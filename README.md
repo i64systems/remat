@@ -1,3 +1,17 @@
+---
+license: apache-2.0
+tags:
+- mixture-of-experts
+- inference
+- memory-efficiency
+- nvme
+- deterministic
+- reproducibility
+- byte-exact
+- low-bit
+- systems
+---
+
 # Memory Remat from NVMe to Resident "Fast Memory": byte-exact inference from digest-verified, demand-rematerialized model memory
 
 ## What this is
