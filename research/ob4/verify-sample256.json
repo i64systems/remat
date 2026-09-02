@@ -1,0 +1,27 @@
+{
+ "container_bytes": 9346171190,
+ "container_path": "/root/ob4/EXPERT-STORE-20B.ob4",
+ "container_sha256_from_index_header": "a5a8fffd46230fb2752945588aa768e4a833c1f7cca985e3ea00f375dbd79314",
+ "failures": [],
+ "index_rows_total": 4608,
+ "leg": "builder3-acceptance-independent-sample",
+ "rows_failed": 0,
+ "rows_ok": 256,
+ "sample_n": 256,
+ "sample_row_indices_first10": [
+  10,
+  27,
+  45,
+  61,
+  101,
+  103,
+  142,
+  170,
+  173,
+  179
+ ],
+ "sample_seed": 20260901,
+ "utc": "2026-09-01T02:31:18Z",
+ "verdict": "PASS",
+ "wall_seconds": 10.539477348327637
+}

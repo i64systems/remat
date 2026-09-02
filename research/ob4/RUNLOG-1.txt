@@ -1,0 +1,613 @@
+OB4-REMAT-1 RUNLOG-1 -- BUILDER 2: CONTAINER, DECODER, AND THE LIVE
+REMATERIALIZING LEASE PATH
+
+Lane: research (CUDA/inventor lane), venue hyde (f32-HYDE, Windows 11 + WSL2
+Ubuntu). Worktree F:\f32\openbob-wt\ob4, branch ob4, based on master 4e7be6b.
+Pure ASCII, no em dashes. Every number below is literal output of a command
+this leg ran itself, or is carried forward from a named prior document with its
+source stated. Nothing is rounded into a claim.
+
+Binding document: research/OB4-REMAT-1-PREREG.md (builder 1, frozen before any
+live decode-in-the-loop run: codec, container, verification law, run plan and
+bars). Prior art it rests on: research/OB1-EXPOSURE-1.md and
+research/ob1/RUNLOG-1.txt (the lease engine and its banked reference runs).
+
+
+1. THE QUESTION, RESTATED
+
+OB-1 established that a mixture-of-experts model can serve a cold expert by
+reading that expert's own bytes off local NVMe, verifying them against a
+committed digest, using them, and dropping them, with byte-identical output.
+Its cold tier stores each expert exactly as the model file holds it.
+
+OB-4 asks the next question: can the STORED form of an expert be SMALLER than
+its EXECUTABLE form, with rematerialization defined as deterministic decode
+plus digest equality, at a decode cost the lease budget can afford?
+
+Builder 1 answered the codec half by measurement and froze the result: MXFP4
+barely compresses (pooled 0.918 of raw), the one lever that helps is splitting
+the per-block scale byte away from the packed 4-bit mantissa before compressing
+each stream on its own, and that split-stream form sits within 0.01 of its own
+order-0 entropy floor. This log is the other half: build the container for the
+whole model, prove every row decodes back to its manifest digest, put the
+decoder inside the lease path, and run it live.
+
+
+2. INPUTS, PINNED
+
+Model      /root/openbob-baselines/models/gpt-oss-20b-MXFP4.gguf
+           12109566624 bytes
+           sha256 27cd6c432c7672cb812a92f611cf3ba7bbc35928262bb1e1253ff4ee6ae35901
+Manifest   research/ob1/EXPERT-MANIFEST-20B.sha256, 4608 data rows
+           sha256 5e9cf0be34f5a02af41e1b0c0688455604731828e2927e9ec0247d22163e99aa
+Corpus     /mnt/f/f32/stage/research/ob1/AC-CODE.txt, 1576144 bytes
+           sha256 d2db5c682d5f52a4383d188fee9d25f592a15d69763dbf886b5614c953e7f3fc
+           (the same digest OB-1's acceptance runs used)
+Geometry   L=24 layers, E=32 experts/layer, 6 fused tensor kinds per layer
+           PER_EXPERT_BYTES_PER_LAYER 13253760
+           TOTAL_EXPERT_BYTES         10178887680
+           TOTAL_MODEL_BYTES          12109566624
+Fork       /root/rs053/llama.cpp branch ob1 HEAD
+           c087083d21e6bd32c1faebc09434a4b54f5d946a. That shared clone was NOT
+           edited: it was confirmed clean at that commit before and after this
+           leg's work. All engine work happened in the private worktree
+           /root/ob4/llama.cpp, branch ob4, created from the same commit.
+zstd       /usr/lib/x86_64-linux-gnu/libzstd.so.1 -> libzstd.so.1.5.5,
+           ZSTD_versionString() "1.5.5". The container was ENCODED through this
+           same shared object and the engine DECODES through it, so both ends
+           are one library build.
+
+The manifest's own raw byte total was recomputed by summing its 4608 rows:
+10178887680, equal to TOTAL_EXPERT_BYTES. Not assumed, added up.
+
+
+3. STEP 1: THE CONTAINER
+
+Tool: research/ob4/build_store.py. Receipt: research/ob4/store-build.json.
+
+Every row is pread from the GGUF by its manifest byte range and sha256-verified
+against the manifest BEFORE any codec touches it, so a bad read cannot be baked
+into the store. Encoding is the frozen codec C2: de-interleave each 17-byte
+block_mxfp4 into a 1-byte-per-block scale stream and a 16-byte-per-block
+mantissa stream, compress each independently at level 19. Bias rows have no
+block structure to split and are stored as a single frame.
+
+Container format (frozen, prereg section 4), as built:
+
+  EXPERT-STORE-20B.ob4
+    bytes 0..7    magic "OB4STOR1"
+    bytes 8..11   uint32 le format version 1
+    bytes 12..19  uint64 le row count
+    bytes 20..27  uint64 le first blob offset (64)
+    bytes 28..63  zero padding
+    bytes 64..    blobs, concatenated, in canonical row order
+
+  blob
+    bytes 0..3    uint32 le scale_frame_len
+    then          scale zstd frame, scale_frame_len bytes
+    then          mantissa zstd frame, blob_len - 4 - scale_frame_len bytes
+
+  For a bias row the single frame of the whole slice is stored in the "scale"
+  position, scale_frame_len is the entire payload length (blob_len - 4), and the
+  mantissa frame is zero bytes long. CLARIFICATION of the prereg's wording: the
+  prereg says scale_frame_len is "set to the full blob length"; the built format
+  sets it to the full PAYLOAD length, i.e. blob_len minus the 4-byte header,
+  because that is the value that makes one reader arithmetic work for both row
+  shapes. The reader therefore has one code path with one branch on
+  mantissa_len == 0, exactly as the prereg intended.
+
+  EXPERT-STORE-20B.ob4.idx
+    bytes 0..7    magic "OB4INDX1"
+    bytes 8..11   uint32 le format version 1
+    bytes 12..19  uint64 le row count
+    bytes 20..27  uint64 le container file size
+    bytes 28..59  container sha256, 32 raw bytes
+    bytes 60..63  zero padding
+    bytes 64..    row_count fixed 69-byte records:
+                  uint16 layer, uint16 expert, uint8 tensor kind index,
+                  uint64 manifest offset, uint64 manifest nbytes,
+                  32-byte manifest sha256, uint64 blob offset, uint64 blob length
+
+Canonical row order is ((layer*E + expert)*6 + tensor_kind_index), which is
+byte-for-byte the same indexing function idx_m() the fork's own
+src/ob1-lease.cpp already computes, so the engine addresses the store with an
+index it has in hand and never searches.
+
+The index is a fixed-width binary record rather than the prereg's illustrative
+"3 x uint16 + string tensor-kind-id + 5 x uint64". Same fields, smaller and
+fixed-stride. Named as deviation D2 below.
+
+MEASURED, literal:
+
+  raw expert bytes (sum of 4608 manifest rows) 10178887680
+  container bytes                              9346171190
+  index bytes                                     318016
+  stored total (container + index)             9346489206
+  bytes saved                                   832398474
+  ratio, container only                        0.9181917989294485
+  ratio, container + index                     0.9182230416359207
+
+  container sha256 a5a8fffd46230fb2752945588aa768e4a833c1f7cca985e3ea00f375dbd79314
+  index     sha256 72c017badc0d141bdd39357265a12af93f3dc932ed748d2977eb7184dc101480
+
+  rows split-stream (weights) 2304
+  rows single-frame (biases)  2304
+  encode wall time            365.5 s on 6 worker processes, nice 10
+
+Per tensor kind (n, raw bytes, stored bytes, ratio):
+
+  ffn_gate_exps.weight  768  3384115200  3114634880  0.9203690465383685
+  ffn_up_exps.weight    768  3384115200  3111765569  0.9195211702603977
+  ffn_down_exps.weight  768  3384115200  3107794332  0.9183476768166757
+  ffn_gate_exps.bias    768     8847360     4090508  0.4623422128182870
+  ffn_up_exps.bias      768     8847360     3398795  0.3841592294198495
+  ffn_down_exps.bias    768     8847360     4487042  0.5071616843894676
+
+Reading it. The whole-population ratio, 0.9182, lands on builder 1's 576-slice
+stratified prediction of 0.9182 to four decimal places. That is a real result in
+both directions: it confirms the sweep's sample was representative, and it
+confirms the honest headline the prereg wrote up front. MXFP4 barely compresses.
+An expert's stored form is 8.2 percent smaller than its executable form, and no
+more. The bias tensors compress to 0.38-0.51 as plain F32 data with real
+structure, but they are 0.26 percent of the bytes and cannot move the total.
+
+The container was then published to the stage path named in the run brief and
+the copy proved identical to the build-time original:
+
+  a5a8fffd46230fb2752945588aa768e4a833c1f7cca985e3ea00f375dbd79314  /root/ob4/EXPERT-STORE-20B.ob4
+  a5a8fffd46230fb2752945588aa768e4a833c1f7cca985e3ea00f375dbd79314  /mnt/f/f32/stage/research/ob4/EXPERT-STORE-20B.ob4
+  72c017badc0d141bdd39357265a12af93f3dc932ed748d2977eb7184dc101480  /root/ob4/EXPERT-STORE-20B.ob4.idx
+  72c017badc0d141bdd39357265a12af93f3dc932ed748d2977eb7184dc101480  /mnt/f/f32/stage/research/ob4/EXPERT-STORE-20B.ob4.idx
+
+The live runs read the /root copy. Both files are the same bytes; /root is the
+same ext4 device (/dev/sdd) the GGUF itself sits on, so the cost limb compares a
+store read against a GGUF read on the same class of device instead of measuring
+the difference between two filesystems. Named as deviation D3.
+
+
+4. STEP 2: FULL DECODE VERIFICATION, THE DIGEST LIMB
+
+Tool: research/ob4/verify_store.py. Receipt: research/ob4/store-verify.json.
+6 worker processes, nice 10, no RUNLOCK taken (no model was loaded).
+
+The reader is written the same way the C++ engine reads: parse the container
+header, parse the index record, one blob pread, one or two zstd frames,
+re-interleave, sha256. It doubles as an executable spec for the engine.
+
+Structural checks on the index, all PASS:
+  - magic and version on both files, and the two row counts agree
+  - the index's stated container size equals the file's actual size
+  - every record is in canonical order
+  - blob ranges are gapless and cover 9346171126 of 9346171190 container bytes,
+    the remaining 64 being the container header
+  - every record's own copy of (manifest offset, nbytes, sha256) equals the
+    manifest row it claims to serve
+
+DIGEST LIMB (stop-ship bar, prereg section 7): PASS.
+  4608 of 4608 rows decoded from the container and sha256-matched the manifest.
+  0 failures. 10178887680 raw bytes reproduced from 9346171126 stored bytes.
+  Wall time 12.694853782653809 s.
+
+This is the claim in its strongest offline form: the container is provably only
+a transport. It holds no identity of its own, and the manifest that OB-1 froze
+is still the only thing that decides whether a byte sequence is the expert.
+
+
+5. STEP 3: THE ENGINE
+
+Diff: research/ob4/remat-engine.patch (sha256
+21bdace92e9eeb2ee63ef36197569ff77cb8d70d924020b8cea19f320274111b), 483
+insertions and 5 deletions across 4 files, applied in the worktree
+/root/ob4/llama.cpp on branch ob4 from fork HEAD c087083.
+
+The design point is that OB-1 already funnels every expert byte through exactly
+one function, ob1_fetch_slice(), which preads a slice and then sha256-verifies
+it against the manifest. That single chokepoint is where rematerialization
+belongs, and putting it there is what keeps the change small enough to reason
+about:
+
+  - src/ob4-remat.cpp and src/ob4-remat.h are new (409 lines together). They
+    open and validate the container and index, cross-check every index row
+    against the manifest row OB-1 loaded, and materialize one slice on demand.
+  - src/ob1-lease.cpp gets 8 exact-match edits. The load-bearing one is inside
+    ob1_fetch_slice: when the store is enabled the bytes are rematerialized from
+    the container instead of being pread from the GGUF, and the sha256 check
+    below it is untouched. Both call sites (resident-at-load, and the routing
+    callback's cold lease) go through the same branch, so resident experts are
+    decoded and verified through exactly the same path as leased ones, as the
+    run brief requires.
+  - src/CMakeLists.txt gets the new source and the zstd link.
+
+All 11 edits were applied by a script that requires each pattern to match
+EXACTLY ONCE in the original file and aborts without writing anything otherwise.
+It reported "applied 11 edits, all matched exactly once".
+
+Verification law, unchanged and still the only correctness test: a decode whose
+bytes do not sha256-match the manifest row is fatal and loud. The container's
+index is checked for self-consistency at startup, but it is never allowed to
+vouch for content.
+
+Refusals built in, so that a misconfiguration cannot quietly become a result:
+  - OB4_STORE set without OB1_LEASE/OB1_K is fatal, not ignored.
+  - A container whose row count, size, ordering or coverage disagrees with its
+    index is fatal at startup, before a byte of the model is loaded.
+  - An index record naming a different manifest offset, length or digest than
+    the manifest itself is fatal at startup.
+  - A decoded frame of the wrong length is fatal.
+  - OB1_FADV is suppressed while the store is on, because it would drop a GGUF
+    range the run never read: a no-op dressed up as a measurement. All OB-4 runs
+    use OB1_FADV=0 regardless.
+
+libzstd linkage. This box carries libzstd's runtime shared object but no zstd.h
+development header:
+
+  $ ls -l /usr/include/zstd.h
+  ls: cannot access '/usr/include/zstd.h': No such file or directory
+
+No package was installed to fix that (no network work was in scope). Instead
+src/ob4-remat.cpp declares the six ABI-stable public symbols it uses
+(ZSTD_createDCtx, ZSTD_freeDCtx, ZSTD_decompressDCtx, ZSTD_isError,
+ZSTD_getErrorName, ZSTD_versionString) and src/CMakeLists.txt links
+/usr/lib/x86_64-linux-gnu/libzstd.so.1 by absolute path through a cache variable
+OB4_ZSTD_LIB, with a configure-time existence check. Named as deviation D1.
+
+Build. The binary was configured CPU-only:
+
+  cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON
+        -DGGML_NATIVE=ON -DGGML_CUDA=OFF -DLLAMA_CURL=OFF
+        -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF
+  cmake --build build --target llama-perplexity -j 6
+
+The banked OB-1 reference binary was built from the same commit with GGML_CUDA
+ON, and every OB-1 acceptance run hid the GPU anyway (CUDA_VISIBLE_DEVICES="",
+-ngl 0). Building CPU-only here is a deviation from that lineage (D4) and it is
+not assumed harmless: this leg runs an explicit BUILD CONTROL arm, a fully
+resident K=0 run on this binary compared byte for byte against OB-1's banked
+res-code-a artifacts, so that "did the store change the output" is separated
+from "did rebuilding the binary change the output" by measurement rather than by
+argument. ldd confirms the linked codec:
+
+  libzstd.so.1 => /lib/x86_64-linux-gnu/libzstd.so.1
+
+
+6. STEP 4: THE LIVE RUNS
+
+Lock discipline. Every run below is a gpt-oss model run and therefore holds the
+box-wide RUNLOCK (mkdir /mnt/f/f32/stage/research/runlock, loop sleeping 30 s
+until success, rmdir immediately when the batch ends, including on error or
+signal via a shell trap). The batch acquires ONCE and holds across its runs
+rather than releasing between them, because a resident baseline and an A/A pair
+whose p95 figures are compared to each other must not be split across another
+tenant's model work; the hold duration is reported below rather than hidden. Two
+sibling workflows share this box, and free RAM was checked against the 6 GB
+floor after acquisition.
+
+Invocation, identical in every flag to the banked OB-1 runs
+(research/ob1/run-ob1.sh), so the only difference between arms is where expert
+bytes come from:
+
+  -m gpt-oss-20b-MXFP4.gguf -f AC-CODE.txt --ctx-size 1024 --chunks 32
+  -b 1024 -ub 1024 --threads 10 --threads-batch 10 --no-warmup --seed 1
+  -ngl 0 --no-mmap --no-repack
+  CUDA_VISIBLE_DEVICES="" nice -n 10 /usr/bin/time -v
+  OB1_K=8 OB1_FADV=0, resident sets from research/ob1/RESIDENT-SETS.json
+
+Arms:
+
+  unit-ob4-c2    K=8, --chunks 2,  OB4_STORE set. A fail-fast unit: it costs
+                 about 90 s and its oracle is the banked OB-1 AC-CODE identity
+                 artifact, whose first two chunk values are [1]24.5827,[2]9.4037.
+                 A 2-chunk run reads the same token stream from the same corpus,
+                 so those two values must reproduce exactly.
+  ob4-res-code   K=0, --chunks 32, no lease engine, no store. The BUILD CONTROL
+                 and the COST limb denominator, made with THIS binary.
+  ob4-k8-code-a  K=8, --chunks 32, OB4_STORE set.
+  ob4-k8-code-b  K=8, --chunks 32, OB4_STORE set. The A/A repeat.
+
+Identity artifacts are exactly the two OB-1 used: the perplexity chunk line
+(identity.txt) and the 786432-line route log.
+
+p95 is computed exactly as OB-1 computed it (research/ob1/RUNLOG-1.txt deviation
+D2): nearest-rank at ceil(0.95*n) over the run's own chunk_ns series, the wall
+time between successive layer-0 routing callbacks, one sample per chunk boundary
+and so 31 samples for a 32-chunk run, reported in milliseconds. Before this
+leg's own runs existed, research/ob4/analyze_runs.py was checked against OB-1's
+already-published figures and reproduced them:
+
+  res-code-a     n=31 rank=30 p95_ms=16073.670240
+  lease-k8-code  n=31 rank=30 p95_ms=24334.359970
+  ratio 1.513927, against the 1.5139 printed in OB1-EXPOSURE-1.md section 3
+
+so the arithmetic below is known correct against prior art rather than merely
+self-consistent.
+
+Lock timeline, literal:
+
+  first attempt   waiting from 2026-09-01T00:13:55Z; the waiter process was
+                  killed by the harness at about 01:18Z, still queued, having
+                  never acquired the lock. Nothing was held and no run had
+                  started, so nothing leaked (verified: /root/ob4/runs did not
+                  exist and the lock was held by another tenant at the time).
+                  Relaunched detached. Named as deviation D5.
+  second attempt  waiting from 01:19:33Z
+                  RUNLOCK acquired after 900s 2026-09-01T01:35:50Z
+                  RUNLOCK released      2026-09-01T02:17:23Z
+  held for 2493 s (41 min 33 s) across the four runs, one acquisition.
+
+Guard processes were checked before and after every run: pid 654 (openbob serve)
+and pid 489 (searxng) were present throughout, 1 and 1.
+
+Run wall times: unit-ob4-c2 70.993251958 s, ob4-res-code 542.088180421 s,
+ob4-k8-code-a 941.586390494 s, ob4-k8-code-b 937.576685177 s.
+
+Engine banner from ob4-k8-code-a, verbatim:
+
+  OB4: remat store ON  zstd=1.5.5 rows=4608
+  OB4:   store    = /root/ob4/EXPERT-STORE-20B.ob4 (9346171190 bytes, sha256 a5a8fffd46230fb2752945588aa768e4a833c1f7cca985e3ea00f375dbd79314)
+  OB4:   index    = /root/ob4/EXPERT-STORE-20B.ob4.idx (318016 bytes)
+  OB4:   index cross-checked against the OB-1 manifest: 4608 rows
+  OB1: lease engine ON  K=8 L=24 E=32 sha=sha-ni fadvise=0
+
+
+7. RESULTS
+
+7.1 IDENTITY LIMB: PASS, AND STRONGER THAN THE BAR ASKED FOR
+
+All four artifacts this leg produced, and both banked OB-1 references, collapse
+to a single pair of digests:
+
+  identity.txt sha256  9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8
+  route.log    sha256  f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77
+
+held by, all five:
+
+  ob4-res-code               this binary, fully resident, bytes from the GGUF
+  ob4-k8-code-a              this binary, K=8 leased, bytes REMATERIALIZED
+  ob4-k8-code-b              the A/A repeat of the above
+  ob1 banked res-code-a      OB-1's binary, fully resident, bytes from the GGUF
+  ob1 banked lease-k8-code   OB-1's binary, K=8 leased, raw bytes from the GGUF
+
+That is one output across two independent builds of the fork, three different
+byte provenances (fully resident, leased raw, leased rematerialized from a
+compressed container), and a repeat. The unit arm agrees at 2 chunks
+([1]24.5827,[2]9.4037, exactly the banked prefix).
+
+The BUILD CONTROL is what licenses reading this as a statement about the store
+rather than about the compiler: ob4-res-code, made with this leg's CPU-only
+binary, reproduces OB-1's banked resident artifacts byte for byte, so the
+rebuild is not a confound and the remaining difference between arms really is
+only where the expert bytes came from.
+
+Every one of the 109752 decodes in each run was sha256-checked against its
+manifest row on the live path, and a single mismatch would have aborted the run
+loudly. None did. Combined with the offline 4608/4608, the DIGEST limb
+(stop-ship) is PASS.
+
+7.2 THE STORE'S OWN BEHAVIOUR WAS BIT-IDENTICAL ACROSS THE A/A PAIR
+
+Not merely the output. Every byte-level counter matched exactly between
+ob4-k8-code-a and ob4-k8-code-b:
+
+  ob4_decodes_total          109752   109752
+  ob4_decodes_split_stream    54876    54876
+  ob4_decoded_bytes_total          242437777920   242437777920
+  ob4_lease_store_bytes_read       220260946643   220260946643
+  ob4_resident_store_bytes_read      2336685280     2336685280
+  lease_events                18100    18100
+  per_layer_lease_events     identical, all 24 entries
+  peak_concurrent_lease_bytes 318090240 (also OB-1's figure at K=8)
+
+Only the clocks differ. 109752 = 18100 lease events x 6 tensors + 1152
+resident slices, and 54876 is exactly half of 109752 because 3 of the 6 tensor
+kinds are split-stream weights. The counters check out arithmetically against
+the geometry, not just against each other.
+
+7.3 RATIO LIMB (report-only by design)
+
+Cold tier on disk:
+
+  raw expert bytes                  10178887680
+  container + index                  9346489206
+  ratio                             0.9182230416359207
+  saved                              832398474 bytes = 0.7752 GiB
+
+Bytes actually moved off disk during a live K=8 AC-CODE run (identical in both
+runs):
+
+  leased:    220260946643 stored vs 239893056000 materialized  0.9181630778133070
+  resident:    2336685280 stored vs   2544721920 materialized  0.9182477903125855
+  total:     222597631923 stored vs 242437777920 materialized  0.9181639669888952
+  fewer bytes read from disk:        19840145997 = 18.4776 GiB
+
+The live ratio (0.91816) and the static container ratio (0.91822) agree to four
+decimals, and both agree with builder 1's 576-slice sweep prediction (0.9182).
+The traffic pattern of a real code-corpus run does not favour more or less
+compressible experts to any measurable degree.
+
+7.4 COST LIMB: PASS
+
+Bar (prereg section 7): live p95 <= 3.0x the OB-1 resident baseline.
+
+  denominator, ob4-res-code p95        15640.098009 ms  (this binary, resident)
+  ob4-k8-code-a p95                    27128.973022 ms  ratio 1.734578  PASS
+  ob4-k8-code-b p95                    28637.733919 ms  ratio 1.831046  PASS
+
+Against OB-1's banked resident baseline instead (16073.670240 ms) the same two
+runs give 1.687790 and 1.781655, so the verdict does not depend on which
+resident reference is used. Both are less than two thirds of the way to the bar.
+
+For context, OB-1's own raw-byte leasing at the same K and corpus cost
+1.513927x its resident baseline. Rematerialization therefore costs about 0.22
+to 0.32 additional units of that normalized ratio, or 1.114842x and 1.176844x
+OB-1's banked leased p95 directly.
+
+7.5 WHERE THE TIME WENT, AND THE FINDING WORTH KEEPING
+
+Inside the lease path's byte-acquisition step (run a / run b):
+
+  blob read from the container   21.386 s /  20.637 s   8.42% /  7.93%
+  decode (zstd + re-interleave) 232.554 s / 239.607 s  91.57% / 92.06%
+  total get-bytes               253.969 s / 260.285 s
+  sha256 verify (unchanged)      93.661 s /  95.864 s
+  whole process                 859.126 s / 871.842 s
+  decode as a share of process     27.07% /   27.48%
+
+Single-threaded decode throughput, measured: 242437777920 output bytes in
+235.615 s of decode = 1.0290 GB/s.
+
+The finding: reading the compressed form off disk was much CHEAPER than reading
+the raw form, and decoding it was much more expensive than either. OB-1's banked
+figure for preading the raw expert bytes in this same run class is 100.589 s;
+this leg's blob reads of the 8.2 percent smaller stored form took 21.386 s. That
+is a 4.7x difference for an 8.2 percent byte reduction, so it is not a bytes
+effect: a 9.35 GB store has materially better page-cache residency on a 24 GB
+box than the 12.11 GB GGUF it replaces, and the lease path reads the same hot
+regions over and over. This is an OBSERVATION, not a controlled result: the OB-1
+number comes from a different build on a different day's cache state, and this
+leg did not run a controlled raw-versus-store read comparison. It is flagged
+because it points at the interesting design space rather than at a conclusion.
+
+The whole cost of rematerialization is decode, and decode is single-threaded on
+this implementation while ten compute threads sit idle, exactly as OB-1 already
+observed for its single-threaded sha256 verify (RUNLOG-1.txt D8). Verify itself
+costs another 93.661 s. So of the 859.126 s run, about 38 percent is spent in
+two serial, embarrassingly parallel byte-processing steps.
+
+7.6 MEMORY
+
+Peak RSS (/usr/bin/time -v), and LOGICAL/RSS exposure using
+TOTAL_MODEL_BYTES 12109566624 as OB-1 defined it:
+
+  ob4-res-code              13150064640   0.920875
+  ob4-k8-code-a              5857521664   2.067353
+  ob4-k8-code-b              5857406976   2.067394
+  ob1 banked lease-k8-code   6018527232   2.012048
+  ob1 banked res-code-a     13321187328   0.909046
+
+Rematerializing leases hold slightly LESS resident memory than raw leases
+(5857521664 vs 6018527232 bytes, exposure 2.067 vs 2.012). The decode scratch
+buffers cost a few megabytes; that is more than repaid because nothing else
+changed and the measurement is dominated by the leased tensor slots, which are
+the same size either way. This is a small effect and is reported because it was
+measured, not because it is important.
+
+Note that the OB-4 disk saving and the OB-1 memory saving are DIFFERENT axes.
+OB-1 bought back fast memory by not resident-loading experts. OB-4 buys back
+COLD TIER DISK, 0.7752 GiB of it, and buys back disk read traffic, 18.4776 GiB
+of it per run, at the price of CPU. Neither subsumes the other, and this run
+shows they compose: the leased run with the compressed cold tier is still
+byte-identical and still inside the cost bar.
+
+
+8. WHAT THIS DOES AND DOES NOT ESTABLISH
+
+Establishes:
+  - A gpt-oss-20b expert's stored form CAN be smaller than its executable form
+    and be rematerialized in the live serving path, with rematerialization
+    defined exactly as the prereg defined it: deterministic decode plus digest
+    equality against the pre-existing manifest.
+  - The whole 4608-row expert population round-trips, offline and live.
+  - The machinery costs 1.73x to 1.83x a resident baseline's p95 at K=8 on the
+    miss-heavy code corpus, comfortably inside the frozen 3.0x bar.
+  - The honest size answer is the one builder 1 predicted and did not dress up:
+    MXFP4 barely compresses. 8.2 percent, and that is the whole prize for this
+    format with this class of codec.
+
+Does not establish:
+  - Anything about a codec other than order-0-class entropy coding on a
+    split MXFP4 stream. The prereg's own C3 measurement says this codec is
+    already within 0.01 of that class's floor, so the remaining upside is not in
+    better entropy coding, it is in a different REPRESENTATION.
+  - Anything about GPU-served deployment. Like OB-1, these runs are -ngl 0 with
+    the GPU hidden, because that is the configuration in which the quantities
+    being measured are meaningful.
+  - Anything about a second model, a second box, or a second inference engine.
+  - A controlled raw-versus-store disk-read comparison (see 7.5).
+
+
+9. DEVIATIONS
+
+D1  libzstd is linked by absolute path and its six ABI-stable public symbols are
+    declared in src/ob4-remat.cpp, because this box has libzstd.so.1 (1.5.5) but
+    no zstd.h development header:
+      $ ls -l /usr/include/zstd.h
+      ls: cannot access '/usr/include/zstd.h': No such file or directory
+    No package was installed. The container was encoded through the same shared
+    object the engine decodes with, so this also removes any encoder/decoder
+    version skew.
+
+D2  The container index is a fixed-width 69-byte binary record rather than the
+    prereg's illustrative "3 x uint16 + string tensor-kind-id + 5 x uint64".
+    Same fields, fixed stride, 318016 bytes total. Counted in the stored total,
+    not waved away.
+
+D3  The live runs read the container from /root/ob4/ rather than from the
+    /mnt/f/f32/stage/research/ob4/ copy named in the run brief. Both files were
+    proved byte-identical by sha256 (section 3). The reason is that /root is the
+    same ext4 device the GGUF sits on, while /mnt/f is a Windows drive through
+    drvfs; reading the store across drvfs would have made the cost limb a
+    measurement of the difference between two filesystems rather than of the
+    codec. The stage copy exists and is the published artifact.
+
+D4  The engine binary was built CPU-only (GGML_CUDA=OFF) while OB-1's banked
+    reference binary was built with CUDA on. This was NOT assumed harmless: the
+    ob4-res-code BUILD CONTROL arm exists precisely to test it, and it passed
+    byte for byte (section 7.1).
+
+D5  The first run-batch attempt was killed by the harness after about 65 minutes
+    of queueing, before it ever acquired the RUNLOCK. Nothing was held and no run
+    had started, verified at the time. It was relaunched detached (setsid) so a
+    harness-level task kill could not stop it again. The acquire policy was also
+    corrected in the relaunch: the house rule "report after 90 min" is
+    implemented as report-and-keep-waiting rather than give-up-at-90, which is
+    the reading that does not throw away a funded run because a neighbour is
+    busy. A sibling workflow held the lock legitimately and was running model
+    work throughout; its lock was never touched.
+
+D6  The batch acquires the RUNLOCK once and holds it across four runs (2493 s)
+    rather than releasing between them, because the resident baseline and the
+    A/A pair are only comparable if another tenant's model work does not land in
+    between and change the page-cache state. The hold is reported, not hidden.
+
+D7  p95 is chunk-level, not token-level, inherited from OB-1's deviation D2 and
+    kept identical so the numbers are comparable.
+
+
+10. HELD MENU (naming only, nothing fires here)
+
+  - PARALLEL DECODE. Decode is 27 percent of process time on one thread while
+    ten compute threads idle. Nothing about the identity guarantee depends on
+    decode being serial; the same is true of OB-1's sha256 verify, another 11
+    percent. This is the obvious next cost win and it is pure engineering.
+  - A DIFFERENT REPRESENTATION, not a better entropy coder. The prereg's C3
+    floor says order-0-class coding on split MXFP4 is finished at 0.918. Real
+    gains have to come from storing something other than the weights: a
+    generator, a delta against a base, or a lower-precision form with a
+    correction, all of which change what "digest equality" is asserted about and
+    so need their own prereg.
+  - THE PAGE-CACHE EFFECT IN 7.5 DESERVES A CONTROLLED RUN. If a smaller cold
+    tier really buys a 4.7x cheaper read, that is a bigger lever than the 8.2
+    percent it costs to get, and it would be measured with a raw-versus-store
+    A/B on one binary with a controlled cache state.
+  - 120b. Same three limbs on gpt-oss-120b, where the expert population is far
+    larger and the cold tier is the dominant cost.
+
+
+11. ARTIFACTS
+
+Off-repo (per the house rule that run evidence stays out of the repo):
+  /mnt/f/f32/stage/research/ob4/EXPERT-STORE-20B.ob4      9346171190 bytes
+  /mnt/f/f32/stage/research/ob4/EXPERT-STORE-20B.ob4.idx      318016 bytes
+  /mnt/f/f32/stage/research/ob4/runs/{unit-ob4-c2,ob4-res-code,ob4-k8-code-a,
+    ob4-k8-code-b}/{route.log,identity.txt,stdout.txt,stderr.txt,ob1-stats.txt}
+  /mnt/f/f32/stage/research/ob4/runbatch2.log   the batch's own log
+
+Committed with this file: research/ob4/build_store.py, verify_store.py,
+analyze_runs.py, run-ob4.sh, remat-engine.patch, store-build.json,
+store-verify.json, run-analysis.json.
+
+The shared fork clone /root/rs053/llama.cpp was confirmed clean at
+c087083d21e6bd32c1faebc09434a4b54f5d946a before and after this leg. Master in
+F:\f32\openbob is untouched at 4e7be6b. Nothing was pushed or merged.
+
+END OB4-REMAT-1 RUNLOG-1

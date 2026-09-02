@@ -1,0 +1,14 @@
+# BOBMOE0 stage-1 DATA PIN, prereg s.4 PRIMARY (enwik8).
+# Acquired under the download law (R0 class) by builder leg 1.
+# URL (exact):        https://mattmahoney.net/dc/enwik8.zip
+# Retrieval date UTC: 2026-08-30T09:07:23Z (copy 1), 2026-08-30T09:07:29Z (copy 2)
+# Verified twice:     downloaded twice to independent paths, cmp byte-equal;
+#                     raw file re-hashed twice after extraction, equal.
+# Compressed bytes:   36445475
+# Raw bytes:          100000000 (exactly 10^8, the standard enwik8 length)
+# Cross-check:        md5 a1fa5ffddb56f4953e226637dabbb36a matches the long-published
+#                     enwik8 md5 - independent corroboration of provenance.
+# Raw bytes live OFF-REPO at F:\f32\stage\lowint\data\enwik8\.
+# The digests below are the pin; the URL is provenance, never the oracle.
+547994d9980ebed1288380d652999f38a14fe291a6247c157c3d33d4932534bc *enwik8.zip
+2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8 *enwik8

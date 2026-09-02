@@ -1,0 +1,196 @@
+BOBMOE0-STAGE2B-LAUNCH - THE seg02 LAUNCH RECEIPT
+=================================================
+Lane: funded ternary (low-int). Leg D, builder, under
+BOBMOE0-STAGE2B-PLAN.txt sections 3 and 4 (frozen before the fix).
+Host: hyde, WSL Ubuntu-24.04, /root/openbob-train/venv,
+torch 2.13.0+cu130, single RTX 3090 Ti.
+Written 2026-08-31 UTC. Pure ASCII, no em dashes. Every number is
+literal command output; the full literal log is
+lowint/moe0/evidence/leg-g1wrap.txt.
+
+
+1. WHAT BROKE, AND THE ARITHMETIC THAT PREDICTED IT
+===================================================
+See BOBMOE0-STAGE2B-PLAN.txt s.1 for the derivation. In one line:
+  TRAIN_WINDOWS N = 90000000 // 512 = 175781; batch B = 64;
+  floor(175781 / 64) = 2746 full batches; 2746 * 64 = 175744;
+  step 2747 drew the 37 leftover windows (a partial batch, survived);
+  step 2748's slice perm[175808:175872] was EMPTY, and np.stack over
+  zero arrays raised ValueError at bobmoe0.py line 384.
+PREDICTED first-crash step: 2748. OBSERVED: metrics-seg01.tsv's last
+row is 2747, the traceback follows. PREDICTED = OBSERVED.
+seg01 was the first run in the lane's history to reach draw 175781.
+
+The seg01 failure line, verbatim, still frozen in launcher.out:
+[2026-08-30T20:55:29Z] ARM FAILED moe rc=1: see /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/moe/run-seg01.out
+
+
+2. THE FIX
+==========
+Commit 22a49e8 (22a49e8d90b391d7bff46c3e7e5c0518ce2b78fe), lead-
+authored under the plan's tiny-fix allowance, one edit at one call
+site in bobmoe0.py's main loop:
+  ids = perm[torch.arange((step - 1) * B, step * B)
+             % corpus.n_train_windows].tolist()
+THE ONE WRAP RULE (plan s.2): the single preregistered permutation
+cycles MODULARLY. ids(s) is a pure function of (perm_seed 28471, N,
+B, s) - no new seed, no new RNG draw, no mutable state, identical for
+both arms, invariant under any segmentation or resume pattern. A1 is
+PRESERVED, not amended. For every step with s*B <= N the rule
+reproduces the pre-fix slice byte for byte, so every banked artifact
+is untouched by construction. batch() itself is unchanged and still
+raises loudly on an empty window list; the fix removes the caller's
+ability to hand it one.
+Plan commit: fd0ab37. Unit rows U1-U6: lowint/moe0/evidence/
+leg-wrapfix.txt.
+
+
+3. G1-WRAP - THE BOUNDARY PROOF. VERDICT: PASS
+==============================================
+MoE arm, the funded step002000 anchor, two clean separate OS
+processes run sequentially under the full proven envelope
+(CUBLAS_WORKSPACE_CONFIG=:4096:8 PYTHONHASHSEED=0 OMP_NUM_THREADS=8
+MKL_NUM_THREADS=8), each into its own scratch dir, each stopped by
+the existing W5 PREEMPT mechanism at the step-3000 cadence boundary.
+No test-only code path was added to the trainer.
+
+ANCHOR, re-verified against CKPT-DIGESTS.txt before the runs and
+again by the launcher at relaunch (both readings agree):
+  936462e5dc415cd29dc8eeaa41a7a9a6249f0e10b05b7e06422ceb485784bf73  step002000.safetensors
+  04875d93e95ebb9d87c220bcccef5fbbfbfab82fe58cee55d916df691e848818  step002000.resume.pt
+
+RUN A begin 2026-08-31T00:43:19Z, EXIT rc=0 at 01:13:59Z
+RUN B begin 2026-08-31T01:13:59Z, EXIT rc=0 at 01:44:36Z
+
+LIMB (i) checkpoint byte-identical A vs B:
+  a6655e3b4af9cfd0808a8d3431af153aa616cbfd3c327139cc287947717fb910  A/step003000.safetensors
+  a6655e3b4af9cfd0808a8d3431af153aa616cbfd3c327139cc287947717fb910  B/step003000.safetensors
+  c6e4815c75f59c019ac52c5859d4ae865d771c616aacf0069254ec22f37e01aa  A/step003000.resume.pt
+  c6e4815c75f59c019ac52c5859d4ae865d771c616aacf0069254ec22f37e01aa  B/step003000.resume.pt
+  cmp step003000.safetensors rc=0 (no output)
+  cmp step003000.resume.pt    rc=0 (no output, extra evidence)
+LIMB (ii) metrics byte-identical, boundary crossed:
+  cmp metrics.tsv rc=0 (no output; full file, steps 2001..3000)
+  8a0a9f72c0f915e6e92f8c980f27ab448d6547610345e88e82b4870979ca0a72  A/metrics.tsv
+  8a0a9f72c0f915e6e92f8c980f27ab448d6547610345e88e82b4870979ca0a72  B/metrics.tsv
+  wc -l = 1004 (4 header lines + exactly 1000 step rows)
+  rows 2746, 2747 and 2748 PRESENT in both, identical:
+  2746	1.41722214380725917e-03	9.96227979660034180e-01	1.04993867874145508e+00	1.00672733783721924e+00	1.27979204058647156e-01
+  2747	1.41715376878636008e-03	9.70996379852294922e-01	1.04501461982727051e+00	9.81446504592895508e-01	1.47256329655647278e-01
+  2748	1.41708536738423849e-03	9.67356562614440918e-01	1.05075311660766602e+00	9.77864086627960205e-01	1.25854894518852234e-01
+LIMB (iii) clean exits with markers:
+  A/PREEMPTED: step=3000 utc=2026-08-31T01:13:59Z
+  B/PREEMPTED: step=3000 utc=2026-08-31T01:44:36Z
+  both rc=0.
+
+All three frozen limbs PASS, none waived. GPU temp 69-72 C across
+both runs; the 90 C rule armed and never approached. The PREEMPT file
+this leg created was removed and verified absent before the relaunch.
+
+
+4. THE seg02 RELAUNCH
+=====================
+LAUNCH UTC              2026-08-31T02:07:16Z
+LAUNCHER_PID            914502   (bash run_stage2.sh, SEG=seg02)
+PYTHON_PID moe          914568   (from the launcher's own line:
+                                  "[2026-08-31T02:07:25Z] PYTHON_PID moe=914568")
+WATCHER_PID             914511   (bash watch_stage2b.sh)
+MoE RESUME              .../stage2/moe/step002000.safetensors
+                        (digests re-verified by the launcher, s.3)
+DENSE ANCHOR            .../stage2/g1card/dense/A/step001000.safetensors
+                        (unchanged default, exactly as originally
+                        planned; dense never started in seg01)
+FINAL STEP both arms    15259, frozen cadence (every 1000 + 15259)
+
+GATES L1-L3 rerun by the launcher itself, logged to
+gates-stage2-seg02.log:
+  L1 serve.pid=654 (BYSTANDER, never signalled)
+  L1 busy-flag literal search: NO BUSY FLAG FILE PRESENT
+  L1 compute-apps: [654, [N/A];]      (no foreign compute pid)
+  L2 free -m available=23201 MiB (bar > 12288)
+  L3 gpu memory.free=23639 MiB (bar >= 8192) gpu_temp_c=40
+  GATES PASS moe
+
+BOTH ARMS RUN THE FIXED TRAINER. The dense arm never executed the
+broken boundary, but it is launched by this same launcher against the
+same bobmoe0.py at 22a49e8, so both arms' final artifacts come from
+byte-identical trainer code under the one shared data order. Stated
+here on the record.
+
+STEPS 2001..2725 COMPUTED IN seg01 ARE HONESTLY LOST. Nothing after
+step002000 was ever banked (the next cadence was 3000), so the cost
+is roughly 53 minutes of wall clock and ZERO falsifier validity
+(plan s.5). seg02 replays 2001 onward under the fixed rule.
+
+
+5. LOGS, MARKERS AND PATHS
+==========================
+All under /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/ (Windows
+F:\f32\stage\lowint\moe0-ckpt\stage2\), off-repo by law:
+  launcher-seg02.out        launcher log (seg01's launcher.out is
+                            FROZEN crash evidence, never overwritten)
+  gates-stage2-seg02.log    the L1-L3 gate log for this segment
+  moe/run-seg02.out         trainer stdout
+  moe/metrics-seg02.tsv     deterministic metrics
+  moe/progress-seg02.txt    progress, gpu_temp_c on every line
+  moe/CKPT-DIGESTS.txt      append-only digest log (funded)
+  watch-seg02.log           the watcher's monitor log
+  FAILED-seg02              WRITTEN BY THE WATCHER on any arm's
+                            nonzero exit, carrying the quoted
+                            ARM FAILED line, its source path and UTC.
+                            ABSENT while the run is healthy.
+  DONE                      written by the launcher when BOTH arms
+                            reach 15259. ABSENT until then.
+  moe|dense/PREEMPTED, moe|dense/TEMPSTOP, PREEMPTED-BETWEEN-ARMS
+                            resumable stops; the watcher notes them
+                            and exits.
+ONE FILE TO WATCH FOR EITHER OUTCOME: FAILED-seg02 for failure, DONE
+for success. The watcher (lowint/moe0/train/watch_stage2b.sh) polls
+60 s and OBSERVES ONLY: it never signals, never kills, and writes
+nothing but its own log and FAILED-seg02.
+
+
+6. IN-SESSION HEALTH BAR (MET BEFORE HAND-OFF)
+==============================================
+(i) The funded run crossed the boundary. metrics-seg02.tsv rows
+    2746..2749 are byte-identical to the G1-WRAP proof rows above,
+    a THIRD independent reproduction.
+(ii) FIRST FRESH CADENCE CHECKPOINT, on time at elapsed_s=1816.102:
+     a6655e3b4af9cfd0808a8d3431af153aa616cbfd3c327139cc287947717fb910  step003000.safetensors
+     c6e4815c75f59c019ac52c5859d4ae865d771c616aacf0069254ec22f37e01aa  step003000.resume.pt
+     appended to the funded CKPT-DIGESTS.txt (the two step002000
+     lines unchanged above them). The funded digest EQUALS proof runs
+     A and B: three clean processes, one checkpoint, one digest.
+(iii) GPU temperature across 42 progress samples: max 72 C. E.g.
+     step=2650 ce=0.963205 elapsed_s=1171.222 gpu_temp_c=72
+     step=3050 ce=0.985580 elapsed_s=1906.678 gpu_temp_c=69
+     step=3075 ce=1.003341 elapsed_s=1951.883 gpu_temp_c=71
+(iv) Watcher pid 914511 alive, its log growing once per 60 s poll.
+
+
+7. PROJECTED COMPLETION
+=======================
+From seg02's own progress lines:
+  LAST_PROGRESS_LINE: step=3075 ce=1.003341 elapsed_s=1951.883 gpu_temp_c=71
+  STEPS_DONE  = 3075 - 2000 = 1075
+  S_PER_STEP  = 1951.883 / 1075 = 1.815705
+  MOE   = 15259 - 2000 = 13259 steps * 1.815705 = 24074.4 s = 6.687 h
+  DENSE = 15259 - 1000 = 14259 steps * 1.815705 = 25890.1 s = 7.192 h
+  TOTAL = 24074.4 + 25890.1 = 49964.6 s = 13.879 h
+  moe train start 2026-08-31T02:07:25Z
+  MoE ARM-DONE projected  2026-08-31T08:48:39Z
+  DONE projected          2026-08-31T16:00:09Z
+The measured 1.815705 s/step sits on the plan's assumed 1.81. The
+projection carries no margin for a gate wait, a preempt, or the
+dense arm's smaller model running faster; read 16:00Z as the EARLY
+edge of a 16:00-17:00Z window.
+
+
+8. WHAT FIRES ON DONE
+=====================
+The collector plan (BOBMOE0-STAGE2-PLAN.txt s.4) fires on the DONE
+marker UNCHANGED. Nothing in stage 2b altered it, and nothing in
+stage 2b moved the prereg, A1, the frozen bars, the envelope, the
+cadence, or the walls.
+
+END BOBMOE0-STAGE2B-LAUNCH

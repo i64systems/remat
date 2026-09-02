@@ -1,0 +1,198 @@
+=== OB5A ALLOCATION ANALYSIS ===
+utc 2026-09-01T14:46:22Z
+
+--- 0. THE ARITHMETIC THIS LEG IS READ AGAINST (20b), all shown ---
+  model file bytes            12109566624
+  L x E x per_expert          24 x 32 x 13253760 = 10178887680
+  trunk, from the FILE total  12109566624 - 10178887680 = 1930678944
+  edge census worst case      18284544 bytes
+  prereg P2a bar k0-prose     2354799264 + 18284544 = 2373083808
+  prereg P2a bar k8-code      4793491104 + 18284544 = 4811775648
+
+--- 1. P1 REGRESSION: identity and route, byte for byte (STOP-SHIP) ---
+run             identity  digest                                                           route     digest
+res-prose       MATCH     96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925
+                MATCH     4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df
+res-code        MATCH     9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8
+                MATCH     f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77
+lease-k8-code   MATCH     9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8
+                MATCH     f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77
+lease-k0-prose  MATCH     96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925
+                MATCH     4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df
+
+--- 2. P1b/P1c COUNTER REGRESSION: the allocator must not move these either ---
+run               lease_events         banked      peak_concur         banked   verdict
+res-prose                    0              0                0              0   MATCH
+res-code                     0              0                0              0   MATCH
+lease-k8-code            18100          18100        318090240      318090240   MATCH
+lease-k0-prose           23096          23096        424120320      424120320   MATCH
+
+P1c, the resident controls must show nothing leased:
+  res-prose       resident_bytes_loaded=0 lease_events=0  MATCH
+  res-code        resident_bytes_loaded=0 lease_events=0  MATCH
+
+--- 3. P2 ALLOCATION: measured, not asserted ---
+run                  va_model   commit_peak  peak_single  commit_calls    decommit  vma_peak    VmHWM_kb
+res-prose         12096558336   12096561152    615333888           459           0       173    12992380
+res-code          12096558336   12096561152    615333888           459           0       179    13009468
+lease-k8-code     12096558336    4793679872    615333888        110067      108462      6777     5877304
+lease-k0-prose    12096558336    2359328768    615333888        138891      138396      8850     3480308
+
+P2a, THE BAR: on the LEASED runs no model-state commit is a function of total expert bytes.
+  lease-k0-prose
+    measured commit peak      2359328768
+    prereg P2a bar            2373083808      PASS
+    headroom under the bar    13755040 bytes (0.5796 pct of the bar)
+    re-derived from the BUFFER, which is what is actually committed:
+      buffer trunk            12096558336 - 10178887680 = 1917670656
+      K x L x per_expert      0 x 24 x 13253760 = 0
+      peak concurrent lease   424120320  (banked, and re-measured above)
+      sum, before edge        2341790976
+      measured minus that     17537792 bytes = the outward-rounding edge actually paid
+      edge census worst case  18284544      edge within census
+    against the allocation the OLD allocator makes for the same run:
+      old single request      12096558336
+      reduction               5.1271x
+  lease-k8-code
+    measured commit peak      4793679872
+    prereg P2a bar            4811775648      PASS
+    headroom under the bar    18095776 bytes (0.3761 pct of the bar)
+    re-derived from the BUFFER, which is what is actually committed:
+      buffer trunk            12096558336 - 10178887680 = 1917670656
+      K x L x per_expert      8 x 24 x 13253760 = 2544721920
+      peak concurrent lease   318090240  (banked, and re-measured above)
+      sum, before edge        4780482816
+      measured minus that     13197056 bytes = the outward-rounding edge actually paid
+      edge census worst case  18284544      edge within census
+    against the allocation the OLD allocator makes for the same run:
+      old single request      12096558336
+      reduction               2.5234x
+
+P2b, THE N-PROPORTIONAL REQUEST IS GONE (20b form of it):
+  res-prose       largest single commit    615333888  (586.83 MB)   reservation 12096558336 
+  res-code        largest single commit    615333888  (586.83 MB)   reservation 12096558336 
+  lease-k8-code   largest single commit    615333888  (586.83 MB)   reservation 12096558336 [DECLARED, not counted against the bar]
+  lease-k0-prose  largest single commit    615333888  (586.83 MB)   reservation 12096558336 [DECLARED, not counted against the bar]
+  On the leased runs no commit request is anywhere near the 12096558336-byte model-state
+  request the old allocator makes; the reservation is reported and declared per
+  prereg section 4.3, not counted against the bar.
+
+P2c, VmHWM within 1.25x of alloc_commit_model_peak PLUS the compute buffers the
+     engine reports at load. Those buffers are not printed at this build's default
+     log level, so they were read off a separate 1-chunk diagnostic run with -v
+     (research/ob5a/DIAG-BUFFERS-1.txt). They are a function of the configuration,
+     not of the allocator, and the two diagnostic arms report them identically.
+     Engine's own words, verbatim:
+       CPU compute buffer size =   823.89 MiB
+       CPU KV buffer size =    24.00 MiB   (printed twice: gpt-oss carries a
+                                            full cache and a sliding-window one)
+       CPU  output buffer size =     0.77 MiB
+       load_tensors:  CPU_Reserve model buffer size = 11536.18 MiB
+     sum 872.6567 MiB = 915046871 bytes
+
+run                   VmHWM_B   commit_peak      +buffers   unaccounted   ratio    bar verdict
+res-prose         13304197120   12096561152   13011608023     292589097  1.0225   1.25 PASS
+res-code          13321695232   12096561152   13011608023     310087209  1.0238   1.25 PASS
+lease-k8-code      6018359296    4793679872    5708726743     309632553  1.0542   1.25 PASS
+lease-k0-prose     3563835392    2359328768    3274375639     289459753  1.0884   1.25 PASS
+  The 'unaccounted' column is what VmHWM carries beyond the committed model state
+  and the engine's own buffers: the tokenized corpus, the allocator's page bitmap,
+  the C++ runtime and the loader's transient reads. If the allocator were leaking
+  N-proportional state this column would grow with the model term. It does not:
+  it is within a few hundred MB across a 5.1x range of committed model state.
+
+  THE STRONGEST FORM OF THIS LIMB IS NOT A RATIO, IT IS A COMPARISON WITH THE
+  BANKED RUNS, which used the OLD allocator on the same box at the same config:
+  run             ob5a MaxRSS_kb banked MaxRSS_kb     delta_kb  delta_pct
+  res-prose             12992380       12991324         1056    0.0081%
+  res-code              13009468       13008364         1104    0.0085%
+  lease-k8-code          5877304        5877468         -164   -0.0028%
+  lease-k0-prose         3480308        3479932          376    0.0108%
+  (lease-k8-code's banked figure is OB-1's 10-thread run, the only one that exists;
+   thread count moves peak RSS a little, so that row is context, not a bar.)
+
+P2d, THE RESIDENT CONTROLS (this is the control, not a bar failure):
+  res-prose       commits 12096561152 of the 12096558336-byte buffer = 100.0000 pct
+                  by construction: with no lease active every tensor is committed
+                  whole in the loader, so this run is the N-proportional case and
+                  is what the leased runs are read against.
+  res-code        commits 12096561152 of the 12096558336-byte buffer = 100.0000 pct
+                  by construction: with no lease active every tensor is committed
+                  whole in the loader, so this run is the N-proportional case and
+                  is what the leased runs are read against.
+
+--- 4. P4 ALLOCATOR DETERMINISM ---
+P4c, the printed digest is the sha256 of the journal FILE (so P4a is not a hash of nothing):
+  aa-k0-prose-a   engine c9e9e8ee91434a086024b9032b58fb214c631482f1cd697766f08095be84572d
+                  file   c9e9e8ee91434a086024b9032b58fb214c631482f1cd697766f08095be84572d   MATCH
+  aa-k0-prose-b   engine c9e9e8ee91434a086024b9032b58fb214c631482f1cd697766f08095be84572d
+                  file   c9e9e8ee91434a086024b9032b58fb214c631482f1cd697766f08095be84572d   MATCH
+  res-prose       engine 01786927d0a3273c7b72bbc80b007587d53503ebe433588eacb4802a5334be44
+                  file   01786927d0a3273c7b72bbc80b007587d53503ebe433588eacb4802a5334be44   MATCH
+  res-code        engine 01786927d0a3273c7b72bbc80b007587d53503ebe433588eacb4802a5334be44
+                  file   01786927d0a3273c7b72bbc80b007587d53503ebe433588eacb4802a5334be44   MATCH
+  lease-k8-code   engine 78badcfe839603ca27c17cc0987a994340b7daab8c12ed7c0c927fecacda7f85
+                  file   78badcfe839603ca27c17cc0987a994340b7daab8c12ed7c0c927fecacda7f85   MATCH
+  lease-k0-prose  engine 02b3dce67db6c4729a4afc968d80bb58858c1fc0b724ea5ff3cae1c5d067228f
+                  file   02b3dce67db6c4729a4afc968d80bb58858c1fc0b724ea5ff3cae1c5d067228f   MATCH
+
+P4b, the A/A pair must agree on the journal digest, the counters and the output:
+  alloc_journal_sha256         a=c9e9e8ee91434a086024b9032b58fb214c631482f1cd697766f08095be84572d b=c9e9e8ee91434a086024b9032b58fb214c631482f1cd697766f08095be84572d MATCH
+  alloc_journal_records        a=17301                              b=17301                              MATCH
+  alloc_commit_calls           a=8895                               b=8895                               MATCH
+  alloc_decommit_calls         a=8406                               b=8406                               MATCH
+  alloc_commit_model_peak      a=2359304192                         b=2359304192                         MATCH
+  alloc_commit_peak_single     a=615333888                          b=615333888                          MATCH
+  alloc_commit_total_bytes     a=20905832448                        b=20905832448                        MATCH
+  alloc_decommit_bytes         a=18535133184                        b=18535133184                        MATCH
+  alloc_va_model_bytes         a=12096558336                        b=12096558336                        MATCH
+  lease_events                 a=1430                               b=1430                               MATCH
+  peak_concurrent_lease_bytes  a=424120320                          b=424120320                          MATCH
+  lease_bytes_read             a=18952876800                        b=18952876800                        MATCH
+  identity.txt                 7b215e1dcecd9d1e0584017366215dbfff375412fc6a73960496b6acec63a61c  MATCH
+  route.log                    4f4030f3911b92f634a343bd97d056f6c272d7196d9c4903b397105469d13241  MATCH
+  alloc-journal.txt            c9e9e8ee91434a086024b9032b58fb214c631482f1cd697766f08095be84572d  MATCH
+  alloc_vma_peak               a=8850                               b=8840                               (NOT a determinism bar: see the note below)
+  alloc_vma_peak counts lines of /proc/self/maps, which includes mappings this
+  allocator does not own (the loader, the C++ heap's arenas, thread stacks). It
+  is reported as a headroom measurement against vm.max_map_count, never as a
+  determinism limb, and it is excluded from the A/A comparison for that reason.
+
+P4d, the call counts must equal what the residency schedule implies:
+  commits   = trunk tensors + resident slices + 6 x lease_events
+  decommits = 6 x lease_events MINUS the last route call's leases, which are never
+              released: ob1_release_active runs at the START of the next route call
+              and there is no route call after the last layer of the last chunk.
+              The engine prints lease_active_slices_at_exit so this is checkable
+              rather than assumed. THE PREREG'S P4d SAID 'decommits = 6 x
+              lease_events' FLAT; that is the relation below, and the correction is
+              declared as a deviation.
+  aa-k0-prose-a   decommits    8406 + active_at_exit  174 =     8580   6 x lease_events =     8580  MATCH
+                  commits      8895 - resident_slices     0 - 6 x lease_events     8580 = 315 trunk tensors
+  aa-k0-prose-b   decommits    8406 + active_at_exit  174 =     8580   6 x lease_events =     8580  MATCH
+                  commits      8895 - resident_slices     0 - 6 x lease_events     8580 = 315 trunk tensors
+  res-prose       decommits       0 + active_at_exit    0 =        0   6 x lease_events =        0  MATCH
+                  commits       459 - resident_slices     0 - 6 x lease_events        0 = 459 trunk tensors
+  res-code        decommits       0 + active_at_exit    0 =        0   6 x lease_events =        0  MATCH
+                  commits       459 - resident_slices     0 - 6 x lease_events        0 = 459 trunk tensors
+  lease-k8-code   decommits  108462 + active_at_exit  138 =   108600   6 x lease_events =   108600  MATCH
+                  commits    110067 - resident_slices  1152 - 6 x lease_events   108600 = 315 trunk tensors
+  lease-k0-prose  decommits  138396 + active_at_exit  180 =   138576   6 x lease_events =   138576  MATCH
+                  commits    138891 - resident_slices     0 - 6 x lease_events   138576 = 315 trunk tensors
+
+--- 5. VMA HEADROOM (prereg section 3.6) ---
+  res-prose       peak /proc/self/maps lines    173   vm.max_map_count 1048576   headroom 6061.1x
+  res-code        peak /proc/self/maps lines    179   vm.max_map_count 1048576   headroom 5858.0x
+  lease-k8-code   peak /proc/self/maps lines   6777   vm.max_map_count 1048576   headroom 154.7x
+  lease-k0-prose  peak /proc/self/maps lines   8850   vm.max_map_count 1048576   headroom 118.5x
+
+--- 6. COST: wall clock against the banked runs ---
+run              wall_s (ob5a)  wall_s banked  delta pct
+res-prose        632.155422518     641.014834    -1.382%
+res-code         637.727468161     633.580138     0.655%
+lease-k8-code    861.577634171 (none banked at 8 threads)          -
+lease-k0-prose   908.702772783     916.076807    -0.805%
+
+=== SUMMARY ===
+ALL BARS PASS: P1a P1b P1c P2a P2b P2c P2d P4b P4c P4d
+OB5A_ANALYZE_FAILURES=0

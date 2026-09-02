@@ -1,0 +1,31 @@
+=== OB1B BINARY VERIFICATION ===
+utc_start 2026-09-01T01:04:00Z
+--- runpath, the one string that must differ ---
+ 0x000000000000001d (RUNPATH)            Library runpath: [/root/rs053/llama.cpp/build/bin:]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/root/ob1b/llama.cpp/build/bin:]
+--- rebuild phase A (pristine source) and keep it ---
+719:    if (g_K <= 0 || g_K > g_E) ob1_fatal("OB1_K=%d out of range 1..%d", g_K, g_E);
+2c1f2fed7faf9714079af6c40545d1eb8d3b13c94420d9312b6ddfc4e05c7281  /root/ob1b/verify/phaseA.so
+--- rebuild phase B (patched source) and keep it ---
+guard edit applied
+719:    if (g_K <  0 || g_K > g_E) ob1_fatal("OB1_K=%d out of range 0..%d", g_K, g_E);
+bfa8166ed641ea664e559af5402d56ef580fc6f90cc226d0b5859d6e023b37b0  /root/ob1b/verify/phaseB.so
+--- extract .text from all three ---
+landed   .text      2645458 bytes  850e33acf7be0facb41cacc5fb1bcda2a0eeb7c63d6e735fd5bfca3c9d9142ca
+phaseA   .text      2645458 bytes  850e33acf7be0facb41cacc5fb1bcda2a0eeb7c63d6e735fd5bfca3c9d9142ca
+phaseB   .text      2645458 bytes  f0336c94d5f1a7eb2697b171e7d4c0f67b5040e6932cae44dcdf2a3002f04af3
+--- verdicts ---
+A) landed .text == phaseA .text : MATCH -- the ob1b tree reproduces the landed
+   engine's executable code exactly; the whole-file digest differs only in
+   metadata (the RUNPATH above).
+B) phaseA .text != phaseB .text : DIFFER, as the guard edit requires
+   differing bytes between pristine and patched .text:
+   1
+   first differing byte offsets:
+1299090 216 210
+--- the running binary is phase B (patched); confirm ---
+bfa8166ed641ea664e559af5402d56ef580fc6f90cc226d0b5859d6e023b37b0  /root/ob1b/llama.cpp/build/bin/libllama.so.0
+1772264971eb456bf6a60d5204c48fb96eeb5a9b026c42ea1dd6f3690b192932  /root/ob1b/llama.cpp/build/bin/llama-perplexity
+719:    if (g_K <  0 || g_K > g_E) ob1_fatal("OB1_K=%d out of range 0..%d", g_K, g_E);
+utc_end 2026-09-01T01:04:13Z
+=== END VERIFICATION ===

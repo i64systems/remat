@@ -1,0 +1,69 @@
+=== OB5A 120B BUFFER DIAGNOSTIC (P2c denominator) ===
+utc_start 2026-09-01T15:54:40Z
+guard_pids: 1 openbob, 1 searxng
+overcommit_before_lock: 0
+### LOCK REQUEST diag-120b-k8 at 2026-09-01T15:54:40Z
+### LOCK ACQUIRED after 0s
+### free RAM available: 22 GB (house bar: 6 GB)
+overcommit_at_run: 0
+cmd: /root/ob5a/llama.cpp/build/bin/llama-perplexity -m /root/openbob-baselines/models/gpt-oss-120b-MXFP4.gguf -f /mnt/f/f32/stage/research/ob1/AC-PROSE.txt --ctx-size 1024 --chunks 1 -b 1024 -ub 1024 --threads 8 --threads-batch 8 --no-warmup --seed 1 -ngl 0 --no-mmap --no-repack -v
+### LOCK RELEASED rc=0
+exit_rc 0
+wallclock_s 102.490198033
+overcommit_after_run: 0
+--- every buffer the engine reports on the 120b, verbatim ---
+0.00.455.237 I load_tensors:          CPU model buffer size =     0.00 MiB
+0.00.459.282 I llama_context:        CPU  output buffer size =     0.77 MiB
+0.00.459.360 I llama_kv_cache:        CPU KV buffer size =     0.00 MiB
+0.00.459.384 I llama_kv_cache:        CPU KV buffer size =     0.00 MiB
+0.01.798.549 I sched_reserve:        CPU compute buffer size =   824.82 MiB
+0.01.798.559 I sched_reserve: graph nodes  = 2057
+0.01.798.559 I sched_reserve: graph splits = 1
+0.02.370.462 I load_tensors:  CPU_Reserve model buffer size = 60438.47 MiB
+0.02.370.476 D load_all_data: no device found for buffer type CPU_Reserve for async uploads
+0.11.647.722 I llama_context:        CPU  output buffer size =     0.77 MiB
+0.11.647.786 I llama_kv_cache:        CPU KV buffer size =    36.00 MiB
+0.11.674.069 I llama_kv_cache:        CPU KV buffer size =    36.00 MiB
+0.11.707.020 I sched_reserve:        CPU compute buffer size =   824.82 MiB
+0.11.707.034 I sched_reserve: graph nodes  = 2057
+0.11.707.034 I sched_reserve: graph splits = 1
+1.41.272.540 D ~llama_context:        CPU compute buffer size is 824.8242 MiB, matches expectation of 824.8242 MiB
+--- the reserve allocator's own announcement, verbatim ---
+OB1: OB5A reserve allocator ON (page size 4096)
+0.02.370.404 I ggml_backend_cpu_reserve_buffer_type_alloc_buffer: OB5A reserved 63374323968 bytes PROT_NONE, region 0, 15472248 pages, base 0x781cd4d88000
+--- any fatal, verbatim ---
+(none)
+--- allocation counters ---
+lease_events=3641
+lease_bytes_read=48256940160
+lease_read_ns=35983131024
+lease_verify_ns=20597290994
+lease_drop_bytes=46981091328
+lease_drop_ns=2882495318
+peak_concurrent_lease_bytes=1590451200
+alloc_reserve_mode=1
+alloc_page_size=4096
+alloc_regions_live=0
+alloc_va_model_bytes=63374323968
+alloc_commit_peak_single=615333888
+alloc_commit_model_peak=7715102720
+alloc_commit_total_bytes=54468960256
+alloc_commit_calls=24045
+alloc_decommit_calls=21306
+alloc_decommit_bytes=46981091328
+alloc_commit_live_at_exit=0
+alloc_vma_peak=46657
+alloc_journal_records=45351
+alloc_journal_bytes=1290634
+alloc_journal_sha256=e383b8f7a0251f2f95d6f5f4bb8417b4513476a1820c9556f2c915c14d48ff89
+lease_active_slices_at_exit=540
+proc_vmpeak_kb=65028060
+proc_vmsize_kb=1406900
+proc_vmhwm_kb=8492888
+proc_vmrss_kb=283916
+--- peak rss ---
+	Maximum resident set size (kbytes): 8492888
+guard_pids_after: 1 openbob, 1 searxng
+### courtesy yield 75s
+utc_end 2026-09-01T15:57:39Z
+=== END 120B BUFFER DIAGNOSTIC rc=0 ===

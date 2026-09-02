@@ -1,0 +1,226 @@
+BOBMOE0-STAGE2-PLAN - LEAD PREREG ADDENDUM (THE CARD PROTOCOL), COMMITTED
+BEFORE ANY CARD STEP
+=========================================================================
+Lane: funded ternary (low-int). Lead-authored. UTC 2026-08-30.
+Parent prereg: lowint/moe0/BOBMOE0-PREREG-1.md (FROZEN; arms, bars, gates
+untouched here). Stage-1 receipt: lowint/moe0/BOBMOE0-STAGE1.txt at
+bac12b8, carrying amendment A1 (ONE shared data-order perm seed 28471
+both arms; arm seeds govern init only). This addendum DOES NOT amend the
+prereg's frozen content: it names the stage-2 execution protocol the
+prereg s.5 and receipt s.7 already require, plus the wiring the trainer
+needs to run it. Pure ASCII, no em dashes. Every pass/fail rule below is
+frozen before the first card step.
+
+AUTHORITY: owner words banked in THREADS.md 2026-08-30 ~17:23 UTC:
+"fire now if free" on this stage; the 3090 Ti "cleared for long-haul
+testing today" (case fan replaced, thermals holding). The overnight-only
+wall is lifted FOR TODAY by her clearance. Card state at plan time
+(literal): NVIDIA GeForce RTX 3090 Ti, 41 C, 8239 MiB used of 24564 MiB,
+sole compute process pid 654 = the hyde serve (the permitted resident
+bystander, guest pid file /root/.local/share/openbob/serve.pid, NEVER
+signalled). free -m available 23201 MiB.
+
+0. GATE -1 AT PLAN TIME (lead, literal)
+=======================================
+(a) git rev-parse HEAD = bac12b87839c12a2a73d6643cd0be195cfaeb8cf;
+    merge-base --is-ancestor bac12b8 HEAD -> YES;
+    merge-base --is-ancestor bac12b8 origin/master -> YES.
+(b) BOBMOE0-STAGE1.txt 16476 bytes.
+(c) sha256sum -c lowint/moe0/MANIFEST-DATA.sha256 from
+    F:\f32\stage\lowint\data\enwik8\: enwik8.zip OK, enwik8 OK.
+(d) git status --porcelain: "?? .scratch-s11/" only (pre-existing,
+    ruled benign in stage 1); git diff HEAD empty of tracked changes.
+Every builder leg re-runs gate -1 (all four limbs, working-tree diff
+included per the LI-S4 kill-law lesson) BEFORE and AFTER its work.
+
+1. TRAINER WIRING (stage-2 additions, leg A work, named now)
+============================================================
+The stage-1 trainer lowint/moe0/train/bobmoe0.py is CPU-era. Leg A adds,
+WITHOUT changing stage-1 behavior (stage-1 recipe, seeds, CPU path, and
+checkpoint bytes must be untouched; --device defaults cpu):
+  W1. CUDA path: --device cuda; model and batches to device; batches
+      still FORMED on CPU by the same seeded permutation, then moved.
+  W2. A1 seed wiring: when stage==2, perm_seed = 28471 SHARED by both
+      arms (arm seeds 28271/28272 govern initialization only). PERM_HEAD
+      is logged and MUST be identical between the two arms' logs.
+  W3. Final-step checkpoint: stage-2 ckpt_steps currently end at 15000;
+      the falsifier reads the FINAL checkpoint, so step 15259 is added
+      to the stage-2 cadence. A wiring fix the prereg's own bar
+      requires, not a recipe change.
+  W4. Resume: each checkpoint = the canonical model safetensors (keys
+      sorted, contiguous fp32, no metadata; THE compared artifact,
+      unchanged form) PLUS a sidecar resume file (optimizer state, torch
+      CPU RNG state, CUDA RNG state, step index). --resume <ckpt-step>
+      restores all of it and continues at step+1. Both files' sha256
+      are banked; G1 byte-compares ride on the safetensors and the
+      deterministic metrics log.
+  W5. PREEMPT: at every checkpoint boundary the trainer checks
+      /mnt/f/f32/openbob-wt/low-int/lowint/moe0/PREEMPT; if present:
+      the boundary checkpoint is already saved, write a PREEMPTED
+      marker beside it, exit 0, resumable. Her demos preempt.
+  W6. Temperature: at every progress interval (every 25 steps) the GPU
+      temperature (nvidia-smi query) is written to the PROGRESS log
+      beside the loss line (never the deterministic metrics log).
+      TEMP RULE, frozen: temperature >= 90 C on 3 consecutive samples
+      = immediate off-cadence checkpoint (named in the progress log),
+      TEMPSTOP marker, clean exit. Never push through. Resumable.
+  W7. Eval mode: --eval-bpb <ckpt> runs a deterministic sequential
+      forward over the FROZEN test split [95%,100%) in non-overlapping
+      ctx windows (BOS-shifted exactly as training), sums cross-entropy
+      in nats over all predicted bytes, and reports
+      bpb = total_nats / (n_bytes * ln 2) at full printed precision to
+      a digestable artifact file. No training-state mutation.
+  W8. Checkpoint digest log: after each save, sha256 of both files
+      appended to <ckpt-root>/<arm>/CKPT-DIGESTS.txt.
+
+COMPUTE DTYPE, RULED: bf16 autocast (torch.autocast "cuda", bfloat16)
+over forward/backward compute; fp32 master weights, fp32 optimizer,
+grad clip on fp32 grads; loss and logs fp32. If G1-CARD fails under
+autocast, ONE named fallback: full fp32, no autocast, G1-CARD re-run
+from scratch. Failing both = named refusal, no funded run. (The wall
+clock under fp32 may run up to ~2x the 8-14 h estimate; lawful under
+her long-haul clearance.)
+
+CUDA DETERMINISM ENVELOPE, NAMED IN FULL (every card process):
+  env: CUBLAS_WORKSPACE_CONFIG=:4096:8, PYTHONHASHSEED=0,
+       OMP_NUM_THREADS=8, MKL_NUM_THREADS=8
+  torch.use_deterministic_algorithms(True)
+  torch.backends.cudnn.deterministic = True
+  torch.backends.cudnn.benchmark = False
+  torch.backends.cuda.matmul.allow_tf32 = False
+  torch.backends.cudnn.allow_tf32 = False
+  torch.manual_seed(arm_seed); torch.cuda.manual_seed_all(arm_seed)
+  single device cuda:0; fixed shapes every step.
+OP-SUBSTITUTION ALLOWANCE: any op use_deterministic_algorithms refuses
+on CUDA is replaced by an arithmetic-equivalent composite (e.g. one-hot
+matmul for an index op); every substitution is NAMED in the leg receipt.
+G1-CARD bytes are the sole pass authority over any such change.
+
+2. G1-CARD - THE PREFIX PROOF (pass/fail frozen)
+================================================
+Runs on BOTH arms, MoE FIRST (the riskier path: router + dispatch),
+then dense. Prefix checkpoints live off-repo at
+/mnt/f/f32/stage/lowint/moe0-ckpt/stage2/g1card/<arm>/<run>/.
+Per arm, two CLEAN separate OS processes under the full envelope:
+  runA: steps 1..1100 straight, checkpoints at {100, 1000, 1100}.
+  runB: steps 1..1000, clean exit at 1000; then a THIRD clean process
+        resumes runB from its own step-1000 checkpoint and runs
+        1001..1100, checkpoint at 1100.
+PASS, all three limbs required, per arm:
+  (i)  step 100 and step 1000 safetensors byte-identical runA vs runB
+       (sha256 AND cmp, quoted literally);
+  (ii) step 1100 safetensors byte-identical runA (straight) vs runB
+       (resumed) - THE RESUME-EXACTNESS PROOF;
+  (iii) deterministic metrics logs byte-identical over the shared
+       steps (runA lines 1..1100 vs runB's 1..1000 plus resumed
+       1001..1100, concatenated at the boundary).
+FAIL: named refusal. Bank the first divergent checkpoint digest pair
+and the first divergent metrics line as divergence evidence. NO funded
+run launches on a failed G1-CARD (after the one dtype fallback above).
+BUDGET NOTE: the funded MoE/dense runs RESUME from their arm's runA
+step-1000 checkpoint, so prefix compute is reused; overhead is runB
+plus runA's 100 extra steps (~1200 steps/arm, ~25-40 min both arms).
+
+3. THE LAUNCHER (leg B, design frozen)
+======================================
+lowint/moe0/train/run_stage2.sh, WSL bash, launched setsid nohup
+detached, SEQUENTIAL arms: moe first, then dense. Per arm, logged
+pre-launch gates (WAIT with a timestamped log line, poll 60 s, never
+contend, never signal):
+  L1. A22 serve check: /root/.local/share/openbob/serve.pid read; the
+      busy-flag literal search (the LI-S12 form: no busy-flag file
+      exists today; if one ever appears, WAIT until it clears);
+      nvidia-smi compute-apps must show NO process other than the
+      serve pid.
+  L2. free -m: available > 12288 MiB, value logged.
+  L3. GPU free memory >= 8192 MiB, value logged. An OOM later is a
+      named stop-and-report, not a wall breach.
+Then: resume the arm from its g1card runA step-1000 checkpoint into
+/mnt/f/f32/stage/lowint/moe0-ckpt/stage2/<arm>/ and run to 15259 with
+checkpoints every 1000 steps plus 15259, sidecars, digest log (W8),
+PREEMPT honored (W5, also checked by the launcher between arms), temp
+rule armed (W6). Markers, all under .../moe0-ckpt/stage2/:
+  <arm>/ARM-DONE      written by the launcher when an arm completes
+  DONE                written when BOTH arms complete (the collector
+                      trigger; Windows path
+                      F:\f32\stage\lowint\moe0-ckpt\stage2\DONE)
+  <arm>/PREEMPTED or <arm>/TEMPSTOP on the named early exits.
+Launcher stdout/stderr: .../stage2/launcher.out. Wall clock: 8-14 h
+both arms under bf16 (prereg s.5 arithmetic), up to ~2x under the fp32
+fallback.
+
+4. THE COLLECTOR PLAN (architect executes on DONE)
+==================================================
+C1. Digest verification: every banked checkpoint re-hashed against
+    CKPT-DIGESTS.txt, both arms, counts quoted.
+C2. bpb per arm: --eval-bpb (W7) on each arm's FINAL (step-15259)
+    checkpoint, run TWICE per arm as clean processes, artifact bytes
+    identical (sha256 quoted); bpb quoted at full precision.
+C3. Falsifier arithmetic against the FROZEN prereg s.3 bars, verbatim:
+    MoE KILLED if bpb_moe > bpb_dense + 0.03; MATCH within 0.03
+    (survival); BEAT below -0.03. No renegotiation.
+C4. Locality: route_stats.py (the G2 instrument, proven bit-repro in
+    stage 1) on the final MoE checkpoint over the frozen val split,
+    twice byte-identical; layer-mean P_half against the frozen 0.60
+    kill bar AT THE FINAL CHECKPOINT; dead-expert count; routing
+    collapse named as its own outcome and it kills the MoE arm even
+    with a passing bpb.
+C5. Compressibility curve: compress_curve.py at every banked
+    checkpoint, both arms (the coequal measurement: WHEN training
+    starts leaving structure, per arm, per tensor class, against the
+    1.585 ternary max and the BitNet-2B 1.560314 pin).
+C6. Receipt: lowint/moe0/BOBMOE0-STAGE2-RESULT.txt with both verdicts
+    banked independently, plus LESSONS-FOR-BIG-WEIGHTS (the lane's
+    standing coequal bar).
+C4/C5 run on CPU (proven instruments, unchanged); C2 runs on the card
+under the full envelope with the L1-L3 gates.
+
+5. THE RESUME STORY (determinism claim under preemption, frozen)
+================================================================
+The funded run is a SEGMENT CHAIN: every checkpoint banks a digest and
+a full sidecar (optimizer + RNG + step). G1-CARD limb (ii) PROVES
+resume-exactness at a real boundary: a resumed segment produces the
+same bytes as the straight run. Therefore a preempted or crashed run
+that resumes from its last banked checkpoint carries the SAME
+whole-run determinism claim: the final bytes are a pure function of
+(code, data pin, seeds), independent of the preemption pattern. If a
+sidecar is missing or corrupt (crash mid-write), resume falls back to
+the previous complete checkpoint pair; if full state restoration is
+ever impossible, the claim NARROWS honestly to per-segment determinism
+and the receipt says so in those words. (Note: after init the trainer
+consumes no RNG - data order is precomputed, no dropout - so the RNG
+sidecar is belt-and-braces, saved anyway.)
+
+6. WALLS, RESTATED FOR THIS STAGE
+=================================
+The hyde serve is a bystander: pid read, never signalled. Nothing
+touches the mini, the Telegram messenger, the demo frame, or the 4B
+serve path. No wsl.exe keepalive is killed (pid file
+C:\f32\agents\seats\software\.scratch\hyde-keepalive.pid). Nothing
+lane-related under C:\f32. Binary wall: checkpoints and sidecars live
+OFF-REPO under F:\f32\stage\lowint\moe0-ckpt\stage2\; digests in git,
+bytes never. The sealed corpus lowint/fixtures/LI-S5-ROUTES-1.txt is
+never opened. Per her banked ruling: the priority-lease slice's card
+timing battery is GATED behind this run - training holds the card,
+timing waits for exclusivity. HER DEMOS PREEMPT via the PREEMPT file.
+
+7. LEGS AND CAPS
+================
+At most 3 builder legs, sequential, opus/sonnet at xhigh or below:
+  LEG A - G1-CARD: the s.1 trainer wiring (W1-W8) with stage-1
+          behavior untouched, committed; the s.2 protocol run on the
+          card; PASS with digests quoted, or named refusal with
+          divergence evidence. Evidence: lowint/moe0/evidence/
+          leg-g1card.txt.
+  LEG B - LAUNCH: run_stage2.sh committed; the funded run launched
+          detached per s.3; first funded checkpoint(s) verified
+          healthy (digest logged, cadence on time); GPU temperature
+          quoted; launch receipt lowint/moe0/BOBMOE0-STAGE2-LAUNCH.txt
+          committed (G1-CARD verdict with digests, launch time UTC,
+          pids, log paths, DONE marker path, expected completion
+          window, reference to this collector plan). Evidence:
+          lowint/moe0/evidence/leg-launch.txt.
+  LEG C - reserve.
+Every number in every receipt is literal command output.
+
+END BOBMOE0-STAGE2-PLAN

@@ -1,0 +1,513 @@
+RS053-GPTOSS-LOCALITY-1 RUNLOG-1: INSTRUMENT BUILD AND ROUTE-LOG RUNS
+Builder 2 of RS053 (instrument + runs). Venue hyde, WSL2 Ubuntu, on-machine.
+Branch research-2, worktree F:\f32\openbob-wt\research-2.
+Bound by research/RS053-GPTOSS-LOCALITY-1-PREREG.md, committed at
+bc240900c29fcece36c5106e0a7d253b0db7bc7e before any instrument existed.
+Pure ASCII, no em dashes. Every number below is literal command output.
+Large artifact bytes are off-repo under /mnt/f/f32/stage/research/rs053/
+with sha256 digests recorded here.
+
+Work window: 2026-08-31T15:51:47Z (first probe) to 2026-08-31T16:35:09Z
+(final fact collection).
+
+
+================================================================
+1. INSTRUMENT: llama.cpp PIN, PATCH, BUILD
+================================================================
+
+1.1 SOURCE PIN
+--------------
+Repo:   https://github.com/ggml-org/llama.cpp
+Commit: ca3d5a3e10d53f7ea672cb9b6178faca3e2807bc
+Literal `git log -1 --format='%H %ci %s'` in /root/rs053/llama.cpp:
+  ca3d5a3e10d53f7ea672cb9b6178faca3e2807bc 2026-08-28 01:49:27 +0200 model: add DSpark support for Nemotron3.5 (#27804)
+Checkout size: 205M (du -sh /root/rs053/llama.cpp)
+Working tree after patch, literal `git status --porcelain`:
+   M src/llama-context.cpp
+   M src/llama-graph.cpp
+
+1.2 WHERE THE PATCH GOES AND WHY THAT SITE
+------------------------------------------
+Emitted format, one line per token per MoE layer:
+
+    layer,token_index,expert_id0,...,expert_id(k-1)
+
+selected top-k expert ids in the router's own rank order, top-1 first.
+Ids only, no floats, so A/A byte identity is a meaningful check.
+
+The naive site (read the tensor llama.cpp already names ffn_moe_topk-<il>)
+is WRONG for two independently sufficient reasons, both verified in the
+source at this pin:
+
+  (a) ggml_argsort_top_k (ggml/src/ggml.c line 5378) returns
+      ggml_view_4d(ctx, argsort_result, k, ne1, ne2, ne3, nb1, nb2, nb3, 0),
+      i.e. selected_experts is a STRIDED VIEW holding k of each row of an
+      [n_expert, n_tokens] argsort output. It is not a contiguous byte
+      range, so ggml_backend_tensor_get over it would read the wrong
+      elements.
+  (b) the CUDA backend has a top-k MoE fusion
+      (ggml/src/ggml-cuda/ggml-cuda.cu, ggml_cuda_topk_moe_fusion at line
+      2806, ggml_cuda_op_topk_moe dispatch at lines 3354 and 3369) which
+      can consume the softmax/argsort/view chain in one kernel, so the
+      intermediate argsort node is not guaranteed to be materialised as
+      a readable node at all.
+
+The patch therefore adds ONE node at the canonical selection point in
+llm_graph_context::build_moe_ffn (src/llama-graph.cpp), immediately after
+the existing `cb(selected_experts, "ffn_moe_topk", il);`:
+
+    if (llama_route_log_enabled()) {
+        ggml_tensor * route_ids = ggml_cont(ctx0, selected_experts);
+        cb(route_ids, "ffn_moe_routelog", il);
+        ggml_build_forward_expand(gf, route_ids);
+    }
+
+ggml_cont yields a contiguous [n_expert_used, n_tokens] I32 copy of the
+selection, whatever the backend did upstream, fused or not. The node is
+added ONLY when the env var is set, so an unset build has a byte-identical
+graph to stock llama.cpp.
+
+Reading side (src/llama-context.cpp): when LLAMA_ROUTE_LOG is set and the
+caller has not installed its own cb_eval, the context installs an internal
+ggml_backend_sched eval callback instead. The callback asks for exactly the
+nodes named "ffn_moe_routelog-<il>", asserts I32 and contiguous, copies the
+ids to host with ggml_backend_tensor_get, and appends the lines.
+
+token_index is a PER-LAYER running counter (std::map<int,int64_t>), not a
+global one: every MoE layer sees the same token stream in the same order,
+so the counter is exact and independent of where ubatch boundaries fall.
+This is what makes the 20b logs come out with exactly 65536 distinct token
+indices per layer even though the run is split into 32 ubatches.
+
+Patch statistics, literal `git diff --stat`:
+  src/llama-context.cpp | 111 +++++++++++++++++++++++++++++++++++++++++++++++++-
+  src/llama-graph.cpp   |  12 ++++++
+  2 files changed, 122 insertions(+), 1 deletion(-)
+
+Patch file banked at research/rs053/route-log.patch (162 lines, 5211 bytes)
+and at /mnt/f/f32/stage/research/rs053/route-log.patch
+  sha256 29b35769e8ee8bf704be19e9f0c4c82c4ed3d0d1ec7fbb855049af6fc2d8f767
+
+1.3 BUILD CONFIG, LITERAL
+-------------------------
+Toolchain as measured on the box:
+  cmake version 4.4.3            (pip wheel, unpacked to /root/rs053/tools; see D4)
+  gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+  Cuda compilation tools, release 13.0, V13.0.88
+  NVIDIA GeForce RTX 3090 Ti, 591.86, 24564 MiB, 1264 MiB used
+  uname -r: 6.18.33.2-microsoft-standard-WSL2
+
+Configure line, exactly as issued (under nice 10):
+  cmake -B build \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DGGML_CUDA=ON \
+    -DCMAKE_CUDA_ARCHITECTURES=86 \
+    -DLLAMA_CURL=OFF \
+    -DLLAMA_BUILD_TESTS=OFF \
+    -DLLAMA_BUILD_EXAMPLES=OFF \
+    -DLLAMA_BUILD_TOOLS=ON \
+    -DLLAMA_BUILD_SERVER=OFF
+  with PATH=/usr/local/cuda/bin:$PATH and CUDACXX=/usr/local/cuda/bin/nvcc
+
+Configure output, selected literal lines:
+  -- Warning: ccache not found - consider installing it for faster compilation or disable this warning with GGML_CCACHE=OFF
+  -- x86 detected
+  -- CUDA Toolkit found
+  -- Including CUDA backend
+  -- Configuring done (25.3s)
+  -- Generating done (0.2s)
+  CONFIGURE_RC=0
+
+Build line: cmake --build build --target llama-perplexity llama-cli -j 10 (nice 10)
+Build timestamps, literal:
+  configure start 2026-08-31T16:01:45Z
+  build start     2026-08-31T16:02:10Z
+  build end       2026-08-31T16:09:21Z
+  BUILD_RC=2
+
+BUILD_RC=2 EXPLAINED (see D3). The only failure line in the whole log is:
+  gmake: *** No rule to make target 'llama-cli'.  Stop.
+which is emitted AFTER
+  [100%] Linking CXX executable ../../bin/llama-perplexity
+  [100%] Built target llama-perplexity
+`grep -iE 'error' /root/rs053/logs/build.log` returns NOTHING. The CUDA
+build of the instrument compiled cleanly on the first try, so the CUDA
+build was kept and the CPU-only fallback was not used. llama-cli is simply
+not a target when LLAMA_BUILD_EXAMPLES=OFF, and it is not needed:
+llama-perplexity is the instrument.
+
+Build product verification:
+  version: 0.3.0-dev (build 1, commit ca3d5a3)
+  built with GNU 13.3.0 for Linux x86_64
+  /root/rs053/llama.cpp/build/bin/libggml-cuda.so.0.22.0  64353432 bytes
+  /root/rs053/llama.cpp/build/bin/libllama.so.0.3.0        4697344 bytes
+Patch present in the shipped library, literal:
+  nm -C -D libllama.so | grep route_log
+    0000000000101700 T llama_route_log_enabled()
+  strings libllama.so | grep -E 'ffn_moe_routelog|LLAMA_ROUTE_LOG'
+    LLAMA_ROUTE_LOG
+    ffn_moe_routelog-
+    ffn_moe_routelog
+    %s: failed to open LLAMA_ROUTE_LOG path '%s'
+
+Full build log banked at /mnt/f/f32/stage/research/rs053/build.log (37612 bytes).
+
+
+================================================================
+2. INSTRUMENT CHOICE AND RUN SETTINGS
+================================================================
+
+Tool: llama-perplexity, used as a prompt-only forward pass (the task allowed
+llama-perplexity or llama-cli). Chosen because --ctx-size N --chunks C gives
+an EXACT, reproducible token budget of N*C tokens, which is what the prereg
+freezes; llama-cli would have processed however many tokens the corpus
+happened to tokenise to. Routing is logged during prompt processing, so no
+generation is required and sampling settings are irrelevant.
+
+Common flags on every run: --threads 10 --threads-batch 10 --no-warmup
+--seed 1, process under nice 10. --no-warmup matters: a warmup decode would
+otherwise prepend warmup tokens to every route log.
+
+  20b runs:  --ctx-size 4096 --chunks 16 -b 2048 -ub 2048 -ngl 99
+             = 65536 tokens, model fully GPU-resident.
+  120b runs: --ctx-size 4096 --chunks 4  -b 4096 -ub 4096 -ngl 99 -ncmoe 36
+             = 16384 tokens. -ncmoe 36 keeps all 36 layers of expert weights
+             CPU-resident through the mmap of the 63 GB GGUF, everything else
+             on the GPU. -ub 4096 makes each chunk a single ubatch, which
+             halves the number of full expert-weight sweeps versus -ub 2048.
+             Measured effect: 2048 tokens per pass cost 50.12 s (probe),
+             4096 tokens per pass cost 44.41 s (120b-prose-a), so the cost is
+             sweep-bound rather than token-bound and the larger ubatch is
+             roughly 2x cheaper per token.
+
+mmap left at its default (enabled) on the 120b: the file is 63387346208 bytes
+against 24029 MB of WSL RAM, so mmap is the only way to run it at all.
+
+
+================================================================
+3. RUN TABLE, LITERAL
+================================================================
+
+Per-run rows. tokens = distinct token indices per layer, counted from the
+route log itself, not from the command line. lines = L * tokens.
+wallclock_s is the driver's own date +%s.%N difference. rss_kb is
+`Maximum resident set size (kbytes)` from /usr/bin/time -v.
+
+run            model  corpus  tokens  lines     bytes      wallclock_s   rss_kb     rc
+-------------  -----  ------  ------  --------  ---------  ------------  ---------  --
+unit-aa-a      20b    prose      512     12288     210722   12.636922770  12202596   0
+unit-aa-b      20b    prose      512     12288     210722    5.628069470  12202764   0
+20b-prose-a    20b    prose    65536   1572864   30260802   31.481108652  12202684   0
+20b-prose-b    20b    prose    65536   1572864   30260802   33.734024101  12203152   0
+20b-code-a     20b    code     65536   1572864   30208633   34.167006810  12203856   0
+20b-code-b     20b    code     65536   1572864   30208633   35.132594264  12204404   0
+120b-probe     120b   prose     2048     73728    1457967   85.919486736   7842588   0
+120b-prose-a   120b   prose    16384    589824   12176641  225.392126128  21748064   0
+120b-prose-b   120b   prose    16384    589824   12176641  248.463304664  22146280   0
+120b-code-a    120b   code     16384    589824   12146384  259.438264438  22824112   0
+120b-code-b    120b   code     16384    589824   12146384  265.762140884  23055616   0
+
+Route log sha256, literal (from SHA256SUMS-route-logs.txt in the stage dir):
+  d85989cec39991e6b1f36f20b7ab5633293644e41ff8e58de8add8a8074475be  runs/unit-aa-a/route.log
+  d85989cec39991e6b1f36f20b7ab5633293644e41ff8e58de8add8a8074475be  runs/unit-aa-b/route.log
+  a0bb972ec5a02e18ab685000c72b512751e579e243deecc3c095d8340c4b50aa  runs/20b-prose-a/route.log
+  a0bb972ec5a02e18ab685000c72b512751e579e243deecc3c095d8340c4b50aa  runs/20b-prose-b/route.log
+  544f48a451821af7b338b30eba777f970267bee956a11b9f6cb2f85ecaf4d2d4  runs/20b-code-a/route.log
+  544f48a451821af7b338b30eba777f970267bee956a11b9f6cb2f85ecaf4d2d4  runs/20b-code-b/route.log
+  7d476b9ce780038dfe1c0830e3d6626aae29050aad012bb419c29a76136593e1  runs/120b-probe/route.log
+  5aa8464d3c71a73648c2323456d656cd40cfcf9dc88b603e1f10da69f9efa129  runs/120b-prose-a/route.log
+  5aa8464d3c71a73648c2323456d656cd40cfcf9dc88b603e1f10da69f9efa129  runs/120b-prose-b/route.log
+  114db00490a2346ddedb84b10c9c8348521d58c0c260e55fa4a6ff641ed19d87  runs/120b-code-a/route.log
+  114db00490a2346ddedb84b10c9c8348521d58c0c260e55fa4a6ff641ed19d87  runs/120b-code-b/route.log
+
+A/A VERDICTS, from `cmp` on the two route logs of each pair:
+  unit-aa    (20b, 512 prose tokens)     AA_VERDICT=IDENTICAL
+  20b-prose  (65536 tokens)              AA_VERDICT=IDENTICAL
+  20b-code   (65536 tokens)              AA_VERDICT=IDENTICAL
+  120b-prose (16384 tokens)              AA_VERDICT=IDENTICAL
+  120b-code  (16384 tokens)              AA_VERDICT=IDENTICAL
+All four prereg runs plus the unit check are byte-identical across their two
+executions. Equal sha256 per pair above says the same thing independently.
+No single-threaded retry was needed; the fallback path in the task
+(single-thread to restore identity) was never entered.
+
+Corroborating, not load-bearing: llama-perplexity's own float output also
+reproduced exactly across each A/A pair.
+  unit-aa-a / unit-aa-b       Final estimate: PPL = 97.8788
+  20b-prose-a / 20b-prose-b   Final estimate: PPL = 2340.9465
+  20b-code-a / 20b-code-b     Final estimate: PPL = 3.3624
+  120b-prose-a / 120b-prose-b Final estimate: PPL = 818.9972
+  120b-code-a / 120b-code-b   Final estimate: PPL = 3.2076
+(The high prose PPL is raw enwik8 XML markup read by an instruction model;
+it is reported because it is literal output, and it bears on nothing here.
+The routing measurement does not depend on PPL.)
+
+Per-pass timings, literal:
+  20b-prose-a    4.01 seconds per pass       20b-prose-b    5.30 seconds per pass
+  20b-code-a     7.35 seconds per pass       20b-code-b     6.57 seconds per pass
+  120b-probe    50.12 seconds per pass
+  120b-prose-a  44.41 seconds per pass       120b-prose-b  55.96 seconds per pass
+  120b-code-a   51.69 seconds per pass       120b-code-b   57.20 seconds per pass
+
+
+================================================================
+4. ROUTE-LOG VALIDATION (all 11 logs)
+================================================================
+
+validate-route-logs.py re-reads every banked log and checks shape against the
+frozen architecture facts. Every check returned OK on every file:
+
+  distinct_layers    = 24 for the 20b logs, layer ids [0..23]   (expected L=24)
+                     = 36 for the 120b logs, layer ids [0..35]  (expected L=36)
+  k_per_line         = [4] on every file                        (expected k=4)
+  tokens_per_layer   = [512] / [65536] / [2048] / [16384]       (exactly the budget)
+  token_index range  = [0 .. budget-1] on EVERY layer, no gaps, no repeats
+  expert_id range    = [0..31] on the 20b logs                  (expected [0..31])
+                     = [0..127] on the 120b logs                (expected [0..127])
+  out_of_range ids   = 0 on every file
+  lines_with_duplicate_expert_ids = 0 on every file
+  total_lines        = L * budget exactly on every file
+
+The token_index check is the important one: it confirms the per-layer counter
+is exact under ubatch splitting (the 20b runs were split into 32 ubatches of
+2048, and each of the 24 layers still shows exactly 65536 indices 0..65535).
+
+The duplicate-id count of 0 also confirms the top-k selection sets are proper
+sets, i.e. the contiguous copy is reading real selections and not garbage.
+
+
+================================================================
+5. M6 DEBT DISCHARGED: PER-EXPERT BYTE SIZE
+================================================================
+
+Prereg deviation 5 named the per-expert byte size as a fact "the
+instrument-building leg owes". It is discharged here.
+
+Method: gguf-expert-bytes.py parses the GGUF TENSOR-INFO section (the prereg
+leg read only the KV-metadata section) and computes each tensor's byte span
+as the difference between consecutive tensor data offsets, with the last
+tensor spanning to the end of the data section. The number is therefore read
+off the actual file layout, not inferred from a type-size table.
+
+GGUF layout facts, literal:
+  gpt-oss-20b-MXFP4.gguf   file_size=12109566624 data_start=13008288 align=32 n_tensor=459
+  gpt-oss-120b-MXFP4.gguf  file_size=63387346208 data_start=13022240 align=32 n_tensor=687
+
+Expert tensors are PACKED PER LAYER, not split per expert: each layer holds
+one tensor per projection carrying all E experts. Types, literal: the weight
+tensors are ggml type 39 = GGML_TYPE_MXFP4 (ggml.h line 429), the bias
+tensors are type 0 = GGML_TYPE_F32 (ggml.h line 390).
+
+  gpt-oss-20b (E=32, L=24), per layer:
+    ffn_gate_exps.weight  dims (2880, 2880, 32)  141004800 bytes  ->  4406400 per expert
+    ffn_up_exps.weight    dims (2880, 2880, 32)  141004800 bytes  ->  4406400 per expert
+    ffn_down_exps.weight  dims (2880, 2880, 32)  141004800 bytes  ->  4406400 per expert
+    ffn_gate_exps.bias    dims (2880, 32)           368640 bytes  ->    11520 per expert
+    ffn_up_exps.bias      dims (2880, 32)           368640 bytes  ->    11520 per expert
+    ffn_down_exps.bias    dims (2880, 32)           368640 bytes  ->    11520 per expert
+    per-layer expert bytes  = 424120320   (identical on all 24 layers)
+    TOTAL_EXPERT_TENSOR_BYTES = 10178887680
+    NON_EXPERT_BYTES          =  1917670656
+
+  gpt-oss-120b (E=128, L=36), per layer:
+    ffn_gate_exps.weight  dims (2880, 2880, 128) 564019200 bytes  ->  4406400 per expert
+    ffn_up_exps.weight    dims (2880, 2880, 128) 564019200 bytes  ->  4406400 per expert
+    ffn_down_exps.weight  dims (2880, 2880, 128) 564019200 bytes  ->  4406400 per expert
+    ffn_gate_exps.bias    dims (2880, 128)         1474560 bytes  ->    11520 per expert
+    ffn_up_exps.bias      dims (2880, 128)         1474560 bytes  ->    11520 per expert
+    ffn_down_exps.bias    dims (2880, 128)         1474560 bytes  ->    11520 per expert
+    per-layer expert bytes  = 1696481280  (identical on all 36 layers)
+    TOTAL_EXPERT_TENSOR_BYTES = 61073326080
+    NON_EXPERT_BYTES          =  2300997888
+
+THE NUMBER M3 AND M6 NEED:
+
+  PER_EXPERT_BYTES_PER_LAYER = 13253760
+
+identical for both models, which follows from both having
+embedding_length = expert_feed_forward_length = 2880. Composition:
+3 * 4406400 (MXFP4 weights) + 3 * 11520 (F32 biases) = 13219200 + 34560 =
+13253760.
+
+So for M6, TOTAL EXPERT BYTES PER LAYER = E * 13253760:
+  gpt-oss-20b   32 * 13253760 =  424120320 bytes per layer
+  gpt-oss-120b 128 * 13253760 = 1696481280 bytes per layer
+Both agree with the measured per-layer spans above, which is an independent
+cross-check of the division.
+
+
+================================================================
+6. ARTIFACT LOCATIONS
+================================================================
+
+Off-repo bytes, /mnt/f/f32/stage/research/rs053/ (166M total):
+  route-log.patch                 5211 bytes, sha256 29b35769e8ee8bf704be19e9f0c4c82c4ed3d0d1ec7fbb855049af6fc2d8f767
+  build.log                      37612 bytes
+  SHA256SUMS-route-logs.txt       1018 bytes
+  corpus-prose.txt              262144 bytes (from the prereg leg)
+  corpus-code.txt              1576144 bytes (from the prereg leg)
+  runs/<runname>/route.log      digests in section 3
+  runs/<runname>/stdout.txt
+  runs/<runname>/stderr.txt     (holds the /usr/bin/time -v block per run)
+
+Route logs were written to /root/rs053/runs/<runname>/route.log on ext4 first,
+then copied to the stage dir (drvfs write throughput is poor for files of
+1572864 lines). Post-copy digest verification, local vs stage, returned MATCH
+on all 11 files; the full 11-line MATCH table is in the leg's transcript and
+every digest is reproduced in section 3.
+
+In-repo (research/rs053/):
+  route-log.patch          the instrument diff against pin ca3d5a3e
+  build.sh                 clone-pin + cmake configure + build, as run
+  run.sh                   the run driver, verbatim
+  runs-all.sh              the exact 11 invocations in order
+  stage.sh                 copy to stage + post-copy digest verification
+  validate-route-logs.py   the section 4 shape checks
+  gguf-expert-bytes.py     the section 5 tensor-info reader
+  RUNLOG-1.txt             this file
+
+
+================================================================
+7. LIVE-PROCESS DISCIPLINE
+================================================================
+
+Never touched, signalled, reniced or killed: pid 654 (openbob serve, the 120B
+serve), pid 489 (searxng), the MoE-0 collector legs, any wsl.exe keepalive.
+All of this leg's work ran under nice 10 with at most 10 threads.
+
+The run driver counted the collector processes immediately before and
+immediately after EVERY run, including all four 120b runs and the 120b probe.
+Literal result on every one of the 11 runs:
+  collector_before: 2 proc(s)
+  collector_after:  2 proc(s)
+
+Collector state at the start of this leg (2026-08-31T15:51:47Z):
+  927707  927704  0  32:35     bash /mnt/f/f32/stage/lowint/moe0-collect-b/sh/c4run.sh 015259 /mnt/f/f32/stage/lowint/moe0-collect-b/c4/final-run2
+  927712  927707  0  32:35     /root/openbob-train/venv/bin/python route_stats.py --stage 2 --ckpt .../step015259.safetensors --data .../enwik8 --split val --batch 32 --threads 8 --out-prefix .../final-run2/route --progress .../final-run2/progress.txt
+
+Collector state after the last run (2026-08-31T16:35:09Z), same two pids,
+elapsed advanced from 32:35 to 01:13:34:
+  927707  927704  0  01:13:34  bash .../c4run.sh 015259 .../final-run2
+  927712  927707  0  01:13:34  /root/openbob-train/venv/bin/python route_stats.py --stage 2 ...
+Both collector legs were alive and progressing throughout. Not stalled, not
+touched. pid 654 and pid 489 were likewise still up (elapsed 1-23:20:21 and
+1-23:22:04 respectively).
+
+MEMORY WALL. `free -m` readings taken around the 120b runs, literal:
+  before 120b-probe     total 24029  used 2512  free 4374  buff/cache 17524  available 21517
+  after  120b-probe     total 24029  used 2184  free 2047  buff/cache 20179  available 21845
+  after  120b-prose-a   total 24029  used 2593  free 2332  buff/cache 19485  available 21436
+  after  120b-prose-b   total 24029  used 2273  free 2205  buff/cache 20026  available 21756
+  after  120b-code-a    total 24029  used 2456  free 1875  buff/cache 20078  available 21573
+  after  120b-code-b    total 24029  used 2200  free 2188  buff/cache 20050  available 21829
+  final                 total 24029  used 2010  free 2051  buff/cache 20377  available 22019
+AVAILABLE never fell below 21436 MB, so the "at least 4 GB free" wall held
+with a wide margin. The large rss_kb figures for the 120b runs (up to
+23055616 kB) are mmap'd, reclaimable page cache of the 63 GB GGUF, which is
+why `free` reads low while `available` stays above 21 GB. Both columns are
+quoted so the reader can see which is which. Swap used moved from 4063 MB to
+4523 MB over the leg and no run was killed.
+
+GPU: 1264 MiB in use on a 24564 MiB card at the end of the leg; the roughly
+1.2 GB already resident at the start was left alone.
+
+
+================================================================
+8. DEVIATIONS, NAMED
+================================================================
+
+Numbered D-series to keep them distinct from the prereg's own 1-6.
+
+D1. INSTRUMENT TOOL. llama-perplexity was used as the prompt-only forward
+    pass. The task allowed either it or llama-cli. Reason for the choice:
+    --ctx-size N --chunks C pins the token budget to exactly N*C, which is
+    what the prereg freezes, whereas llama-cli would forward however many
+    tokens the corpus happened to tokenise to. No generation was performed.
+
+D2. CLONE METHOD AND PIN. The task said "clone llama.cpp ... record the exact
+    HEAD commit hash". This leg did `git init` + `git remote add` +
+    `git fetch --depth 1 origin <sha>` + `git checkout FETCH_HEAD` rather
+    than `git clone`, and pinned to
+    ca3d5a3e10d53f7ea672cb9b6178faca3e2807bc rather than taking upstream tip.
+    Same content at the pin, far fewer bytes fetched. The pin was chosen
+    because it is the exact commit the house's existing
+    /root/openbob-baselines/llama.cpp build already uses, so a clean
+    first-try CUDA build on this box was a known quantity rather than a bet
+    on a moving tip. HEAD is recorded literally in section 1.1.
+
+D3. BUILD_RC=2, AND WHY THE CUDA BUILD WAS STILL KEPT. The build command
+    named two targets, llama-perplexity and llama-cli. llama-cli is not a
+    target under -DLLAMA_BUILD_EXAMPLES=OFF, so gmake ended with
+    `gmake: *** No rule to make target 'llama-cli'.  Stop.` and RC=2, AFTER
+    llama-perplexity had reached [100%] and linked. `grep -iE 'error'` over
+    the whole build log returns nothing. The task's rule was "build with CUDA
+    if it builds cleanly on the first try, else CPU-only": the CUDA
+    compilation of the instrument was clean on the first try, so CUDA was
+    kept and the CPU-only fallback was NOT used. Named because a non-zero RC
+    must never be quietly swallowed.
+
+D4. CMAKE WAS NOT ON THE BOX. hyde had no cmake (apt reported
+    "Installed: (none)"), and `python3 -m venv` failed because ensurepip is
+    unavailable. Rather than install a system package or mutate the live
+    /root/openbob-train venv that the MoE-0 collector is running out of, this
+    leg borrowed that venv's pip in DOWNLOAD-ONLY mode
+    (`pip download --no-deps -d /tmp/rs053cm cmake`) and unpacked the wheel
+    cmake-4.4.3-py3-none-manylinux2014_x86_64 into /root/rs053/tools. Nothing
+    system-wide was changed and the collector's venv was not written to.
+
+D5. PATCH SITE IS AN ADDED NODE, NOT AN EDIT TO THE SELECTION MATH. Detailed
+    in section 1.2 with source line references. Summary: the existing
+    ffn_moe_topk tensor is a strided view and the CUDA top-k MoE fusion can
+    elide the intermediate argsort node, so neither is safe to read directly.
+    The patch adds one ggml_cont node under the env guard and reads that.
+    Consequence to be aware of: when LLAMA_ROUTE_LOG is set, the graph has
+    one extra node per MoE layer and the sched runs with an eval callback,
+    which disables node-range batching and forces a synchronise at each
+    logged node. That is a THROUGHPUT cost only; it does not change the
+    routing decisions, and all A/A pairs are byte-identical under it. When
+    the env var is unset the graph is unchanged from stock.
+
+D6. LOGS WRITTEN LOCALLY THEN COPIED. Route logs were written to ext4 under
+    /root/rs053/runs/ and copied to /mnt/f/f32/stage/research/rs053/runs/
+    afterwards, because drvfs is slow for files of 1572864 lines. Digests
+    were verified local-vs-stage after the copy and returned MATCH on all 11
+    files. Final resting place is the stage dir as the house rule requires.
+
+D7. ONE EXTRA SIZING RUN. 120b-probe (2048 tokens, ctx 2048, -ub 2048) was
+    run before the prereg 120b runs to measure per-sweep cost and confirm the
+    memory envelope. It is banked with the rest for completeness but is NOT
+    one of the prereg's 8 executions. Its measurement is what selected
+    -ub 4096 for the real runs (see section 2).
+
+D8. UNIT A/A EXECUTIONS ARE ALSO EXTRA. unit-aa-a and unit-aa-b are the
+    task's step-2 512-token check, banked, and likewise not part of the 8.
+
+D9. PREREG DEVIATION 5 DISCHARGED. Per-expert byte size is computed and
+    recorded in section 5: 13253760 bytes per expert per layer, for both
+    models. The prereg left this owed by this leg; it is no longer owed.
+
+D10. PREREG DEVIATION 2, TIE OBSERVATION, IS NOT FULLY OBSERVABLE HERE. The
+    prereg said the receipt would record whether any router-logit tie was
+    ever observed, expected count 0. An IDS-ONLY log cannot see float ties in
+    the router logits by construction: the tie is resolved inside argsort
+    before any id is emitted. What IS observable is the proxy "a repeated
+    expert id inside one selection set", which would indicate a degenerate
+    selection; that count is 0 on every one of the 11 logs (section 4).
+    Stated as a scope limit of the instrument rather than reported as a tie
+    count of zero, because the two are not the same claim. A future leg that
+    wants real tie counts must log the router logits, which would break the
+    ids-only property that makes A/A byte identity meaningful.
+
+D11. TOKEN BUDGETS WERE HIT EXACTLY, NOT TRUNCATED. The prereg's fallback for
+    a corpus that tokenises shorter than its budget was never triggered. Both
+    corpora tokenised long enough, and the route logs themselves confirm
+    exactly 65536 token indices per layer on the 20b runs and exactly 16384
+    on the 120b runs.
+
+D12. ANALYSIS NOT PERFORMED BY THIS LEG. M1 to M6 are not computed here. This
+    leg's scope was instrument plus runs; it delivers the raw route-id logs,
+    their digests, the A/A verdicts, and the per-expert byte size M3/M6 need.
+
+No other deviations. Nothing in the prereg was renegotiated by this leg.
+
+END RS053 RUNLOG-1

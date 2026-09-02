@@ -1,0 +1,94 @@
+=== OB5A BUFFER DIAGNOSTIC ===
+utc_start 2026-09-01T14:41:49Z
+guard_pids: 1 openbob, 1 searxng
+### LOCK REQUEST diag-lease at 2026-09-01T14:41:49Z
+### LOCK ACQUIRED diag-lease after 0s
+### free RAM available: 22 GB (house bar: 6 GB)
+### LOCK RELEASED diag-lease rc=0
+--- diag-lease: every buffer the engine reports, verbatim ---
+0.00.434.488 I load_tensors:          CPU model buffer size =     0.00 MiB
+0.00.437.915 I llama_context:        CPU  output buffer size =     0.77 MiB
+0.00.437.966 I llama_kv_cache:        CPU KV buffer size =     0.00 MiB
+0.00.437.983 I llama_kv_cache:        CPU KV buffer size =     0.00 MiB
+0.00.669.436 I sched_reserve:        CPU compute buffer size =   823.89 MiB
+0.00.669.446 I sched_reserve: graph nodes  = 1373
+0.00.669.446 I sched_reserve: graph splits = 1
+0.01.058.647 I load_tensors:  CPU_Reserve model buffer size = 11536.18 MiB
+0.01.058.651 D load_all_data: no device found for buffer type CPU_Reserve for async uploads
+0.02.885.131 I llama_context:        CPU  output buffer size =     0.77 MiB
+0.02.885.185 I llama_kv_cache:        CPU KV buffer size =    24.00 MiB
+0.02.901.245 I llama_kv_cache:        CPU KV buffer size =    24.00 MiB
+0.02.920.687 I sched_reserve:        CPU compute buffer size =   823.89 MiB
+0.02.920.697 I sched_reserve: graph nodes  = 1373
+0.02.920.697 I sched_reserve: graph splits = 1
+0.34.444.364 D ~llama_context:        CPU compute buffer size is 823.8867 MiB, matches expectation of 823.8867 MiB
+--- diag-lease: the reserve allocator's own announcement, verbatim ---
+0.01.058.614 I ggml_backend_cpu_reserve_buffer_type_alloc_buffer: OB5A reserved 12096558336 bytes PROT_NONE, region 0, 2953262 pages, base 0x7bdb0efd2000
+--- diag-lease: allocation counters ---
+alloc_reserve_mode=1
+alloc_page_size=4096
+alloc_regions_live=0
+alloc_va_model_bytes=12096558336
+alloc_commit_peak_single=615333888
+alloc_commit_model_peak=2357026816
+alloc_commit_total_bytes=11677888512
+alloc_commit_calls=4725
+alloc_decommit_calls=4230
+alloc_decommit_bytes=9327034368
+alloc_commit_live_at_exit=0
+alloc_vma_peak=8374
+alloc_journal_records=8955
+alloc_journal_bytes=239798
+alloc_journal_sha256=4590a0b66eff95078203bb293dbd436a2a4f6159af3b82426a9822dff198d2bc
+proc_vmpeak_kb=15077780
+proc_vmsize_kb=1741556
+proc_vmhwm_kb=3457052
+proc_vmrss_kb=297096
+### courtesy yield 75s
+### LOCK REQUEST diag-resident at 2026-09-01T14:43:40Z
+### LOCK ACQUIRED diag-resident after 0s
+### free RAM available: 22 GB (house bar: 6 GB)
+### LOCK RELEASED diag-resident rc=0
+--- diag-resident: every buffer the engine reports, verbatim ---
+0.00.415.039 I load_tensors:          CPU model buffer size =     0.00 MiB
+0.00.418.454 I llama_context:        CPU  output buffer size =     0.77 MiB
+0.00.418.505 I llama_kv_cache:        CPU KV buffer size =     0.00 MiB
+0.00.418.524 I llama_kv_cache:        CPU KV buffer size =     0.00 MiB
+0.00.422.915 I sched_reserve:        CPU compute buffer size =   823.89 MiB
+0.00.422.940 I sched_reserve: graph nodes  = 1373
+0.00.422.940 I sched_reserve: graph splits = 1
+0.00.828.649 I load_tensors:  CPU_Reserve model buffer size = 11536.18 MiB
+0.00.828.653 D load_all_data: no device found for buffer type CPU_Reserve for async uploads
+0.07.976.026 I llama_context:        CPU  output buffer size =     0.77 MiB
+0.07.976.107 I llama_kv_cache:        CPU KV buffer size =    24.00 MiB
+0.07.989.900 I llama_kv_cache:        CPU KV buffer size =    24.00 MiB
+0.08.007.335 I sched_reserve:        CPU compute buffer size =   823.89 MiB
+0.08.007.352 I sched_reserve: graph nodes  = 1373
+0.08.007.352 I sched_reserve: graph splits = 1
+0.28.037.916 D ~llama_context:        CPU compute buffer size is 823.8867 MiB, matches expectation of 823.8867 MiB
+--- diag-resident: the reserve allocator's own announcement, verbatim ---
+0.00.828.620 I ggml_backend_cpu_reserve_buffer_type_alloc_buffer: OB5A reserved 12096558336 bytes PROT_NONE, region 0, 2953262 pages, base 0x73a381fd0000
+--- diag-resident: allocation counters ---
+alloc_reserve_mode=1
+alloc_page_size=4096
+alloc_regions_live=0
+alloc_va_model_bytes=12096558336
+alloc_commit_peak_single=615333888
+alloc_commit_model_peak=12096561152
+alloc_commit_total_bytes=12098408448
+alloc_commit_calls=459
+alloc_decommit_calls=0
+alloc_decommit_bytes=0
+alloc_commit_live_at_exit=0
+alloc_vma_peak=155
+alloc_journal_records=459
+alloc_journal_bytes=13049
+alloc_journal_sha256=01786927d0a3273c7b72bbc80b007587d53503ebe433588eacb4802a5334be44
+proc_vmpeak_kb=15011916
+proc_vmsize_kb=1675692
+proc_vmhwm_kb=12991432
+proc_vmrss_kb=296664
+### courtesy yield 75s
+guard_pids_after: 1 openbob, 1 searxng
+utc_end 2026-09-01T14:45:26Z
+=== END BUFFER DIAGNOSTIC ===

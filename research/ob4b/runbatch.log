@@ -1,0 +1,425 @@
+##### OB4B RUN BATCH #####
+utc_start 2026-09-01T02:55:55Z
+
+########## unit-pool1 ##########
+runlock: held by another workflow, waited 0s (02:55:55Z)
+runlock: held by another workflow, waited 600s (03:06:36Z)
+runlock: held by another workflow, waited 1200s (03:17:24Z)
+runlock: held by another workflow, waited 1800s (03:28:15Z)
+runlock: held by another workflow, waited 2400s (03:39:06Z)
+runlock: ACQUIRED after 2880s at 2026-09-01T03:47:47Z
+free RAM available: 22 GiB
+=== OB4B RUN unit-pool1 (K=8 CHUNKS=4 STORE=/root/ob4/EXPERT-STORE-20B.ob4 POOL=1) ===
+utc_start 2026-09-01T03:47:47Z
+guard_pids: 1 openbob, 1 searxng
+runlock_held_by_me: /mnt/f/f32/stage/research/runlock
+free before:
+               total        used        free      shared  buff/cache   available
+Mem:              23           0          15           0           7          22
+bin: 4e1c41552e0a528500410215e4603700a5e3293c868332d079d8be6a6b8d6ec1
+lib: 90279df234db252d6c29360d6219cba1fb677e0273af5dc908fee2cdc2d83322
+cmd: /root/ob4b/llama.cpp/build/bin/llama-perplexity -m /root/openbob-baselines/models/gpt-oss-20b-MXFP4.gguf -f /mnt/f/f32/stage/research/ob1/AC-CODE.txt --ctx-size 1024 --chunks 4 -b 1024 -ub 1024 --threads 10 --threads-batch 10 --no-warmup --seed 1 -ngl 0 --no-mmap --no-repack
+env: OB4_STORE=/root/ob4/EXPERT-STORE-20B.ob4 OB4B_DECODE_THREADS=1
+exit_rc 0
+wallclock_s 133.920453845
+utc_end 2026-09-01T03:50:01Z
+--- OB4B / OB4 / OB1 banner ---
+OB4B: decode pool 1 (caller + 0 worker threads)
+OB4: remat store ON  zstd=1.5.5 rows=4608
+OB4:   store    = /root/ob4/EXPERT-STORE-20B.ob4 (9346171190 bytes, sha256 a5a8fffd46230fb2752945588aa768e4a833c1f7cca985e3ea00f375dbd79314)
+OB4:   index    = /root/ob4/EXPERT-STORE-20B.ob4.idx (318016 bytes)
+OB4:   index cross-checked against the OB-1 manifest: 4608 rows
+OB1: lease engine ON  K=8 L=24 E=32 sha=sha-ni fadvise=0
+OB1:   sets     = /mnt/f/f32/openbob-wt/ob4/research/ob1/RESIDENT-SETS.json
+OB1:   manifest = /mnt/f/f32/openbob-wt/ob4/research/ob1/EXPERT-MANIFEST-20B.sha256
+OB1:   gguf     = /root/openbob-baselines/models/gpt-oss-20b-MXFP4.gguf
+--- peak rss / elapsed ---
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 2:13.91
+	Maximum resident set size (kbytes): 5720568
+--- route log ---
+98304
+ff192e390ab846cf549d237d89f0706738b0aafb1aee3a54a07586c7883ca8b9  /root/ob4b/runs/unit-pool1/route.log
+--- identity artifact (the '[1]' per-chunk PPL line, same artifact OB-1 and OB-4 used) ---
+42
+c8049cb509e3d9b35cf31564e83aaf5c78523fa39d992ac1c8a69f839083ba55  /root/ob4b/runs/unit-pool1/identity.txt
+[1]24.5827,[2]9.4037,[3]5.8070,[4]4.6785,
+--- stats ---
+ob1_mode=lease
+ob1_k=8
+ob1_sha_impl=sha-ni
+ob1_fadvise=0
+ob4_store=/root/ob4/EXPERT-STORE-20B.ob4
+ob4_store_index=/root/ob4/EXPERT-STORE-20B.ob4.idx
+ob4_store_bytes=9346171190
+ob4_store_sha256=a5a8fffd46230fb2752945588aa768e4a833c1f7cca985e3ea00f375dbd79314
+ob4_index_bytes=318016
+ob4_zstd_version=1.5.5
+ob4_rows=4608
+ob4_decodes_total=14742
+ob4_decodes_split_stream=7371
+ob4_decoded_bytes_total=32564488320
+ob4_resident_blob_read_ns=2372913542
+ob4_resident_decode_ns=3040112645
+ob4_resident_store_bytes_read=2336685280
+ob4_lease_blob_read_ns=4350259384
+ob4_lease_decode_ns=31900180368
+ob4_lease_store_bytes_read=27563165864
+ob4b_decode_threads=1
+ob4b_pool_dispatches=96
+ob4b_pool_items_total=13590
+ob4b_pool_wall_ns=48235151441
+ob4b_items_by_slot=13590
+layers=24
+experts=32
+manifest_rows=4608
+registered_expert_tensors=144
+resident_slices_loaded=1152
+resident_bytes_loaded=2544721920
+resident_read_ns=5413754543
+resident_verify_ns=1009526631
+lease_events=2265
+lease_bytes_read=30019766400
+lease_read_ns=36256581752
+lease_verify_ns=11972553372
+lease_drop_bytes=29686431744
+lease_drop_ns=2064582954
+peak_concurrent_lease_bytes=318090240
+route_calls=96
+process_ns_since_ob1_init=122359145346
+per_layer_lease_events=96,96,96,96,95,95,96,96,96,95,94,90,94,94,96,96,95,91,95,94,94,92,92,91
+chunk_count=3
+--- timings ---
+0.45.886.196 I perplexity: 33.11 seconds per pass - ETA 2.13.495.394 I Final estimate: PPL = 4.6785 +/- 0.26437
+guard_pids_after: 1 openbob, 1 searxng
+--- post-copy digest check ---
+ff192e390ab846cf549d237d89f0706738b0aafb1aee3a54a07586c7883ca8b9  /root/ob4b/runs/unit-pool1/route.log
+ff192e390ab846cf549d237d89f0706738b0aafb1aee3a54a07586c7883ca8b9  /mnt/f/f32/stage/research/ob4b/runs/unit-pool1/route.log
+c8049cb509e3d9b35cf31564e83aaf5c78523fa39d992ac1c8a69f839083ba55  /root/ob4b/runs/unit-pool1/identity.txt
+c8049cb509e3d9b35cf31564e83aaf5c78523fa39d992ac1c8a69f839083ba55  /mnt/f/f32/stage/research/ob4b/runs/unit-pool1/identity.txt
+=== END unit-pool1 rc=0 ===
+runlock: RELEASED at 2026-09-01T03:50:01Z
+
+########## unit-pool8 ##########
+runlock: ACQUIRED after 0s at 2026-09-01T03:50:01Z
+free RAM available: 22 GiB
+=== OB4B RUN unit-pool8 (K=8 CHUNKS=4 STORE=/root/ob4/EXPERT-STORE-20B.ob4 POOL=8) ===
+utc_start 2026-09-01T03:50:01Z
+guard_pids: 1 openbob, 1 searxng
+runlock_held_by_me: /mnt/f/f32/stage/research/runlock
+free before:
+               total        used        free      shared  buff/cache   available
+Mem:              23           0           7           0          15          22
+bin: 4e1c41552e0a528500410215e4603700a5e3293c868332d079d8be6a6b8d6ec1
+lib: 90279df234db252d6c29360d6219cba1fb677e0273af5dc908fee2cdc2d83322
+cmd: /root/ob4b/llama.cpp/build/bin/llama-perplexity -m /root/openbob-baselines/models/gpt-oss-20b-MXFP4.gguf -f /mnt/f/f32/stage/research/ob1/AC-CODE.txt --ctx-size 1024 --chunks 4 -b 1024 -ub 1024 --threads 10 --threads-batch 10 --no-warmup --seed 1 -ngl 0 --no-mmap --no-repack
+env: OB4_STORE=/root/ob4/EXPERT-STORE-20B.ob4 OB4B_DECODE_THREADS=8
+exit_rc 0
+wallclock_s 88.784771468
+utc_end 2026-09-01T03:51:30Z
+--- OB4B / OB4 / OB1 banner ---
+OB4B: decode pool 8 (caller + 7 worker threads)
+OB4: remat store ON  zstd=1.5.5 rows=4608
+OB4:   store    = /root/ob4/EXPERT-STORE-20B.ob4 (9346171190 bytes, sha256 a5a8fffd46230fb2752945588aa768e4a833c1f7cca985e3ea00f375dbd79314)
+OB4:   index    = /root/ob4/EXPERT-STORE-20B.ob4.idx (318016 bytes)
+OB4:   index cross-checked against the OB-1 manifest: 4608 rows
+OB1: lease engine ON  K=8 L=24 E=32 sha=sha-ni fadvise=0
+OB1:   sets     = /mnt/f/f32/openbob-wt/ob4/research/ob1/RESIDENT-SETS.json
+OB1:   manifest = /mnt/f/f32/openbob-wt/ob4/research/ob1/EXPERT-MANIFEST-20B.sha256
+OB1:   gguf     = /root/openbob-baselines/models/gpt-oss-20b-MXFP4.gguf
+OB4B: 7 decode worker threads started
+--- peak rss / elapsed ---
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 1:28.77
+	Maximum resident set size (kbytes): 5806664
+--- route log ---
+98304
+ff192e390ab846cf549d237d89f0706738b0aafb1aee3a54a07586c7883ca8b9  /root/ob4b/runs/unit-pool8/route.log
+--- identity artifact (the '[1]' per-chunk PPL line, same artifact OB-1 and OB-4 used) ---
+42
+c8049cb509e3d9b35cf31564e83aaf5c78523fa39d992ac1c8a69f839083ba55  /root/ob4b/runs/unit-pool8/identity.txt
+[1]24.5827,[2]9.4037,[3]5.8070,[4]4.6785,
+--- stats ---
+ob1_mode=lease
+ob1_k=8
+ob1_sha_impl=sha-ni
+ob1_fadvise=0
+ob4_store=/root/ob4/EXPERT-STORE-20B.ob4
+ob4_store_index=/root/ob4/EXPERT-STORE-20B.ob4.idx
+ob4_store_bytes=9346171190
+ob4_store_sha256=a5a8fffd46230fb2752945588aa768e4a833c1f7cca985e3ea00f375dbd79314
+ob4_index_bytes=318016
+ob4_zstd_version=1.5.5
+ob4_rows=4608
+ob4_decodes_total=14741
+ob4_decodes_split_stream=7370
+ob4_decoded_bytes_total=32564488320
+ob4_resident_blob_read_ns=506380346
+ob4_resident_decode_ns=3039883054
+ob4_resident_store_bytes_read=2336685280
+ob4_lease_blob_read_ns=10116407583
+ob4_lease_decode_ns=44161378113
+ob4_lease_store_bytes_read=27563165864
+ob4b_decode_threads=8
+ob4b_pool_dispatches=96
+ob4b_pool_items_total=13590
+ob4b_pool_wall_ns=8794298765
+ob4b_items_by_slot=1771,1657,1749,1695,1622,1684,1687,1725
+layers=24
+experts=32
+manifest_rows=4608
+registered_expert_tensors=144
+resident_slices_loaded=1152
+resident_bytes_loaded=2544721920
+resident_read_ns=3546920688
+resident_verify_ns=1023754507
+lease_events=2265
+lease_bytes_read=30019766400
+lease_read_ns=54287070209
+lease_verify_ns=13229366665
+lease_drop_bytes=29686431744
+lease_drop_ns=1901960254
+peak_concurrent_lease_bytes=318090240
+route_calls=96
+process_ns_since_ob1_init=79780221707
+per_layer_lease_events=96,96,96,96,95,95,96,96,96,95,94,90,94,94,96,96,95,91,95,94,94,92,92,91
+chunk_count=3
+--- timings ---
+0.29.033.481 I perplexity: 21.37 seconds per pass - ETA 1.28.345.187 I Final estimate: PPL = 4.6785 +/- 0.26437
+guard_pids_after: 1 openbob, 1 searxng
+--- post-copy digest check ---
+ff192e390ab846cf549d237d89f0706738b0aafb1aee3a54a07586c7883ca8b9  /root/ob4b/runs/unit-pool8/route.log
+ff192e390ab846cf549d237d89f0706738b0aafb1aee3a54a07586c7883ca8b9  /mnt/f/f32/stage/research/ob4b/runs/unit-pool8/route.log
+c8049cb509e3d9b35cf31564e83aaf5c78523fa39d992ac1c8a69f839083ba55  /root/ob4b/runs/unit-pool8/identity.txt
+c8049cb509e3d9b35cf31564e83aaf5c78523fa39d992ac1c8a69f839083ba55  /mnt/f/f32/stage/research/ob4b/runs/unit-pool8/identity.txt
+=== END unit-pool8 rc=0 ===
+runlock: RELEASED at 2026-09-01T03:51:30Z
+
+########## UNIT GATE ##########
+unit-pool1 identity sha256 c8049cb509e3d9b35cf31564e83aaf5c78523fa39d992ac1c8a69f839083ba55 (42 B)
+unit-pool8 identity sha256 c8049cb509e3d9b35cf31564e83aaf5c78523fa39d992ac1c8a69f839083ba55 (42 B)
+unit-pool1 route    sha256 ff192e390ab846cf549d237d89f0706738b0aafb1aee3a54a07586c7883ca8b9 (1780170 B)
+unit-pool8 route    sha256 ff192e390ab846cf549d237d89f0706738b0aafb1aee3a54a07586c7883ca8b9 (1780170 B)
+PASS: pool1 == pool8 identity, byte identical
+PASS: pool1 == pool8 route log, byte identical
+FAIL: unit identity is not a prefix of the banked OB-4 identity
+  unit   b'[1]24.5827,[2]9.4037,[3]5.8070,[4]4.6785,\n'
+  banked b'[1]24.5827,[2]9.4037,[3]5.8070,[4]4.6785,[5]3.9503,[6]4.4480,[7]4.1828,[8]4.8746,[9]5.0073,[10]4.3655,[11]4.2378,[12]4.6916,[13]4.7125,[14]4.6844,[15]4.5999,[16]4.5206,[17]4.4348,[18]4.6799,[19]4.9102'
+PASS: unit route log is an exact prefix of the banked OB-4 route log
+      unit lines 98304, banked lines 786432
+BATCH STOP: UNIT GATE FAILED, no full run is started
+##### OB4B RUN BATCH #####
+utc_start 2026-09-01T03:52:51Z
+
+########## unit-pool1 ##########
+SKIP unit-pool1: artifacts already present and OB4B_SKIP_EXISTING=1
+
+########## unit-pool8 ##########
+SKIP unit-pool8: artifacts already present and OB4B_SKIP_EXISTING=1
+
+########## UNIT GATE ##########
+pool1 identity sha256 c8049cb509e3d9b35cf31564e83aaf5c78523fa39d992ac1c8a69f839083ba55 (42 B)
+pool8 identity sha256 c8049cb509e3d9b35cf31564e83aaf5c78523fa39d992ac1c8a69f839083ba55 (42 B)
+pool1 route    sha256 ff192e390ab846cf549d237d89f0706738b0aafb1aee3a54a07586c7883ca8b9 (1780170 B)
+pool8 route    sha256 ff192e390ab846cf549d237d89f0706738b0aafb1aee3a54a07586c7883ca8b9 (1780170 B)
+pool1 identity bytes  b'[1]24.5827,[2]9.4037,[3]5.8070,[4]4.6785,\n'
+banked identity head  b'[1]24.5827,[2]9.4037,[3]5.8070,[4]4.6785,[5]3.9503'
+PASS: pool1 == pool8 identity, byte identical
+PASS: pool1 == pool8 route log, byte identical
+PASS: unit identity (41 B, trailing newline stripped) is an exact prefix of the banked OB-4 identity
+PASS: unit route log is an exact prefix of the banked OB-4 route log
+      unit lines 98304, banked lines 786432
+UNIT GATE: PASS
+
+########## ob4b-k8-code-a ##########
+runlock: held by another workflow, waited 0s (03:52:51Z)
+runlock: held by another workflow, waited 600s (04:03:46Z)
+runlock: held by another workflow, waited 1200s (04:14:30Z)
+runlock: ACQUIRED after 1470s at 2026-09-01T04:19:08Z
+free RAM available: 22 GiB
+=== OB4B RUN ob4b-k8-code-a (K=8 CHUNKS=32 STORE=/root/ob4/EXPERT-STORE-20B.ob4 POOL=8) ===
+utc_start 2026-09-01T04:19:08Z
+guard_pids: 1 openbob, 1 searxng
+runlock_held_by_me: /mnt/f/f32/stage/research/runlock
+free before:
+               total        used        free      shared  buff/cache   available
+Mem:              23           1           9           0          12          22
+bin: 4e1c41552e0a528500410215e4603700a5e3293c868332d079d8be6a6b8d6ec1
+lib: 90279df234db252d6c29360d6219cba1fb677e0273af5dc908fee2cdc2d83322
+cmd: /root/ob4b/llama.cpp/build/bin/llama-perplexity -m /root/openbob-baselines/models/gpt-oss-20b-MXFP4.gguf -f /mnt/f/f32/stage/research/ob1/AC-CODE.txt --ctx-size 1024 --chunks 32 -b 1024 -ub 1024 --threads 10 --threads-batch 10 --no-warmup --seed 1 -ngl 0 --no-mmap --no-repack
+env: OB4_STORE=/root/ob4/EXPERT-STORE-20B.ob4 OB4B_DECODE_THREADS=8
+exit_rc 0
+wallclock_s 635.940283177
+utc_end 2026-09-01T04:29:44Z
+--- OB4B / OB4 / OB1 banner ---
+OB4B: decode pool 8 (caller + 7 worker threads)
+OB4: remat store ON  zstd=1.5.5 rows=4608
+OB4:   store    = /root/ob4/EXPERT-STORE-20B.ob4 (9346171190 bytes, sha256 a5a8fffd46230fb2752945588aa768e4a833c1f7cca985e3ea00f375dbd79314)
+OB4:   index    = /root/ob4/EXPERT-STORE-20B.ob4.idx (318016 bytes)
+OB4:   index cross-checked against the OB-1 manifest: 4608 rows
+OB1: lease engine ON  K=8 L=24 E=32 sha=sha-ni fadvise=0
+OB1:   sets     = /mnt/f/f32/openbob-wt/ob4/research/ob1/RESIDENT-SETS.json
+OB1:   manifest = /mnt/f/f32/openbob-wt/ob4/research/ob1/EXPERT-MANIFEST-20B.sha256
+OB1:   gguf     = /root/openbob-baselines/models/gpt-oss-20b-MXFP4.gguf
+OB4B: 7 decode worker threads started
+--- peak rss / elapsed ---
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 10:35.93
+	Maximum resident set size (kbytes): 5807092
+--- route log ---
+786432
+f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77  /root/ob4b/runs/ob4b-k8-code-a/route.log
+--- identity artifact (the '[1]' per-chunk PPL line, same artifact OB-1 and OB-4 used) ---
+345
+9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8  /root/ob4b/runs/ob4b-k8-code-a/identity.txt
+[1]24.5827,[2]9.4037,[3]5.8070,[4]4.6785,[5]3.9503,[6]4.4480,[7]4.1828,[8]4.8746,[9]5.0073,[10]4.3655,[11]4.2378,[12]4.6916,[13]4.7125,[14]4.6844,[15]4.5999,[16]4.5206,[17]4.4348,[18]4.6799,[19]4.9102,[20]4.7501,[21]4.5479,[22]4.5482,[23]4.6588,[24]4.4453,[25]4.4709,[26]4.4218,[27]4.3281,[28]4.3121,[29]4.2606,[30]4.2596,[31]4.1792,[32]4.2823,
+--- stats ---
+ob1_mode=lease
+ob1_k=8
+ob1_sha_impl=sha-ni
+ob1_fadvise=0
+ob4_store=/root/ob4/EXPERT-STORE-20B.ob4
+ob4_store_index=/root/ob4/EXPERT-STORE-20B.ob4.idx
+ob4_store_bytes=9346171190
+ob4_store_sha256=a5a8fffd46230fb2752945588aa768e4a833c1f7cca985e3ea00f375dbd79314
+ob4_index_bytes=318016
+ob4_zstd_version=1.5.5
+ob4_rows=4608
+ob4_decodes_total=109749
+ob4_decodes_split_stream=54873
+ob4_decoded_bytes_total=242433371520
+ob4_resident_blob_read_ns=3086167553
+ob4_resident_decode_ns=3731045334
+ob4_resident_store_bytes_read=2336685280
+ob4_lease_blob_read_ns=90320130597
+ob4_lease_decode_ns=374285810724
+ob4_lease_store_bytes_read=220260946643
+ob4b_decode_threads=8
+ob4b_pool_dispatches=768
+ob4b_pool_items_total=108600
+ob4b_pool_wall_ns=74993038234
+ob4b_items_by_slot=14538,13352,13429,13444,13323,13530,13360,13624
+layers=24
+experts=32
+manifest_rows=4608
+registered_expert_tensors=144
+resident_slices_loaded=1152
+resident_bytes_loaded=2544721920
+resident_read_ns=6817926261
+resident_verify_ns=1064726218
+lease_events=18100
+lease_bytes_read=239893056000
+lease_read_ns=464674300312
+lease_verify_ns=111521706435
+lease_drop_bytes=239145369600
+lease_drop_ns=18578727383
+peak_concurrent_lease_bytes=318090240
+route_calls=768
+process_ns_since_ob1_init=620544037498
+per_layer_lease_events=768,768,766,768,764,765,768,764,758,760,731,729,753,748,758,768,749,739,765,757,763,734,723,734
+chunk_count=31
+--- timings ---
+0.33.943.028 I perplexity: 21.57 seconds per pass - ETA 10.35.506.461 I Final estimate: PPL = 4.2823 +/- 0.08499
+guard_pids_after: 1 openbob, 1 searxng
+--- post-copy digest check ---
+f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77  /root/ob4b/runs/ob4b-k8-code-a/route.log
+f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77  /mnt/f/f32/stage/research/ob4b/runs/ob4b-k8-code-a/route.log
+9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8  /root/ob4b/runs/ob4b-k8-code-a/identity.txt
+9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8  /mnt/f/f32/stage/research/ob4b/runs/ob4b-k8-code-a/identity.txt
+=== END ob4b-k8-code-a rc=0 ===
+runlock: RELEASED at 2026-09-01T04:29:44Z
+
+########## ob4b-k8-code-b ##########
+runlock: ACQUIRED after 0s at 2026-09-01T04:29:44Z
+free RAM available: 22 GiB
+=== OB4B RUN ob4b-k8-code-b (K=8 CHUNKS=32 STORE=/root/ob4/EXPERT-STORE-20B.ob4 POOL=8) ===
+utc_start 2026-09-01T04:29:44Z
+guard_pids: 1 openbob, 1 searxng
+runlock_held_by_me: /mnt/f/f32/stage/research/runlock
+free before:
+               total        used        free      shared  buff/cache   available
+Mem:              23           1          16           0           6          22
+bin: 4e1c41552e0a528500410215e4603700a5e3293c868332d079d8be6a6b8d6ec1
+lib: 90279df234db252d6c29360d6219cba1fb677e0273af5dc908fee2cdc2d83322
+cmd: /root/ob4b/llama.cpp/build/bin/llama-perplexity -m /root/openbob-baselines/models/gpt-oss-20b-MXFP4.gguf -f /mnt/f/f32/stage/research/ob1/AC-CODE.txt --ctx-size 1024 --chunks 32 -b 1024 -ub 1024 --threads 10 --threads-batch 10 --no-warmup --seed 1 -ngl 0 --no-mmap --no-repack
+env: OB4_STORE=/root/ob4/EXPERT-STORE-20B.ob4 OB4B_DECODE_THREADS=8
+exit_rc 0
+wallclock_s 629.028109856
+utc_end 2026-09-01T04:40:13Z
+--- OB4B / OB4 / OB1 banner ---
+OB4B: decode pool 8 (caller + 7 worker threads)
+OB4: remat store ON  zstd=1.5.5 rows=4608
+OB4:   store    = /root/ob4/EXPERT-STORE-20B.ob4 (9346171190 bytes, sha256 a5a8fffd46230fb2752945588aa768e4a833c1f7cca985e3ea00f375dbd79314)
+OB4:   index    = /root/ob4/EXPERT-STORE-20B.ob4.idx (318016 bytes)
+OB4:   index cross-checked against the OB-1 manifest: 4608 rows
+OB1: lease engine ON  K=8 L=24 E=32 sha=sha-ni fadvise=0
+OB1:   sets     = /mnt/f/f32/openbob-wt/ob4/research/ob1/RESIDENT-SETS.json
+OB1:   manifest = /mnt/f/f32/openbob-wt/ob4/research/ob1/EXPERT-MANIFEST-20B.sha256
+OB1:   gguf     = /root/openbob-baselines/models/gpt-oss-20b-MXFP4.gguf
+OB4B: 7 decode worker threads started
+--- peak rss / elapsed ---
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 10:29.02
+	Maximum resident set size (kbytes): 5807192
+--- route log ---
+786432
+f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77  /root/ob4b/runs/ob4b-k8-code-b/route.log
+--- identity artifact (the '[1]' per-chunk PPL line, same artifact OB-1 and OB-4 used) ---
+345
+9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8  /root/ob4b/runs/ob4b-k8-code-b/identity.txt
+[1]24.5827,[2]9.4037,[3]5.8070,[4]4.6785,[5]3.9503,[6]4.4480,[7]4.1828,[8]4.8746,[9]5.0073,[10]4.3655,[11]4.2378,[12]4.6916,[13]4.7125,[14]4.6844,[15]4.5999,[16]4.5206,[17]4.4348,[18]4.6799,[19]4.9102,[20]4.7501,[21]4.5479,[22]4.5482,[23]4.6588,[24]4.4453,[25]4.4709,[26]4.4218,[27]4.3281,[28]4.3121,[29]4.2606,[30]4.2596,[31]4.1792,[32]4.2823,
+--- stats ---
+ob1_mode=lease
+ob1_k=8
+ob1_sha_impl=sha-ni
+ob1_fadvise=0
+ob4_store=/root/ob4/EXPERT-STORE-20B.ob4
+ob4_store_index=/root/ob4/EXPERT-STORE-20B.ob4.idx
+ob4_store_bytes=9346171190
+ob4_store_sha256=a5a8fffd46230fb2752945588aa768e4a833c1f7cca985e3ea00f375dbd79314
+ob4_index_bytes=318016
+ob4_zstd_version=1.5.5
+ob4_rows=4608
+ob4_decodes_total=109746
+ob4_decodes_split_stream=54871
+ob4_decoded_bytes_total=242424558720
+ob4_resident_blob_read_ns=1597876858
+ob4_resident_decode_ns=2887778013
+ob4_resident_store_bytes_read=2336685280
+ob4_lease_blob_read_ns=89253442720
+ob4_lease_decode_ns=359602734793
+ob4_lease_store_bytes_read=220260946643
+ob4b_decode_threads=8
+ob4b_pool_dispatches=768
+ob4b_pool_items_total=108600
+ob4b_pool_wall_ns=72930066992
+ob4b_items_by_slot=14183,13733,13464,13459,13438,13452,13565,13306
+layers=24
+experts=32
+manifest_rows=4608
+registered_expert_tensors=144
+resident_slices_loaded=1152
+resident_bytes_loaded=2544721920
+resident_read_ns=4486153900
+resident_verify_ns=1055420518
+lease_events=18100
+lease_bytes_read=239893056000
+lease_read_ns=448922621638
+lease_verify_ns=110835761630
+lease_drop_bytes=239145369600
+lease_drop_ns=16155664113
+peak_concurrent_lease_bytes=318090240
+route_calls=768
+process_ns_since_ob1_init=614466260060
+per_layer_lease_events=768,768,766,768,764,765,768,764,758,760,731,729,753,748,758,768,749,739,765,757,763,734,723,734
+chunk_count=31
+--- timings ---
+0.29.657.631 I perplexity: 20.48 seconds per pass - ETA 10.27.006.265 I Final estimate: PPL = 4.2823 +/- 0.08499
+guard_pids_after: 1 openbob, 1 searxng
+--- post-copy digest check ---
+f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77  /root/ob4b/runs/ob4b-k8-code-b/route.log
+f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77  /mnt/f/f32/stage/research/ob4b/runs/ob4b-k8-code-b/route.log
+9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8  /root/ob4b/runs/ob4b-k8-code-b/identity.txt
+9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8  /mnt/f/f32/stage/research/ob4b/runs/ob4b-k8-code-b/identity.txt
+=== END ob4b-k8-code-b rc=0 ===
+runlock: RELEASED at 2026-09-01T04:40:14Z
+
+runlock present at end (should be absent): none
+utc_end 2026-09-01T04:40:14Z
+##### END OB4B RUN BATCH #####

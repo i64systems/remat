@@ -1,0 +1,489 @@
+LEG D EVIDENCE - G1-WRAP BOUNDARY PROOF AND THE seg02 RELAUNCH
+==============================================================
+Lane: funded ternary (low-int). Builder leg D under
+BOBMOE0-STAGE2B-PLAN.txt sections 3 and 4 (frozen before the fix).
+Venue: worktree /mnt/f/f32/openbob-wt/low-int, branch low-int.
+Host: hyde, WSL Ubuntu-24.04, venv /root/openbob-train/venv,
+torch 2.13.0+cu130, single RTX 3090 Ti. No ssh.
+Every number below is literal command output. Pure ASCII, no em dashes.
+
+
+0. GATE -1 (BEFORE THE WORK)
+============================
+$ git rev-parse --abbrev-ref HEAD
+low-int
+$ git rev-parse HEAD
+22a49e8d90b391d7bff46c3e7e5c0518ce2b78fe
+$ git merge-base --is-ancestor 292f864 HEAD  -> YES
+$ git merge-base --is-ancestor 292f864 origin/master -> YES
+$ git merge-base --is-ancestor 22a49e8 HEAD -> YES
+$ git merge-base --is-ancestor fd0ab37 HEAD -> YES
+$ git status --porcelain
+?? .scratch-s11/
+
+ARM FAILED line, verbatim from
+/mnt/f/f32/stage/lowint/moe0-ckpt/stage2/launcher.out line 16:
+[2026-08-30T20:55:29Z] ARM FAILED moe rc=1: see /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/moe/run-seg01.out
+
+seg01's launcher.out and moe/run-seg01.out, metrics-seg01.tsv and
+progress-seg01.txt are FROZEN crash evidence. Nothing in this leg
+wrote to any of them (seg02 uses its own -seg02 file names; ls at
+s.6 below shows both generations side by side).
+
+
+1a. ANCHOR RE-VERIFICATION (funded moe step002000)
+==================================================
+$ cat /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/moe/CKPT-DIGESTS.txt
+936462e5dc415cd29dc8eeaa41a7a9a6249f0e10b05b7e06422ceb485784bf73  step002000.safetensors
+04875d93e95ebb9d87c220bcccef5fbbfbfab82fe58cee55d916df691e848818  step002000.resume.pt
+
+$ sha256sum step002000.safetensors step002000.resume.pt
+936462e5dc415cd29dc8eeaa41a7a9a6249f0e10b05b7e06422ceb485784bf73 *step002000.safetensors
+04875d93e95ebb9d87c220bcccef5fbbfbfab82fe58cee55d916df691e848818 *step002000.resume.pt
+
+MATCH, both files. (The launcher recomputed the same two digests
+independently inside WSL at relaunch; its ANCHOR lines are quoted at
+s.5 below and agree byte for byte.)
+
+
+1b. GATES L1-L3, MANUAL, BEFORE THE PROOF RUNS
+==============================================
+Read at 2026-08-31T00:42:42Z inside WSL.
+
+L1 $ cat /root/.local/share/openbob/serve.pid
+654
+L1 $ nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader
+654, [N/A]
+    Only the serve. NO foreign compute pid. The serve is a BYSTANDER:
+    read, never signalled, never killed. No wsl.exe keepalive touched.
+
+L2 $ free -m
+               total        used        free      shared  buff/cache   available
+Mem:           24029         831       22424          75        1111       23198
+Swap:           6144        4072        2071
+    available = 23198 MiB > 12288 MiB bar. PASS.
+
+L3 $ nvidia-smi --query-gpu=memory.free,temperature.gpu,name --format=csv,noheader
+23642 MiB, 41, NVIDIA GeForce RTX 3090 Ti
+    memory.free = 23642 MiB >= 8192 MiB bar. temp 41 C. PASS.
+
+
+1c. THE PREEMPT FILE
+====================
+$ ls -la /mnt/f/f32/openbob-wt/low-int/lowint/moe0/PREEMPT
+ls: cannot access '/mnt/f/f32/openbob-wt/low-int/lowint/moe0/PREEMPT': No such file or directory
+    NO pre-existing PREEMPT file. Not her demo. Safe to create one.
+
+$ touch PREEMPT; ls -la PREEMPT
+-rwxrwxrwx 1 root root 0 Aug 30 20:43 /mnt/f/f32/openbob-wt/low-int/lowint/moe0/PREEMPT
+PREEMPT created utc=2026-08-31T00:43:19Z
+
+W5 behavior verified in bobmoe0.py (lines 809-818): the preempt-file
+check sits INSIDE "if step in ckpt_steps:" and fires only AFTER
+checkpoint_now(step) has saved the checkpoint, sidecar and digests;
+it then writes PREEMPTED beside the checkpoint, says so, and breaks
+the loop for a clean exit 0. That is exactly the stop this proof
+uses. No test-only code path was added to the trainer.
+
+
+1d. THE TWO PROOF RUNS (SEQUENTIAL, CLEAN SEPARATE OS PROCESSES)
+================================================================
+Harness (off-repo, .../stage2/g1wrap/run_proof.sh) runs A then B in
+sequence; each run is its own clean python process under the full
+proven envelope, exported by the harness before either run:
+  CUBLAS_WORKSPACE_CONFIG=:4096:8 PYTHONHASHSEED=0
+  OMP_NUM_THREADS=8 MKL_NUM_THREADS=8
+Trainer invocation per run X in {A,B}, mirroring the launcher's:
+  /root/openbob-train/venv/bin/python bobmoe0.py \
+    --arm moe --stage 2 --run FUNDED-seg01 --device cuda --grad-ckpt \
+    --data /mnt/f/f32/stage/lowint/data/enwik8/enwik8 \
+    --ckpt-dir <scratchX> --log <scratchX>/metrics.tsv \
+    --progress <scratchX>/progress.txt \
+    --digest-log <scratchX>/CKPT-DIGESTS.txt --threads 8 \
+    --preempt-file /mnt/f/f32/openbob-wt/low-int/lowint/moe0/PREEMPT \
+    --resume .../stage2/moe/step002000.safetensors \
+    > <scratchX>/run.out 2>&1
+scratchA = /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/g1wrap/moe/A
+scratchB = /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/g1wrap/moe/B
+The --run tag is FUNDED-seg01 for BOTH runs so any run-tag text is
+identical. The funded digest log and the funded moe dir were not
+written by either proof run.
+
+$ cat .../g1wrap/moe/harness.log
+[2026-08-31T00:43:19Z] PROOF RUN A BEGIN scratch=/mnt/f/f32/stage/lowint/moe0-ckpt/stage2/g1wrap/moe/A
+[2026-08-31T01:13:59Z] PROOF RUN A EXIT rc=0
+[2026-08-31T01:13:59Z] PROOF RUN B BEGIN scratch=/mnt/f/f32/stage/lowint/moe0-ckpt/stage2/g1wrap/moe/B
+[2026-08-31T01:44:36Z] PROOF RUN B EXIT rc=0
+[2026-08-31T01:44:36Z] PROOF HARNESS COMPLETE both runs rc=0
+
+Run A header (run.out, the envelope on the record):
+BOBMOE0 stage=2 arm=moe run=FUNDED-seg01
+torch=2.13.0+cu130 threads=8 interop=1
+CUDA_VISIBLE_DEVICES=[UNSET] cuda.is_available=True cuda.is_initialized=False
+DEVICE=cuda:0
+ENVELOPE cublas_workspace=[:4096:8] pythonhashseed=[0] omp=[8] mkl=[8]
+ENVELOPE cudnn.deterministic=True cudnn.benchmark=False matmul.tf32=False cudnn.tf32=False
+GPU_NAME=NVIDIA GeForce RTX 3090 Ti
+arm_seed=28271 perm_seed=28471 master_seed=2827
+GRAD_CKPT=True
+PARAM_TOTAL=163772416
+CORPUS_BYTES=100000000 TRAIN_END=90000000 VAL_END=95000000 TRAIN_WINDOWS=175781
+CORPUS_SHA256=2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8
+COMPUTE_DTYPE=bf16_autocast
+PERM_HEAD=[162022, 152200, 22668, 121423, 33066, 8061, 162184, 144215]
+PARAM_GROUPS decay_tensors=336 nodecay_tensors=38
+CE_IMPL=native:F.cross_entropy
+
+TRAIN_WINDOWS=175781 and perm_seed=28471 are the STAGE2B s.1 crash
+arithmetic's own constants, unchanged.
+
+THE BOUNDARY, OBSERVED LIVE IN RUN A (progress.txt, temp beside every
+loss line). The pre-fix run died between 2725 and the next print; run
+A walked straight through:
+step=2725 ce=0.964701 elapsed_s=1305.325 gpu_temp_c=70
+step=2750 ce=0.979554 elapsed_s=1351.818 gpu_temp_c=71
+step=2775 ce=1.029212 elapsed_s=1395.657 gpu_temp_c=70
+step=2800 ce=1.014714 elapsed_s=1439.779 gpu_temp_c=70
+(The seg01 crash's own last progress line was step=2725 ce=0.964701
+gpu_temp_c=70. Run A reproduces that ce EXACTLY at the same step and
+then continues, which is the fix in one pair of lines.)
+
+Run A tail (run.out):
+step=2975 ce=0.956081 elapsed_s=1755.963 gpu_temp_c=71
+CKPT step=3000 path=/mnt/f/f32/stage/lowint/moe0-ckpt/stage2/g1wrap/moe/A/step003000.safetensors elapsed_s=1818.741
+CKPT_SHA256 step=3000 a6655e3b4af9cfd0808a8d3431af153aa616cbfd3c327139cc287947717fb910  step003000.safetensors
+PREEMPT seen at step=3000, checkpoint saved, exiting clean
+CUDA_MAX_MEM_ALLOCATED_MIB=5241.1 CUDA_MAX_MEM_RESERVED_MIB=7044.0
+STOP_REASON=PREEMPTED
+DONE steps=15259 wall_clock_s=1820.833
+
+Run B tail (run.out):
+step=2950 ce=0.978038 elapsed_s=1709.666 gpu_temp_c=71
+step=2975 ce=0.956081 elapsed_s=1755.735 gpu_temp_c=70
+CKPT step=3000 path=/mnt/f/f32/stage/lowint/moe0-ckpt/stage2/g1wrap/moe/B/step003000.safetensors elapsed_s=1816.456
+CKPT_SHA256 step=3000 a6655e3b4af9cfd0808a8d3431af153aa616cbfd3c327139cc287947717fb910  step003000.safetensors
+PREEMPT seen at step=3000, checkpoint saved, exiting clean
+CUDA_MAX_MEM_ALLOCATED_MIB=5241.1 CUDA_MAX_MEM_RESERVED_MIB=7044.0
+STOP_REASON=PREEMPTED
+DONE steps=15259 wall_clock_s=1818.646
+
+GPU temp across both proof runs stayed in 69-72 C. The 90 C rule was
+armed and never approached. No TEMPSTOP marker was written.
+
+
+1e. THE FROZEN PASS RULE, ALL LIMBS
+===================================
+Metrics headers compared before comparing rows (identical, no run-tag
+text, no timestamps):
+A: # BOBMOE0 stage=2 arm=moe deterministic metrics log
+A: # arm_seed=28271 perm_seed=28471 param_total=163772416
+A: # resumed_from=step002000.safetensors start_step=2001
+A: step	lr	ce	aux	loss	gradnorm
+B: # BOBMOE0 stage=2 arm=moe deterministic metrics log
+B: # arm_seed=28271 perm_seed=28471 param_total=163772416
+B: # resumed_from=step002000.safetensors start_step=2001
+B: step	lr	ce	aux	loss	gradnorm
+
+(i) CHECKPOINT BYTE-IDENTICAL A vs B
+$ sha256sum A/step003000.safetensors B/step003000.safetensors A/step003000.resume.pt B/step003000.resume.pt
+a6655e3b4af9cfd0808a8d3431af153aa616cbfd3c327139cc287947717fb910  A/step003000.safetensors
+a6655e3b4af9cfd0808a8d3431af153aa616cbfd3c327139cc287947717fb910  B/step003000.safetensors
+c6e4815c75f59c019ac52c5859d4ae865d771c616aacf0069254ec22f37e01aa  A/step003000.resume.pt
+c6e4815c75f59c019ac52c5859d4ae865d771c616aacf0069254ec22f37e01aa  B/step003000.resume.pt
+$ cmp A/step003000.safetensors B/step003000.safetensors
+cmp_safetensors_rc=0            (no output, byte-identical)
+$ cmp A/step003000.resume.pt B/step003000.resume.pt
+cmp_resume_rc=0                 (no output, byte-identical)
+    The sidecar cmp is EXTRA evidence beyond the frozen limb; no bar
+    was moved by adding it.
+LIMB (i) PASS.
+
+(ii) METRICS BYTE-IDENTICAL, BOUNDARY ROWS PRESENT
+$ cmp A/metrics.tsv B/metrics.tsv
+cmp_metrics_rc=0                (no output, byte-identical, full file,
+                                 steps 2001..3000)
+$ sha256sum A/metrics.tsv B/metrics.tsv
+8a0a9f72c0f915e6e92f8c980f27ab448d6547610345e88e82b4870979ca0a72  A/metrics.tsv
+8a0a9f72c0f915e6e92f8c980f27ab448d6547610345e88e82b4870979ca0a72  B/metrics.tsv
+$ wc -l A/metrics.tsv
+1004 A/metrics.tsv          (4 header lines + exactly 1000 step rows)
+
+Boundary rows, run A (step lr ce aux loss gradnorm):
+2746	1.41722214380725917e-03	9.96227979660034180e-01	1.04993867874145508e+00	1.00672733783721924e+00	1.27979204058647156e-01
+2747	1.41715376878636008e-03	9.70996379852294922e-01	1.04501461982727051e+00	9.81446504592895508e-01	1.47256329655647278e-01
+2748	1.41708536738423849e-03	9.67356562614440918e-01	1.05075311660766602e+00	9.77864086627960205e-01	1.25854894518852234e-01
+2749	1.41701693960394142e-03	9.42877948284149170e-01	1.04115939140319824e+00	9.53289568424224854e-01	1.08773298561573029e-01
+
+Boundary rows, run B:
+2746	1.41722214380725917e-03	9.96227979660034180e-01	1.04993867874145508e+00	1.00672733783721924e+00	1.27979204058647156e-01
+2747	1.41715376878636008e-03	9.70996379852294922e-01	1.04501461982727051e+00	9.81446504592895508e-01	1.47256329655647278e-01
+2748	1.41708536738423849e-03	9.67356562614440918e-01	1.05075311660766602e+00	9.77864086627960205e-01	1.25854894518852234e-01
+2749	1.41701693960394142e-03	9.42877948284149170e-01	1.04115939140319824e+00	9.53289568424224854e-01	1.08773298561573029e-01
+
+Step 2747 is the OLD partial-batch step (37 windows before the fix)
+and step 2748 is the OLD crash step (empty slice, ValueError at
+bobmoe0.py line 384). Both now carry a full row with a finite loss
+and gradnorm, in both runs, identically. The wrap rule holds.
+LIMB (ii) PASS.
+
+(iii) CLEAN EXITS WITH PREEMPTED MARKERS
+harness.log: PROOF RUN A EXIT rc=0 / PROOF RUN B EXIT rc=0
+$ cat A/PREEMPTED
+step=3000 utc=2026-08-31T01:13:59Z
+$ cat B/PREEMPTED
+step=3000 utc=2026-08-31T01:44:36Z
+LIMB (iii) PASS.
+
+G1-WRAP VERDICT: PASS, all three frozen limbs, no limb waived.
+
+
+1f. PREEMPT REMOVED
+===================
+$ rm -f /mnt/f/f32/openbob-wt/low-int/lowint/moe0/PREEMPT
+$ ls -la /mnt/f/f32/openbob-wt/low-int/lowint/moe0/PREEMPT
+ls: cannot access '/mnt/f/f32/openbob-wt/low-int/lowint/moe0/PREEMPT': No such file or directory
+$ ls -1 /mnt/f/f32/openbob-wt/low-int/lowint/moe0/
+BOBMOE0-PREREG-1.md
+BOBMOE0-STAGE1.txt
+BOBMOE0-STAGE2-LAUNCH.txt
+BOBMOE0-STAGE2-PLAN.txt
+BOBMOE0-STAGE2B-PLAN.txt
+MANIFEST-DATA.sha256
+evidence
+g3
+train
+ABSENT, confirmed. The file I created is the only one that ever
+existed in this leg, and it is gone.
+
+
+2a. THE WATCHER
+===============
+lowint/moe0/train/watch_stage2b.sh, committed with this leg. Pure
+ASCII, no em dashes. OBSERVES ONLY: it never signals, never kills,
+and writes exactly two things, its own log and the FAILED-seg02
+marker. Poll 60 s. Behavior, per plan s.4:
+  - appends "[UTC] arm=<moe|dense> <last progress-seg02.txt line>"
+    (active arm = the more recently modified progress file)
+  - on "ARM FAILED" in launcher-seg02.out: writes
+    .../stage2/FAILED-seg02 with the quoted line, source path and
+    UTC, then exits
+  - on the DONE marker: final line, exit
+  - on PREEMPTED / TEMPSTOP / PREEMPTED-BETWEEN-ARMS markers (either
+    arm, or between arms): notes the marker and its contents, exits
+
+
+2b. THE seg02 LAUNCH
+====================
+Pre-launch state, 2026-08-31T02:0x UTC:
+$ free -m
+               total        used        free      shared  buff/cache   available
+Mem:           24029         816       22955          75         594       23213
+$ nvidia-smi --query-gpu=memory.free,temperature.gpu --format=csv,noheader
+23637 MiB, 40
+$ nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader
+654, [N/A]
+$ cat /root/.local/share/openbob/serve.pid
+654
+
+Command, detached, from
+/mnt/f/f32/openbob-wt/low-int/lowint/moe0/train inside WSL:
+  SEG=seg02 RESUME_MOE=/mnt/f/f32/stage/lowint/moe0-ckpt/stage2/moe/step002000.safetensors \
+    setsid nohup bash run_stage2.sh \
+    > /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/launcher-seg02.out 2>&1 &
+then, the same way:
+  setsid nohup bash watch_stage2b.sh > .../stage2/watch-seg02.stdout 2>&1 &
+
+LAUNCH_UTC=2026-08-31T02:07:16Z
+LAUNCHER_PID=914502
+WATCHER_PID=914511
+
+$ cat launcher-seg02.out
+[2026-08-31T02:07:16Z] STAGE2 FUNDED RUN BEGIN seg=seg02 launcher_pid=914502
+[2026-08-31T02:07:16Z] ENVELOPE cublas=[:4096:8] pythonhashseed=[0] omp=[8] mkl=[8]
+[2026-08-31T02:07:19Z] ANCHOR moe safetensors=936462e5dc415cd29dc8eeaa41a7a9a6249f0e10b05b7e06422ceb485784bf73  /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/moe/step002000.safetensors
+[2026-08-31T02:07:25Z] ANCHOR moe sidecar=04875d93e95ebb9d87c220bcccef5fbbfbfab82fe58cee55d916df691e848818  /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/moe/step002000.resume.pt
+[2026-08-31T02:07:25Z] GATES BEGIN moe
+[2026-08-31T02:07:25Z] L1 serve.pid=654 (BYSTANDER, never signalled)
+[2026-08-31T02:07:25Z] L1 busy-flag literal search: NO BUSY FLAG FILE PRESENT
+[2026-08-31T02:07:25Z] L1 compute-apps: [654, [N/A];]
+[2026-08-31T02:07:25Z] L2 free -m available=23201 MiB (bar > 12288)
+[2026-08-31T02:07:25Z] L3 gpu memory.free=23639 MiB (bar >= 8192) gpu_temp_c=40
+[2026-08-31T02:07:25Z] INFO checkpoint volume free: 351059 MiB
+[2026-08-31T02:07:25Z] GATES PASS moe
+[2026-08-31T02:07:25Z] LAUNCH moe FUNDED seg=seg02 resume=/mnt/f/f32/stage/lowint/moe0-ckpt/stage2/moe/step002000.safetensors to step 15259, frozen cadence
+[2026-08-31T02:07:25Z] PYTHON_PID moe=914568
+
+The launcher's own ANCHOR digests match s.1a exactly. The launcher
+reran L1-L3 itself and logged them to gates-stage2-seg02.log.
+seg01's launcher.out was NOT touched (see s.6 ls).
+
+$ head -2 watch-seg02.log
+[2026-08-31T02:07:18Z] WATCHER BEGIN pid=914511 poll=60s root=/mnt/f/f32/stage/lowint/moe0-ckpt/stage2 (observe only, never signals)
+[2026-08-31T02:07:18Z] arm=none no progress-seg02.txt yet (gates or startup)
+
+BOTH ARMS RUN THE FIXED TRAINER. The dense arm never executed the
+broken boundary (it never started in seg01), but it is launched by
+this same launcher against this same bobmoe0.py at commit 22a49e8, so
+both arms' final artifacts come from byte-identical trainer code
+under one shared data order. Stated explicitly per the leg's charge.
+
+
+2c. IN-SESSION HEALTH BAR
+=========================
+(i) FUNDED metrics-seg02.tsv rows PAST 2748, from the live funded run:
+2746	1.41722214380725917e-03	9.96227979660034180e-01	1.04993867874145508e+00	1.00672733783721924e+00	1.27979204058647156e-01
+2747	1.41715376878636008e-03	9.70996379852294922e-01	1.04501461982727051e+00	9.81446504592895508e-01	1.47256329655647278e-01
+2748	1.41708536738423849e-03	9.67356562614440918e-01	1.05075311660766602e+00	9.77864086627960205e-01	1.25854894518852234e-01
+2749	1.41701693960394142e-03	9.42877948284149170e-01	1.04115939140319824e+00	9.53289568424224854e-01	1.08773298561573029e-01
+    IDENTICAL to the proof runs' rows above. The funded run is a
+    THIRD independent reproduction of the boundary.
+
+(ii) FIRST FRESH CADENCE CHECKPOINT, ON TIME, DIGEST BANKED:
+$ tail run-seg02.out
+CKPT step=3000 path=/mnt/f/f32/stage/lowint/moe0-ckpt/stage2/moe/step003000.safetensors elapsed_s=1816.102
+CKPT_SHA256 step=3000 a6655e3b4af9cfd0808a8d3431af153aa616cbfd3c327139cc287947717fb910  step003000.safetensors
+$ cat .../stage2/moe/CKPT-DIGESTS.txt
+936462e5dc415cd29dc8eeaa41a7a9a6249f0e10b05b7e06422ceb485784bf73  step002000.safetensors
+04875d93e95ebb9d87c220bcccef5fbbfbfab82fe58cee55d916df691e848818  step002000.resume.pt
+a6655e3b4af9cfd0808a8d3431af153aa616cbfd3c327139cc287947717fb910  step003000.safetensors
+c6e4815c75f59c019ac52c5859d4ae865d771c616aacf0069254ec22f37e01aa  step003000.resume.pt
+    The funded step003000 digest a6655e3b... EQUALS the G1-WRAP proof
+    runs A and B. Three clean processes, one checkpoint, one digest.
+    Append-only: the two step002000 lines are unchanged.
+
+(iii) GPU TEMPERATURE, seg02 progress log:
+$ grep -c "^step=" progress-seg02.txt
+42
+$ hottest sample across those 42 lines
+gpu_temp_c=72
+Sample lines with temps beside the loss:
+step=2200 ce=0.954257 elapsed_s=361.391 gpu_temp_c=72
+step=2650 ce=0.963205 elapsed_s=1171.222 gpu_temp_c=72
+step=2875 ce=0.988234 elapsed_s=1572.571 gpu_temp_c=71
+step=3025 ce=0.927971 elapsed_s=1862.734 gpu_temp_c=70
+step=3050 ce=0.985580 elapsed_s=1906.678 gpu_temp_c=69
+step=3075 ce=1.003341 elapsed_s=1951.883 gpu_temp_c=71
+    Max 72 C. The 90 C rule armed and never approached.
+
+(iv) WATCHER ALIVE AND ITS LOG GROWING:
+$ ps -o pid,etime,cmd -p 914502 -p 914511 -p 914568
+    PID     ELAPSED CMD
+ 914502       32:18 bash run_stage2.sh
+ 914511       32:16 bash watch_stage2b.sh
+ 914568       32:08 /root/openbob-train/venv/bin/python .../bobmoe0.py --arm moe --stage 2 --run FUNDED-seg02 --device cuda --grad-ckpt --data /mnt/f/f32/stage/lowint/data/enwik8/enwik8 --ckpt-dir .../stage2/moe --log .../metrics-seg02.tsv --progress .../progress-seg02.txt --digest-log .../CKPT-DIGESTS.txt --threads 8 --preempt-file /mnt/f/f32/openbob-wt/low-int/lowint/moe0/PREEMPT --resume .../moe/step002000.safetensors
+$ tail -3 watch-seg02.log
+[2026-08-31T02:37:30Z] arm=moe step=2975 ce=0.956081 elapsed_s=1754.374 gpu_temp_c=70
+[2026-08-31T02:38:33Z] arm=moe CKPT_SHA256 step=3000 a6655e3b4af9cfd0808a8d3431af153aa616cbfd3c327139cc287947717fb910  step003000.safetensors
+[2026-08-31T02:39:36Z] arm=moe step=3050 ce=0.985580 elapsed_s=1906.678 gpu_temp_c=69
+    Growing once per 60 s poll, as designed.
+HEALTH BAR: all four limbs MET.
+
+
+2d. PROJECTED COMPLETION (from seg02's OWN progress lines)
+=========================================================
+LAST_PROGRESS_LINE: step=3075 ce=1.003341 elapsed_s=1951.883 gpu_temp_c=71
+STEPS_DONE = 3075 - 2000 = 1075
+S_PER_STEP = 1951.883000 / 1075 = 1.815705
+MOE_REMAINING = 15259 - 2000 = 13259 steps
+MOE_SECONDS = 13259 * 1.815705 = 24074.4 s = 6.687 h
+DENSE_REMAINING = 15259 - 1000 = 14259 steps
+DENSE_SECONDS = 14259 * 1.815705 = 25890.1 s = 7.192 h
+TOTAL_SECONDS = 24074.4 + 25890.1 = 49964.6 s = 13.879 h
+MOE_TRAIN_START_UTC = 2026-08-31T02:07:25Z (launcher LAUNCH moe line)
+MOE_ARM_DONE_PROJ_UTC = 2026-08-31T08:48:39Z
+DONE_PROJ_UTC = 2026-08-31T16:00:09Z (no gate-wait margin)
+
+The measured 1.815705 s/step sits on the plan's assumed 1.81. The
+projection carries no margin for a gate wait, a preempt, or the
+dense arm's own (smaller) model being faster; treat 16:00Z as the
+early edge of a 16:00-17:00Z window.
+
+Dense resume anchor exists and is untouched:
+$ ls -la .../stage2/g1card/dense/A/step001000.*
+-rwxrwxrwx 1 root root 403918171 Aug 30 15:21 .../g1card/dense/A/step001000.resume.pt
+-rwxrwxrwx 1 root root 201918608 Aug 30 15:21 .../g1card/dense/A/step001000.safetensors
+
+
+3. WALLS AND DEVIATIONS, NAMED
+==============================
+WALLS HELD:
+  - serve pid 654: read four times, NEVER signalled. Still the only
+    compute app on the card beside the trainer.
+  - no wsl.exe keepalive touched (pid file
+    C:\f32\agents\seats\software\.scratch\hyde-keepalive.pid never
+    read for a signal and never written).
+  - nothing on the mini, the Telegram messenger, the demo frame, or
+    the 4B serve path was contacted.
+  - checkpoint and sidecar BYTES stay off-repo under
+    /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/. Only digests are here.
+  - no secrets in git.
+  - seg01 evidence files untouched (s.6).
+  - the frozen bars, A1, and the prereg were not moved. This leg
+    changed no trainer code; the fix is commit 22a49e8, landed by the
+    lead before this leg began.
+
+DEVIATIONS, all disclosed, none touching a frozen rule:
+  D-1. The two proof runs were started by ONE harness script that
+       runs them back to back. Each run is still its own clean OS
+       process under the full envelope, started sequentially, as s.3
+       requires; the harness only saves a second manual launch.
+  D-2. cmp and sha256 of the step003000 SIDECAR (resume.pt) were
+       added beyond the frozen limbs, as extra evidence. Both are
+       byte-identical. No bar was relaxed anywhere.
+  D-3. The 1a anchor digests were first recomputed on the Windows
+       host (sha256sum prints the "*" binary marker there) and then
+       independently recomputed inside WSL by the launcher itself.
+       Both readings agree; both are quoted above.
+  D-4. Harness and launch shell files (run_proof.sh, start_proof.sh,
+       start_seg02.sh, project.sh) live OFF-REPO under .../stage2/
+       because they are one-shot scaffolding, not lane code. The one
+       durable script, watch_stage2b.sh, IS committed under
+       lowint/moe0/train/.
+NO_REFUSALS. Nothing was NOT_MEASURED.
+
+
+4. GATE -1 (AFTER THE WORK)
+===========================
+Rerun after committing; see the commit's own trailer and the report
+back to the lead. Ancestry limbs (292f864, 22a49e8, fd0ab37 all
+ancestors of HEAD; 292f864 ancestor of origin/master) re-checked, and
+git status --porcelain re-quoted, in the same session.
+
+
+5. FILES THIS LEG PRODUCED
+==========================
+IN GIT (branch low-int):
+  lowint/moe0/train/watch_stage2b.sh
+  lowint/moe0/evidence/leg-g1wrap.txt   (this file)
+  lowint/moe0/BOBMOE0-STAGE2B-LAUNCH.txt
+OFF-REPO (bytes and logs), under
+/mnt/f/f32/stage/lowint/moe0-ckpt/stage2/ :
+  g1wrap/moe/{A,B}/{step003000.safetensors,step003000.resume.pt,
+                    metrics.tsv,progress.txt,run.out,PREEMPTED,
+                    CKPT-DIGESTS.txt}
+  g1wrap/moe/harness.log, g1wrap/run_proof.sh, g1wrap/start_proof.sh
+  launcher-seg02.out, gates-stage2-seg02.log, watch-seg02.log,
+  watch-seg02.stdout, start_seg02.sh, project.sh
+  moe/{metrics-seg02.tsv,progress-seg02.txt,run-seg02.out,
+       step003000.safetensors,step003000.resume.pt}
+  moe/CKPT-DIGESTS.txt (appended, never rewritten)
+
+
+6. seg01 EVIDENCE UNTOUCHED (both generations side by side)
+===========================================================
+$ ls -la /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/moe/
+-rwxrwxrwx 1 root root     218565 Aug 30 16:55 metrics-seg01.tsv
+-rwxrwxrwx 1 root root     135065 Aug 30 22:40 metrics-seg02.tsv
+-rwxrwxrwx 1 root root       5137 Aug 30 16:54 progress-seg01.txt
+-rwxrwxrwx 1 root root       3689 Aug 30 22:40 progress-seg02.txt
+-rwxrwxrwx 1 root root       5872 Aug 30 16:55 run-seg01.out
+-rwxrwxrwx 1 root root       3689 Aug 30 22:40 run-seg02.out
+$ ls -la /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/
+-rwxrwxrwx 1 root root  1455 Aug 30 16:55 gates-stage2-seg01.log
+-rwxrwxrwx 1 root root  1205 Aug 30 22:07 gates-stage2-seg02.log
+-rwxrwxrwx 1 root root  1205 Aug 30 22:07 launcher-seg02.out
+-rwxrwxrwx 1 root root  1455 Aug 30 16:55 launcher.out
+seg01 mtimes are all 16:5x (the crash). Nothing at 22:xx overwrote
+them. No FAILED-seg02 file exists; no DONE file exists.
+
+END leg-g1wrap.txt

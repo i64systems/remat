@@ -1,0 +1,107 @@
+== 0. WHY THE RS053 120b ROUTE LOG IS NOT THE PREDICTION SOURCE ==
+  Measured, not argued. The RS053 run's own command line, verbatim from
+  /mnt/f/f32/stage/research/rs053/runs/120b-prose-a/stderr.txt:
+    -f /mnt/f/f32/stage/research/rs053/corpus-prose.txt --ctx-size 4096
+    --chunks 4 -b 4096 -ub 4096 --threads 10 -ngl 99 -ncmoe 36
+  This leg's frozen 120b configuration, verbatim from
+  /root/ob1b/runs/pag120-prose-a/stderr.txt:
+    -f /mnt/f/f32/stage/research/ob1/AC-PROSE.txt --ctx-size 1024
+    --chunks 8 -b 1024 -ub 1024 --threads 8 -ngl 0 --no-repack
+  Three differences, each of which alone breaks the prediction:
+    corpus        rs053/corpus-prose.txt  vs  ob1/AC-PROSE.txt
+    micro-batch   4096 tokens             vs  1024 tokens
+    token budget  16384 (4 x 4096)        vs  8192 (8 x 1024)
+  lease_events and peak_concurrent are both defined per MICRO-BATCH, so a
+  4096-token chunking cannot predict a 1024-token run even on the same
+  corpus. The RS053 log's role is unchanged and unmixed: it is the
+  RANKING corpus that produced RESIDENT-SETS-120B-K8.json, and step 2
+  verifies exactly that.
+
+== 1. THE RULE, VALIDATED AGAINST EIGHT ALREADY-MEASURED 20b POINTS ==
+  corpus K      pred_events    meas_events       ev          pred_peak_B          meas_peak_B     peak
+  code   4            21115          21115    MATCH            371105280            371105280    MATCH
+  code   8            18100          18100    MATCH            318090240            318090240    MATCH
+  code   16           12092          12092    MATCH            212060160            212060160    MATCH
+  prose  4            20024          20024    MATCH            371105280            371105280    MATCH
+  prose  8            16954          16954    MATCH            318090240            318090240    MATCH
+  prose  16           10836          10836    MATCH            212060160            212060160    MATCH
+  code   0            24078          24078    MATCH            424120320            424120320    MATCH
+  prose  0            23096          23096    MATCH            424120320            424120320    MATCH
+  EIGHT OF EIGHT REPRODUCED: True
+
+== 2. THIS LEG'S OWN 20b REGRESSION POINTS, PREDICTED ==
+  The P1 suite is four runs. The two resident runs lease nothing, so
+  their counters are zero by construction. The two leased runs have
+  predicted counters, and those counters are themselves a regression:
+  the new allocator must not change them either.
+  run              K     lease_events    peak_concurrent_B       ACCT_bytes
+  res-prose        -                0                    0      12109566624
+  res-code         -                0                    0      12109566624
+  lease-k8-code    8            18100            318090240       4793491104
+  lease-k0-prose   0            23096            424120320       2354799264
+  (lease-k8-code is OB-1's own measured point: 18100 / 318090240.
+   lease-k0-prose is OB-1b's:                  23096 / 424120320.
+   Both are therefore predictions AND banked measurements.)
+
+== 3. THE 120b K=8 PREDICTION, THE ONE THE NIGHT LEG CONSUMES ==
+  route source  /mnt/f/f32/stage/research/ob1b/runs/pag120-prose-a/route.log
+  route sha256  a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1
+  sets source   /mnt/f/f32/openbob-wt/research-2/research/ob1b/RESIDENT-SETS-120B-K8.json
+  config        E=128 L=36 budget=8192 chunk_tokens=1024 chunks=8
+
+  K     lease_events   peak_experts    peak_concurrent_B  rule (E-K)*per_expert    rule?
+  8            27403            120           1590451200             1590451200  MATCHES
+  0            29698            128           1696481280             1696481280  MATCHES
+
+  lease_bytes_read predicted for K=8 = 27403 x 13253760 = 363192785280
+  per-layer lease_events K=8 (36 values, the engine prints this series):
+    957,918,863,812,811,822,862,837,781,727,666,642,643,656,760,763,706,740,749,776,751,715,703,718,740,770,750,762,783,760,784,848,776,726,682,644
+
+== 4. THE ACCT ARITHMETIC, RE-DERIVED FROM FIRST PRINCIPLES ==
+  Definitions used, and nothing else:
+    TOTAL(120b)          = 63387346208      (measured file size, verify_inputs)
+    L                    = 36
+    E                    = 128
+    PER_EXPERT           = 13253760      (manifest header, one expert one layer)
+    total_expert_bytes   = 36 x 128 x 13253760 = 61073326080
+    resident_always      = 63387346208 - 61073326080 = 2314020128
+    resident_always      = 3.6506 pct of the model
+    CHECK vs OB1B-KNEE-1.md s4 (2314020128): True
+
+    K=8 pool_bytes       = 8 x 36 x 13253760 = 3817082880
+    K=8 peak_concurrent  = 1590451200      (PREDICTED above, not assumed)
+    K=8 ACCT             = 2314020128 + 3817082880 + 1590451200 = 7721554208
+    CHECK vs the brief's expected RSS figure (7721554208): True
+    K=8 EXPOSURE_acct    = 63387346208 / 7721554208 = 8.209143
+
+    K=0 ACCT (the floor) = 2314020128 + 1696481280 = 4010501408
+    K=0 EXPOSURE_acct    = 63387346208 / 4010501408 = 15.805342   (prereg ceiling)
+    CHECK vs OB5-PLAN-1 s1 ceiling 15.805342: True
+
+== 5. THE MOONSHOT SLOPE, AT MATCHED RESIDENT FRACTION ==
+  K/E = 6.25 percent on both models (20b K=2 of 32; 120b K=8 of 128).
+  gpt-oss-20b   K=2   ACCT     2964472224  EXPOSURE 4.084898   (OB1B measured 4.084898)
+  gpt-oss-120b  K=8   ACCT     7721554208  EXPOSURE 8.209143   (PREDICTED, this leg)
+  slope: N grows 5.2345x (12109566624 -> 63387346208) while ACCT grows 2.6047x (2964472224 -> 7721554208)
+  exposure ratio 120b/20b at matched resident fraction: 2.0096x
+
+== 6. WHAT MUST NOT SCALE WITH N, STATED AS THE P2 TERMS ==
+  The peak committed MODEL STATE is predicted term by term. Every term
+  is either a constant of the model trunk or a function of the residency
+  schedule (K, L, E). No term is a function of total expert bytes.
+  term                              20b K=0         120b K=8
+  resident_always (trunk)        1930678944       2314020128
+  K x L x per_expert                      0       3817082880
+  peak_concurrent                 424120320       1590451200
+  ACCT total                     2354799264       7721554208
+  total_expert_bytes (N term)      10178887680      61073326080
+  ACCT as pct of model               19.45%           12.18%
+
+  The current allocator's single model-state request, for contrast:
+    20b   12109566624 bytes   (measured: it succeeds, and is 5.14x the K=0 ACCT)
+    120b  63374323968 bytes   (measured: it FAILS, OB1B-KNEE-1.md s9)
+    note 63374323968 is the BUFFER size llama.cpp asks for; the model file
+    is 63387346208. The 12222240-byte difference is GGUF header and
+    metadata that never enters the tensor buffer.
+
+PREDICT_VALIDATION_OK=True

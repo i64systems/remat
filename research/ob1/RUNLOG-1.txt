@@ -1,0 +1,603 @@
+OB-1 EXPOSURE-1, BUILDER 2 RUN LOG: THE LEASE ENGINE
+====================================================
+
+Binding document: research/OB1-EXPOSURE-1-PREREG.md (frozen before this
+instrument existed). Every deviation from it is named in section 12 of this
+file. Every number below is literal output of the command named beside it; a
+command that failed is reported verbatim rather than replaced with a plausible
+value.
+
+
+0. WHAT THIS DOCUMENT IS
+
+A large language model of the "mixture of experts" (MoE) kind does not use all
+of its parameters on any one token. gpt-oss-20b, the model measured here, is
+built from 24 layers; each layer holds 32 independent feed-forward sub-networks
+called EXPERTS, and a small learned ROUTER picks 4 of those 32 for each token.
+The other 28 contribute nothing to that token. Serving the model the ordinary
+way nonetheless keeps all 32 x 24 experts in fast memory at all times, because
+that is simply how the file is loaded.
+
+This leg asks whether a bounded subset can be kept resident instead, with the
+rest read from disk only when the router actually asks for them, WITHOUT
+changing a single output byte. "Without changing a single output byte" is the
+whole point: a serving trick that quietly perturbs the arithmetic is not a
+memory result, it is an accuracy trade dressed up as one.
+
+The quantity being measured is CAPACITY EXPOSURE, defined for this program as
+
+    capacity exposure = logical parameter bytes on disk
+                        / peak fast-resident bytes
+
+that is, how much model a given amount of fast memory is made to carry. It is
+reported as a measurement, never as a verdict.
+
+
+1. THE QUESTION, STATED SO IT CAN FAIL
+
+Three limbs, all frozen in the prereg before any of this was built:
+
+  IDENTITY. At every resident-set size K in {16, 8, 4}, on both acceptance
+  corpora, the leased run's output artifact must be byte-identical to the fully
+  resident run's, and the two runs' routing logs must be byte-identical too.
+  This is a pass/fail bar. Per the prereg it is expected to PASS by design, so
+  a failure here would be an implementation bug, not a discovered trade-off.
+
+  EXPOSURE. Report-only. The instrument reports the peak fast-resident bytes it
+  actually reached, not the arithmetic the prereg pencilled in.
+
+  COST. At K=16, leased p95 latency must be at most 3.0x the fully resident p95.
+
+
+2. THE MACHINE AND THE WALLS
+
+  Host          f32-HYDE, Windows 11 + WSL2 Ubuntu
+  CPU           AMD Ryzen 9 5900X, 12 cores / 24 threads (literal: /proc/cpuinfo
+                "model name : AMD Ryzen 9 5900X 12-Core Processor")
+  CPU features  AVX2, FMA, BMI2, SHA-NI; no AVX-512
+  WSL RAM       24029 MB total (literal: free -m)
+  GPU           RTX 3090-class 24 GB, NOT used by any run in this leg
+  Model file    /root/openbob-baselines/models/gpt-oss-20b-MXFP4.gguf
+                12109566624 bytes, sha256 27cd6c432c7672cb812a92f611cf3ba7bbc35
+                928262bb1e1253ff4ee6ae35901 (registry-verified 2026-08-31)
+  Engine        the RS053 llama.cpp fork at /root/rs053/llama.cpp, upstream
+                commit ca3d5a3 plus the RS053 route-log patch, on a new branch
+                "ob1"; this leg's lease engine is commit 29a601d on that branch
+  Thread wall   at most 10 compute threads, every run under nice 10
+  Untouched     pid 654 (openbob serve) and pid 489 (searxng) were confirmed
+                alive before and after every run and were never signalled
+
+No model weights were downloaded. The only model bytes read are those of the
+GGUF file above.
+
+
+3. WHAT A LEASE IS
+
+3.1 The layout fact it rests on
+
+In the GGUF file format, a MoE layer's experts are not 32 separate tensors.
+All 32 experts of one layer share ONE tensor per weight kind, with the expert
+index as the outermost (slowest varying) dimension. gpt-oss-20b has six such
+"fused expert" tensors per layer: the gate, up and down projection weights and
+their three bias vectors. Because the expert axis is outermost, expert e's data
+is a CONTIGUOUS byte range inside that tensor, namely
+
+    [e * per_expert, (e+1) * per_expert)
+
+where per_expert is the tensor's byte span divided by 32. Builder 1's manifest
+(research/ob1/EXPERT-MANIFEST-20B.sha256) records, for each of the 24 x 32 x 6 =
+4608 such ranges, its absolute file offset, its length, and its sha256 digest.
+One expert's share of all six tensors in one layer is 13253760 bytes.
+
+3.2 The engine
+
+Source: src/ob1-lease.h and src/ob1-lease.cpp in the fork, plus four small hook
+edits. The complete diff is committed here as research/ob1/lease-engine.patch.
+It is inert unless the environment variable OB1_LEASE is set, so the same binary
+produces both the leased and the resident runs.
+
+  AT MODEL LOAD. For each of the 144 fused expert tensors the engine reads ONLY
+  the byte ranges of the experts in that layer's resident set (the static,
+  popularity-ranked set for the chosen K, from research/ob1/RESIDENT-SETS.json),
+  sha256-verifying each range against its manifest row. The non-resident ranges
+  are never written and never read, so the operating system never faults their
+  pages in and they never occupy physical memory. Before doing any of this the
+  engine cross-checks its own view of the file against the loader's: the
+  manifest's offset for expert 0 must equal the offset the loader is about to
+  read from, the per-expert slice length must equal the manifest's length, and
+  experts 1..31 must be exactly the consecutive slices this implies. Any
+  disagreement aborts.
+
+  AT RUN TIME. The router's chosen expert ids for a layer exist in the compute
+  graph as their own small tensor. The RS053 route-log patch already makes the
+  scheduler stop there: it computes the graph up to and including that ids
+  tensor and then calls back into llama.cpp BEFORE running any of the layer's
+  expert matrix multiplies. The lease engine hooks that same callback. It
+
+    (a) drops the previous layer's leases with madvise(MADV_DONTNEED), which
+        returns those physical pages to the operating system. Only whole pages
+        lying fully inside a slice are dropped, so a neighbouring resident
+        expert that happens to share an edge page is never disturbed;
+    (b) reads the ids and, for every routed expert that is not resident, pread()s
+        its six byte ranges straight into that expert's own slots in the fused
+        tensors;
+    (c) sha256-verifies each range against its manifest row. A mismatch prints
+        the layer, expert, tensor, offset, expected digest and actual digest,
+        and aborts;
+    (d) returns, at which point the unmodified kernel runs.
+
+  WHAT IS NOT CHANGED. The tensors, their shapes, their addresses, the kernels,
+  the node order and the arithmetic are all exactly what the fully resident run
+  uses. The matrix multiply reads rows only for the experts the router named,
+  and those rows now hold the same bytes they would have held anyway. This is
+  why byte-identity is a structural expectation rather than a hope.
+
+  WHY REPLAY STAYS EXACT. The residency policy is static: which experts are warm
+  at any moment is a function of K and the layer only, never of run history.
+  There is no least-recently-used cache and no cache-state dependence, so two
+  runs over the same tokens lease exactly the same experts in exactly the same
+  order.
+
+3.3 sha256
+
+Verification is the load-bearing claim of the design, so a wrong digest routine
+would silently void it. The engine carries two implementations, a plain
+reference one and one using the CPU's SHA-NI instructions, and at startup it
+checks both against the standard empty-string and "abc" digests and against each
+other on 144 different lengths of a pseudo-random buffer. If they ever disagree
+the SHA-NI path is disabled and the run says so. Measured throughput of the
+selected path is reported in section 10.
+
+
+4. THE THREE FLAGS, AND WHY THEY ARE A DEVIATION
+
+Builder 1's committed baseline ran with -ngl 99, meaning every weight in GPU
+memory. This leg's runs instead use:
+
+  -ngl 0 with the GPU hidden (CUDA_VISIBLE_DEVICES="")
+      A lease can only reduce peak fast-resident bytes if the fast tier is
+      memory that can be handed back. GPU memory here is a single allocation
+      sized to the whole tensor; not writing part of it does not make the
+      allocation smaller, so leasing into VRAM would report an exposure of
+      exactly 1.0 no matter how few experts were used. Shrinking the allocation
+      instead would mean changing tensor shapes and therefore the kernel, which
+      the identity limb forbids. On the CPU the fast tier is ordinary process
+      memory, pages are faulted in on first touch and can be returned with
+      madvise, and the exposure metric's denominator is then directly the
+      process's peak resident set size. This is also the configuration the
+      prereg's own formula describes, since its resident_always term counts
+      embeddings, attention weights and layer norms as always mapped.
+
+  --no-mmap
+      With memory mapping on, a tensor's data IS the file mapping and the loader
+      never writes it, so there is nothing for the engine to fill or drop. With
+      it off, expert tensors are ordinary anonymous memory the engine controls.
+
+  --no-repack
+      llama.cpp's CPU backend can rewrite MXFP4 weights into an interleaved
+      layout at load time for a faster kernel. Under that transform a GGUF byte
+      range is no longer the tensor's own bytes and the manifest would not
+      describe memory any more. Repacking is disabled for the LEASED AND THE
+      RESIDENT runs alike, so it is a property of the experiment, not a
+      difference between its arms.
+
+Consequence, named plainly: this leg's runs are not byte-comparable with builder
+1's GPU baseline, because floating point on a GPU and floating point on a CPU do
+not agree bit for bit. This leg therefore produces its OWN fully resident
+reference runs, with the same binary and the same flags, and compares against
+those. That is in fact the stricter comparison, because the leased and resident
+arms then differ in exactly one thing: where the expert bytes came from. It is
+recorded as deviation D1.
+
+
+5. WHAT WAS RUN
+
+Corpora, both from builder 1 (research/ob1/extract_corpora.py):
+
+  AC-PROSE  262144 bytes of enwik8 at [96000000, 96262144), disjoint from the
+            slice used to rank the experts
+  AC-CODE   builder 1's corpus-code.txt verbatim
+
+Honesty law, restated: the corpus used to RANK the experts (RS053's own
+20b-prose-a route log) is not either acceptance corpus. The ranking never saw
+these tokens.
+
+Invocation shape, identical for every run in the matrix:
+
+  llama-perplexity -m <model> -f <corpus> --ctx-size 1024 --chunks 32
+      -b 1024 -ub 1024 --threads 10 --threads-batch 10 --no-warmup --seed 1
+      -ngl 0 --no-mmap --no-repack
+
+32 chunks of 1024 tokens is 32768 tokens, the prereg's token budget.
+
+Identity artifact, as defined by the prereg: the single line of the tool's
+standard output that begins "[1]", which is the comma-separated list of
+per-chunk perplexity values. Builder 1 established that the raw standard output
+is not stable across runs because of a wall-clock estimate printed above that
+line; the perplexity values themselves were already identical.
+
+Runs:
+
+  res-prose-a, res-prose-b   fully resident, AC-PROSE, run twice (an A/A pair,
+                             to show the reference itself is stable)
+  res-code-a                 fully resident, AC-CODE
+  lease-k16-prose-a/-b       leased K=16, AC-PROSE, run twice
+  lease-k16-code             leased K=16, AC-CODE
+  lease-k8-prose,  -code     leased K=8
+  lease-k4-prose,  -code     leased K=4
+  lease-k16-prose-fadv       leased K=16, AC-PROSE, with the operating system's
+                             page cache dropped for every range the engine reads,
+                             so the cold tier is genuinely cold storage
+
+Drivers: research/ob1/run-ob1.sh (one run) and research/ob1/runs-ob1.sh (the
+matrix). Analysis: research/ob1/analyze.py. Negative controls:
+research/ob1/controls.py and research/ob1/controls.sh.
+
+
+6. THE UNIT RESULT (task step 2)
+
+Before the matrix, K=16 on the first 2048 tokens of AC-PROSE, leased against
+resident, same binary, same flags:
+
+  identity artifact  resident 7b215e1dcecd9d1e0584017366215dbfff375412fc6a73960
+                              496b6acec63a61c
+                     leased   7b215e1dcecd9d1e0584017366215dbfff375412fc6a73960
+                              496b6acec63a61c        cmp: MATCH
+  route log          resident 4f4030f3911b92f634a343bd97d056f6c272d7196d9c4903b
+                              397105469d13241
+                     leased   4f4030f3911b92f634a343bd97d056f6c272d7196d9c4903b
+                              397105469d13241        cmp: MATCH
+  peak resident set  resident 12992344 KB
+                     leased    8235060 KB
+  leases taken       662 expert-loads, 8773989120 bytes read and verified
+  loaded at startup  5089443840 bytes = exactly 16 x 24 x 13253760, so half of
+                     the expert bytes in the file were never loaded at all
+
+Identity held on the first attempt; no debugging rounds were needed.
+
+
+7. IDENTITY REFERENCES
+
+These are this leg's fully resident runs. Every leased run is compared against
+the one for its corpus. Digests are sha256 of the file.
+
+  prose  res-prose-a  identity 96049ccf8ca241bf58233afe13ed75e2ca43180d81973360
+                               d04cebc80d551925
+                      route    4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b
+                               8ea0326b5dffc3df
+  code   res-code-a   identity 9acdf5ef883588030b675eebea31e3afbaf9f82d12d73eda
+                               d8f3254762aa0ae8
+                      route    f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a6616
+                               2741f049bff41c77
+
+The A/A pair res-prose-a / res-prose-b produced byte-identical identity
+artifacts and byte-identical route logs, so the reference is itself stable.
+
+For completeness, builder 1's committed GPU baseline for the same corpus has
+identity digest f120af4f8bef225154a47e314aaba4a726fef5d77ce220937ca8f0b9af5b770f,
+which differs, exactly as deviation D1 says it must: that run computed in GPU
+floating point and this one computes in CPU floating point. The comparison this
+leg makes is the tighter one.
+
+Sizes, for the record: each route log is 786432 lines (32768 tokens x 24 MoE
+layers); the prose identity artifact is 408 bytes and the code one 345 bytes.
+
+
+8. THE MATRIX (task step 3)
+
+Columns: leases is expert-loads, one per (layer, expert) leased for one
+micro-batch; bytes_moved is bytes pread and verified over the whole run;
+B/tok is bytes_moved / 32768; wall_s and rss_KB are from /usr/bin/time -v;
+p50_ms and p95_ms are over the 31 measured per-chunk intervals; ident and
+route are cmp against the reference for that corpus.
+
+run                      K corpus    tok ident  route    leases    bytes_moved    B/tok   wall_s     rss_KB   p50_ms   p95_ms
+res-prose-a             -- prose   32768 ref    ref           0              0      0.0   549.04   12991752  15709.3  16025.8
+res-prose-b             -- prose   32768 MATCH  MATCH         0              0      0.0   550.97   12991844  15691.6  15889.5
+res-code-a              -- code    32768 ref    ref           0              0      0.0   550.20   13008972  15549.0  16073.7
+lease-k16-prose-a       16 prose   32768 MATCH  MATCH     10836   143617743360 4382865.7   685.27    8237136  19594.5  20090.3
+lease-k16-prose-b       16 prose   32768 MATCH  MATCH     10836   143617743360 4382865.7   680.24    8236956  19578.9  20583.7
+lease-k16-prose-c       16 prose   32768 MATCH  MATCH     10836   143617743360 4382865.7   688.71    8237020  19852.8  20533.2
+lease-k16-code          16 code    32768 MATCH  MATCH     12092   160264465920 4890883.4   703.02    8253928  20111.8  20746.2
+lease-k8-prose           8 prose   32768 MATCH  MATCH     16954   224704247040 6857429.4   757.09    5860332  21944.7  22667.9
+lease-k8-code            8 code    32768 MATCH  MATCH     18100   239893056000 7320955.1   778.10    5877468  22343.5  24334.4
+lease-k4-prose           4 prose   32768 MATCH  MATCH     20024   265393290240 8099160.5   806.70    4669004  23688.1  24323.7
+lease-k4-code            4 code    32768 MATCH  MATCH     21115   279853142400 8540440.1   812.90    4688856  23759.1  24767.8
+lease-k16-prose-fadv    16 prose   32768 MATCH  MATCH     10836   143617743360 4382865.7   788.06    8236424  22977.2  24691.8
+
+IDENTITY LIMB: PASS at every K in {16, 8, 4}, on both acceptance corpora, on
+both the output artifact and the routing log. Nine leased runs, nine matches,
+no exceptions. Per-run digests are listed in section 13.
+
+The A/A pair lease-k16-prose-a / lease-k16-prose-b is byte-identical, so the
+leased path is as repeatable as the resident one.
+
+What the leases prove was absent. At K=4 the engine loaded 1272360960 bytes of
+expert data, out of 10178887680 bytes of expert data in the file. 8906526720
+bytes, 87.5 percent of the model's expert parameters, were never read into
+memory at startup at all, and the run still reproduced the fully resident
+output byte for byte across 32768 tokens. That result is only possible if the
+kernel really did read the leased bytes: a leased region that went unread would
+have been the zero page, and 87.5 percent of the experts being zero cannot give
+the same 32 perplexity values to four decimal places.
+
+
+9. EXPOSURE (report-only limb)
+
+Two denominators are reported, because they answer different questions.
+
+  RSS_bytes   the peak resident set size of the whole process, from
+              /usr/bin/time -v. This is what the machine actually paid. It
+              includes things that are not model parameters at all: compute
+              buffers, the KV cache, the tokenizer, allocator overhead. That is
+              why the fully resident run scores BELOW 1.0: the process is
+              larger than the file.
+  ACCT_bytes  the prereg's formula with the scratch term MEASURED rather than
+              assumed: resident_always (1930678944) + K x 24 x 13253760 +
+              peak_concurrent_lease_bytes as the engine observed it.
+
+run                      K      RSS_bytes    EXP_rss     ACCT_bytes   EXP_acct peak_lease_bytes
+res-prose-a             --    13303554048   0.910250    12109566624   1.000000                0
+res-prose-b             --    13303648256   0.910244    12109566624   1.000000                0
+res-code-a              --    13321187328   0.909046    12109566624   1.000000                0
+lease-k16-prose-a       16     8434827264   1.435663     7232182944   1.674400        212060160
+lease-k16-prose-b       16     8434642944   1.435694     7232182944   1.674400        212060160
+lease-k16-prose-c       16     8434708480   1.435683     7232182944   1.674400        212060160
+lease-k16-code          16     8452022272   1.432742     7232182944   1.674400        212060160
+lease-k16-prose-fadv    16     8434098176   1.435787     7232182944   1.674400        212060160
+lease-k8-prose           8     6000979968   2.017932     4793491104   2.526252        318090240
+lease-k8-code            8     6018527232   2.012048     4793491104   2.526252        318090240
+lease-k4-prose           4     4781060096   2.532820     3574145184   3.388101        371105280
+lease-k4-code            4     4801388544   2.522097     3574145184   3.388101        371105280
+
+Read as a ratio against this leg's own fully resident run, which is the honest
+like-for-like comparison, peak process memory fell by
+
+  K=16   13303554048 -> 8434827264 bytes   1.577x less
+  K=8    13303554048 -> 6000979968 bytes   2.217x less
+  K=4    13303554048 -> 4781060096 bytes   2.782x less
+
+The prereg's illustrative EXPOSURE figures were 1.721729, 2.697817 and 3.765069.
+The measured ACCT figures come out lower (1.674400, 2.526252, 3.388101) for one
+reason, stated as deviation D3: the prereg assumed a single 13253760-byte
+scratch slot, and the measured peak concurrent lease is larger than that. It is
+exactly 16, 24 and 28 experts' worth at K=16, 8 and 4 respectively, which is to
+say: in the worst micro-batch of the run, EVERY non-resident expert of some
+layer was routed at least once. With 1024 tokens in a micro-batch and 4 experts
+per token, that is what should be expected, and it is a property of the batch
+shape rather than of the lease design.
+
+peak_concurrent_lease_bytes literal check:
+  K=16  212060160 = 16 x 13253760
+  K=8   318090240 = 24 x 13253760
+  K=4   371105280 = 28 x 13253760
+
+
+10. COST
+
+COST LIMB, prereg section 8: leased p95 latency at K=16 must be at most 3.0x
+the fully resident p95. Measured, per-chunk:
+
+  lease-k16-prose-a      p95 20090.3 ms vs 16025.8 ms   ratio 1.2536   PASS
+  lease-k16-prose-b      p95 20583.7 ms vs 16025.8 ms   ratio 1.2844   PASS
+  lease-k16-prose-c      p95 20533.2 ms vs 16025.8 ms   ratio 1.2813   PASS
+  lease-k16-code         p95 20746.2 ms vs 16073.7 ms   ratio 1.2907   PASS
+  lease-k16-prose-fadv   p95 24691.8 ms vs 16025.8 ms   ratio 1.5407   PASS
+
+and, beyond the frozen bar, at the smaller resident sets:
+
+  lease-k8-prose         p95 22667.9 ms vs 16025.8 ms   ratio 1.4145
+  lease-k8-code          p95 24334.4 ms vs 16073.7 ms   ratio 1.5139
+  lease-k4-prose         p95 24323.7 ms vs 16025.8 ms   ratio 1.5178
+  lease-k4-code          p95 24767.8 ms vs 16073.7 ms   ratio 1.5409
+
+Whole-run wall clock tells the same story: 549.04 s resident, 685.27 s at K=16
+(1.248x), 757.09 s at K=8 (1.379x), 806.70 s at K=4 (1.469x), all on AC-PROSE.
+
+Where the extra time goes, measured separately by the engine:
+
+run                     read_s    verify_s   drop_bytes        resident_load_verify_s
+lease-k16-prose-a       59.168      57.670   143169011712      2.117
+lease-k16-prose-b       58.928      58.003   143169011712      2.051
+lease-k16-prose-c       60.465      57.676   143169011712      2.100
+lease-k16-code          67.014      64.330   159771709440      2.061
+lease-k8-prose          94.501      89.689   223997730816      1.027
+lease-k8-code          100.589      95.870   239145369600      0.999
+lease-k4-prose         115.409     107.870   264560381952      0.502
+lease-k4-code          120.649     112.701   278980349952      0.514
+lease-k16-prose-fadv   138.106      59.057   143169011712      2.135
+
+Derived throughputs, from those literals:
+
+  sha256 verification   143617743360 bytes / 57.670 s = 2.49 GB/s
+                        (the SHA-NI path; the engine reports which path it chose)
+  read, page cache warm 143617743360 bytes / 59.168 s = 2.43 GB/s
+  read, page cache cold 143617743360 bytes / 138.106 s = 1.04 GB/s
+                        (the -fadv run, which tells the OS to forget every range
+                        it reads, so every lease is a real NVMe read)
+
+The cold-cache run is the honest one to quote for a claim about serving from
+storage, and it is worth noting what it shows: dropping the page cache costs
+2.33x on read time and 15 percent on total wall clock, and leaves peak RSS
+unchanged (8434098176 vs 8434827264 bytes). The memory result therefore does
+not depend on the operating system quietly holding the model in cache.
+
+Verification is roughly half the added cost, and it is not optional in this
+design: it is the reason a leased byte can be trusted. It is also the part most
+obviously open to improvement, since it is single-threaded here while ten
+compute threads sit idle waiting for it.
+
+
+11. NEGATIVE CONTROLS
+
+A digest check that never fires proves nothing. Three deliberately wrong
+manifests were built by research/ob1/controls.py, written to the leg's own stage
+directory, never over the real manifest, and run by research/ob1/controls.sh.
+All four results are literal output.
+
+  C1  wrong digest on a NON-resident expert (layer 0, expert 0), so the check
+      must fire at lease time, mid-run:
+        exit_rc=134
+        OB1 FATAL: expert digest MISMATCH layer=0 expert=0
+          tensor=ffn_gate_exps.weight offset=1413665184 nbytes=4406400
+          got  178373dffcca0561bfcdedb1592f4bc2e679bd10746a78bba1481167bd1a9223
+          want 0000000000000000000000000000000000000000000000000000000000000000
+        perplexity lines produced: 0
+      The "got" value is the manifest's own true digest for that range, so the
+      engine read the right bytes and rejected them against the doctored row.
+
+  C2  wrong digest on a RESIDENT expert (layer 0, expert 1), so the check must
+      fire at model-load time, before any token is processed:
+        exit_rc=134
+        OB1 FATAL: expert digest MISMATCH layer=0 expert=1
+          tensor=ffn_gate_exps.weight offset=1418071584 nbytes=4406400
+          got  8126a6003039e0257a86ae61cc029c55ec9c1ba0eead3cd72d82f5f74b9d4957
+          want 0000000000000000000000000000000000000000000000000000000000000000
+        perplexity lines produced: 0
+
+  C3  wrong OFFSET on a resident expert, to exercise the geometry cross-check
+      between the manifest and the loader rather than the digest:
+        exit_rc=134
+        OB1 FATAL: tensor 'blk.0.ffn_gate_exps.weight': manifest expert 1 is
+          not the contiguous slice the loader implies
+        perplexity lines produced: 0
+
+  C4  the real manifest, same one-chunk shape, which must NOT abort:
+        exit_rc=0
+        perplexity lines produced: 1
+        [1]131.2100,
+
+A fourth, unplanned control arrived on its own: the resident-set parser bug of
+deviation D6 aborted the K=8 and K=4 runs at startup rather than proceeding with
+a wrong resident set. No run in this leg ever produced a number from a
+configuration the engine could not fully validate.
+
+
+12. DEVIATIONS
+
+D1  CPU CONFIGURATION, AND THIS LEG'S OWN IDENTITY REFERENCE. Section 4 gives
+    the reasoning in full. Runs use -ngl 0 with the GPU hidden, --no-mmap and
+    --no-repack; builder 1's committed baseline used -ngl 99. The leased runs
+    are therefore compared against fully resident runs made by this leg with the
+    same binary and the same flags, not against builder 1's digests. Builder 1's
+    prose baseline digest f120af4f... and this leg's 96049ccf... are both
+    reported above so the difference is visible rather than hidden.
+
+D2  p95 IS PER CHUNK, NOT PER TOKEN. Builder 1's deviation 3 recorded that
+    llama-perplexity emits no per-token timing series. This leg instruments its
+    own: the engine timestamps every layer-0 routing callback, which bounds one
+    micro-batch of 1024 tokens, and writes the series to the stats file. A
+    32-chunk run yields 31 intervals, since the last chunk has no following
+    layer-0 callback to close it, so p95 is the 30th smallest of 31 by the
+    nearest-rank method. Dividing by 1024 gives a per-token figure but it is a
+    derived average within a batch, not a measured per-token latency, so the
+    ratio in section 10 is computed on the chunk figures themselves.
+
+D3  THE SCRATCH IS A BOUNDED PER-LAYER SET, NOT ONE SLOT. The prereg's section 6
+    describes a single reusable slot holding one expert. That shape presumes one
+    token at a time. This leg's frozen invocation processes 1024 tokens per
+    micro-batch, and a single fused mul_mat_id call needs every expert that any
+    of those tokens routed to be present simultaneously. Reducing the
+    micro-batch to one token would change the batching and therefore the very
+    numbers being compared for identity, which is not an acceptable price. The
+    engine instead holds all non-resident experts routed within one layer's
+    micro-batch and drops them at the next layer, and reports the peak it
+    actually reached. Measured peaks are in section 9. This is the only reason
+    the measured ACCT exposure sits below the prereg's illustrative arithmetic.
+
+D4  madvise DROPS ONLY WHOLE INTERIOR PAGES. A per-expert slice is 4406400 bytes
+    (weights) or 11520 bytes (biases), neither a multiple of the 4096-byte page,
+    so a slice's first and last pages can be shared with a neighbouring expert
+    that may be resident. The engine therefore drops only pages lying fully
+    inside a slice. Measured shortfall at K=16 on AC-PROSE: 143617743360 bytes
+    leased against 143169011712 bytes dropped, so 448731648 bytes, 0.31 percent,
+    stayed resident across 10836 lease events. That is about 41412 bytes per
+    lease event, consistent with up to two edge pages on each of six tensors.
+
+D5  THE RUN MATRIX WAS INTERRUPTED BY THE HARNESS, NOT BY THIS LEG. Part way
+    through, the tool process that had launched runs-ob1.sh was terminated by
+    the agent harness. That killed the shell chain and the run then in flight,
+    lease-k16-code, which had produced no identity artifact and no stats file
+    and had staged nothing. It was deleted and re-run from the start by
+    research/ob1/runs-ob1-resume.sh. Guard processes pid 654 and pid 489 were
+    verified alive immediately afterwards and were never signalled. Subsequent
+    batches were launched detached inside WSL so a harness action could not
+    reach them.
+
+D6  A BUG IN THE RESIDENT-SET PARSER, FOUND BY ITS OWN ABORT. The first build
+    located the resident set for a given K by searching the JSON for that key.
+    For K=8 and K=4 the search matched LAYER key 8 (or 4) inside the K=16 set
+    first, whose value is a list rather than an object, and the engine aborted:
+    "OB1 FATAL: resident_sets[\"8\"] is not an object", exit 134, four runs, no
+    output. The scan was rewritten to walk only the direct children of
+    resident_sets, stepping over each child value with a bracket-matching skip
+    (fork commit c087083). Because this changed the binary, an already-completed
+    case was re-run on the rebuilt binary as lease-k16-prose-c: its identity
+    artifact and route log are byte-identical to lease-k16-prose-a's, which ties
+    the pre-rebuild and post-rebuild runs together. The runs affected by the bug
+    (K=8 and K=4, both corpora) were all re-run on the fixed binary; no result
+    in section 8 comes from the broken build.
+
+D7  THE PAGE CACHE. The nine main runs let the operating system cache the model
+    file normally, so most leases after the first pass are served from RAM the
+    process does not own. That would flatter any claim about reading from
+    storage, so lease-k16-prose-fadv repeats the K=16 prose run with the cache
+    dropped for every range read. Both results are reported in section 10; the
+    memory figure is unaffected and the time cost is +15 percent.
+
+D8  ONE SHA-256 THREAD. Verification runs on the main thread inside the routing
+    callback, while the ten compute threads wait. This is the simplest correct
+    arrangement and it respects the leg's thread budget, but roughly half the
+    added latency in section 10 is a single-threaded hash of data that is
+    already in cache. It is named here because a later leg quoting these latency
+    numbers should know they are not a floor.
+
+
+13. ARTIFACTS AND DIGESTS
+
+Off-repo artifact bytes, per house law, live under
+/mnt/f/f32/stage/research/ob1/runs/<run>/ and contain, for each run, route.log,
+identity.txt, stdout.txt, stderr.txt and ob1-stats.txt. Total for the leg's
+stage directory: 233M. Local working copies are under /root/ob1/runs/.
+
+run                    sha256 identity.txt                                     sha256 route.log
+res-prose-a            96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925  4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df
+res-prose-b            96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925  4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df
+res-code-a             9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8  f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77
+lease-k16-prose-a      96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925  4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df
+lease-k16-prose-b      96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925  4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df
+lease-k16-prose-c      96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925  4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df
+lease-k16-code         9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8  f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77
+lease-k8-prose         96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925  4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df
+lease-k8-code          9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8  f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77
+lease-k4-prose         96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925  4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df
+lease-k4-code          9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8  f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77
+lease-k16-prose-fadv   96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925  4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df
+
+Committed in this repository:
+
+  research/ob1/lease-engine.patch     the full engine diff, fork branch ob1,
+                                      base abc4140, head c087083
+  research/ob1/run-ob1.sh             one run
+  research/ob1/runs-ob1.sh            the matrix as first launched
+  research/ob1/runs-ob1-resume.sh     resume after the harness interruption (D5)
+  research/ob1/runs-ob1-resume2.sh    resume after the parser fix (D6)
+  research/ob1/analyze.py             produces sections 8, 9 and 10
+  research/ob1/controls.py            builds the doctored manifests
+  research/ob1/controls.sh            runs the negative controls
+  research/ob1/ANALYZE-1.txt          the analysis tool's own output, verbatim
+
+
+14. PROCESS
+
+pid 654 (openbob serve) and pid 489 (searxng) were confirmed alive before and
+after every run and were never signalled, renamed, reniced or killed. All runs
+used at most 10 compute threads under nice 10. The GPU was hidden from every
+run in this leg and its resident allocation was left alone. No model weights
+were downloaded. The sealed corpus lowint/fixtures/LI-S5-ROUTES-1.txt was never
+opened. Work was confined to the research-2 worktree and to the leg's own stage
+directory; master was not touched and nothing was pushed.
+
+Final machine state, literal: /root has 705G available; the leg's stage
+directory is 233M; free -m reports 24029 total, 11761 free, 23152 available.
+

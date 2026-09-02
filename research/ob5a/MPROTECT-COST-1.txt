@@ -1,0 +1,54 @@
+mprotect_cost: n_slices=64 slice=4406400 region=282009600 bytes iters=200 cycles_per_arm=12800 extra_threads=3
+  baseline: RSS 422 pages (1.6 MB)  VMAs 29
+  the PROT_NONE reservation of 282009600 bytes SUCCEEDS under
+  vm.overcommit_memory=0 because a PROT_NONE mapping carries no
+  VM_WRITE and is therefore not an accountable mapping.
+
+== DID IT ACTUALLY DECOMMIT? RSS AFTER 12800 CYCLES OVER A 268.9 MB REGION ==
+  arm                                     RSS_pages         RSS_MB       VMAs
+  (baseline before any arm)                     422            1.6         29
+  A madvise(DONTNEED)                           588            2.3         30
+  B mprotect(PROT_NONE)                       69448          271.3        154
+  C madvise + mprotect(PROT_NONE)               732            2.9        154
+  D mmap(MAP_FIXED, PROT_NONE)                  804            3.1        154
+  region size in pages, for scale: 68850 (268.9 MB)
+
+== PER-SLICE-CYCLE COSTS, NANOSECONDS ==
+  A madvise(DONTNEED)             commit mean      21.3  p50        20  p95        30  p99        40  max        101
+  A madvise(DONTNEED)             write  mean 2093789.7  p50   2067181  p95   2249436  p99   2384336  max    5234705
+  A madvise(DONTNEED)             drop   mean  204232.4  p50    197896  p95    236429  p99    284567  max     527155
+
+  B mprotect(PROT_NONE)           commit mean   77419.6  p50     72903  p95    107345  p99    152961  max     589752
+  B mprotect(PROT_NONE)           write  mean  255785.8  p50    239528  p95    272146  p99    367605  max    2794966
+  B mprotect(PROT_NONE)           drop   mean   59578.8  p50     56741  p95     74078  p99     96967  max    1064748
+
+  C madvise + mprotect(PROT_NONE) commit mean    4636.6  p50      4058  p95      8026  p99     10907  max      84683
+  C madvise + mprotect(PROT_NONE) write  mean 2101759.0  p50   2077929  p95   2254771  p99   2380107  max    3564129
+  C madvise + mprotect(PROT_NONE) drop   mean  210504.1  p50    203949  p95    243757  p99    296575  max     607441
+
+  D mmap(MAP_FIXED, PROT_NONE)    commit mean    5411.6  p50      4810  p95      9055  p99     12193  max      83435
+  D mmap(MAP_FIXED, PROT_NONE)    write  mean 2101584.4  p50   2075364  p95   2252516  p99   2386283  max    3560839
+  D mmap(MAP_FIXED, PROT_NONE)    drop   mean  209733.2  p50    203025  p95    242605  p99    293207  max     769817
+
+== SYSCALL OVERHEAD PER SLICE CYCLE, AGAINST ARM A ==
+  A madvise(DONTNEED)                syscalls  204253.8 ns   delta vs A       +0.0 ns   wall   29.416 s
+  B mprotect(PROT_NONE)              syscalls  136998.3 ns   delta vs A   -67255.4 ns   wall    5.029 s
+  C madvise + mprotect(PROT_NONE)    syscalls  215140.7 ns   delta vs A   +10887.0 ns   wall   29.658 s
+  D mmap(MAP_FIXED, PROT_NONE)       syscalls  215144.8 ns   delta vs A   +10891.0 ns   wall   29.656 s
+
+== PROJECTION ONTO THE RUNS THAT MATTER (delta x 6 slices x events) ==
+  B mprotect(PROT_NONE)          
+    20b lease-k0-prose (banked 916.077 s)          -9.3200 s = -1.0174 pct of wall
+    20b lease-k0-code  (banked 923.879 s)          -9.7163 s = -1.0517 pct of wall
+    20b lease-k8-code  (OB-1 banked 778.10 s, 10 thr)   -7.3039 s = -0.9387 pct of wall
+    120b K=8 predicted (paged ref 410.282 s)      -11.0580 s = -2.6952 pct of wall
+  C madvise + mprotect(PROT_NONE)
+    20b lease-k0-prose (banked 916.077 s)          +1.5087 s = +0.1647 pct of wall
+    20b lease-k0-code  (banked 923.879 s)          +1.5728 s = +0.1702 pct of wall
+    20b lease-k8-code  (OB-1 banked 778.10 s, 10 thr)   +1.1823 s = +0.1520 pct of wall
+    120b K=8 predicted (paged ref 410.282 s)       +1.7900 s = +0.4363 pct of wall
+  D mmap(MAP_FIXED, PROT_NONE)   
+    20b lease-k0-prose (banked 916.077 s)          +1.5092 s = +0.1647 pct of wall
+    20b lease-k0-code  (banked 923.879 s)          +1.5734 s = +0.1703 pct of wall
+    20b lease-k8-code  (OB-1 banked 778.10 s, 10 thr)   +1.1828 s = +0.1520 pct of wall
+    120b K=8 predicted (paged ref 410.282 s)       +1.7907 s = +0.4365 pct of wall

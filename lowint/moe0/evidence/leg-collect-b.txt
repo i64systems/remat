@@ -1,0 +1,626 @@
+BOB-MOE-0 STAGE-2 COLLECTOR, LEG COLLECT-B (C4, C5)
+===================================================
+Lane: low-int (funded ternary lane). Venue: hyde, on-machine, no ssh.
+Worktree: F:\f32\openbob-wt\low-int (WSL /mnt/f/f32/openbob-wt/low-int).
+Plan executed: BOBMOE0-STAGE2-PLAN.txt s.4 steps C4 and C5, verbatim.
+Frozen definitions and bars: BOBMOE0-PREREG-1.md s.2 G2 (stat definitions,
+collapse clause) and s.3 (the P_half kill bar), quoted verbatim below.
+Stage-1 method reference: BOBMOE0-STAGE1.txt s.4 (compressibility curve,
+bits/trit) and the G2 instrument bit-repro standard.
+Predecessor leg: leg-collect-a.txt (C1, C2, C3) at commit df85ff4.
+Every number below is literal command output. Pure ASCII, no em dashes.
+
+Leg wall clock: 2026-08-31, 14:09:10Z to 17:50:39Z. Three route_stats
+passes (about 66, 78 and 72 minutes) plus one compress_curve pass
+(56 seconds), all sequential, all CPU only.
+
+This leg writes NO receipt and claims NO lane verdict beyond the two
+frozen bars it is instructed to evaluate. The RESULT receipt is the
+lane lead's.
+
+
+0. GATE -1, BEFORE
+==================
+$ cd /f/f32/openbob-wt/low-int
+$ git rev-parse HEAD
+df85ff4c59f267987c3a84070346238313d2b6ad
+$ git rev-parse --abbrev-ref HEAD
+low-int
+$ git merge-base --is-ancestor cc19ae4 HEAD
+exit code 0   (cc19ae4 IS an ancestor of HEAD)
+$ git merge-base --is-ancestor cc19ae4 origin/master
+exit code 0   (cc19ae4 IS an ancestor of origin/master)
+$ git status --porcelain
+?? .scratch-s11/
+$ cat F:\f32\stage\lowint\moe0-ckpt\stage2\DONE
+2026-08-31T13:10:57Z
+
+GATE -1 BEFORE: PASS. Branch low-int. HEAD is df85ff4, the collect-a
+landing commit, which is a descendant of the briefed cc19ae4; both
+ancestry limbs return exit 0. The only status line is the allowed
+pre-existing '?? .scratch-s11/'. The DONE marker reads
+2026-08-31T13:10:57Z verbatim.
+
+
+1. CARD AND HOST GATES (three captures, one before each leg segment)
+====================================================================
+C4 and C5 run on CPU per plan s.4 ("C4/C5 run on CPU, proven
+instruments, unchanged"). Both instruments set CUDA_VISIBLE_DEVICES=""
+at import; every process logged cuda.is_available=False. The card was
+therefore NOT used by this leg. The card gates are still read and
+logged as required, and the serve is read-only throughout.
+
+--- GATE CAPTURE 1, before the C4 final run 1 ---
+UTC=2026-08-31T14:09:10Z
+$ cat /root/.local/share/openbob/serve.pid
+654
+$ ps -p 654 -o pid,stat,etime,cmd
+    PID STAT     ELAPSED CMD
+    654 Ssl   1-21:02:53 /root/.local/bin/openbob serve --tmax 6
+(read only; the serve was NEVER signalled at any point in this leg)
+$ find /root/.local/share/openbob -maxdepth 2 -iname '*busy*'
+FIND_RC=0
+(no output: no busy flag present, so no wait was required)
+ABSENT: /root/.local/share/openbob/BUSY
+ABSENT: /root/.local/share/openbob/serve.busy
+ABSENT: /root/.local/share/openbob/busy
+ABSENT: /run/openbob/BUSY
+ABSENT: /tmp/openbob-busy
+ABSENT: /root/.local/share/openbob/CARD-BUSY
+$ free -m
+               total        used        free      shared  buff/cache   available
+Mem:           24029         838       22516          75        1017       23191
+Swap:           6144        4066        2077
+L2 PASS: available = 23191 MiB > 12288 MiB.
+$ nvidia-smi --query-gpu=name,memory.total,memory.free,memory.used,temperature.gpu,utilization.gpu --format=csv
+name, memory.total [MiB], memory.free [MiB], memory.used [MiB], temperature.gpu, utilization.gpu [%]
+NVIDIA GeForce RTX 3090 Ti, 24564 MiB, 23503 MiB, 811 MiB, 37, 5 %
+L3 PASS: memory.free = 23503 MiB >= 8192 MiB; temperature.gpu = 37 C.
+$ nvidia-smi --query-compute-apps=pid,process_name,used_memory --format=csv
+pid, process_name, used_gpu_memory [MiB]
+654, [Not Found], [N/A]
+L1 PASS: the only compute process is the serve pid 654 (bystander).
+$ cat /mnt/c/f32/agents/seats/software/.scratch/hyde-keepalive.pid
+26796
+(read only; no wsl.exe keepalive was killed or signalled)
+
+--- GATE CAPTURE 2, before the C4 final run 2 ---
+UTC=2026-08-31T15:17:10Z
+serve.pid 654; busy-flag search: FIND_RC=0, no output, all six named
+paths ABSENT.
+$ free -m
+               total        used        free      shared  buff/cache   available
+Mem:           24029         878       22125          75        1368       23151
+Swap:           6144        4066        2077
+L2 PASS: available = 23151 MiB > 12288 MiB.
+$ nvidia-smi --query-gpu=name,memory.total,memory.free,memory.used,temperature.gpu,utilization.gpu --format=csv
+name, memory.total [MiB], memory.free [MiB], memory.used [MiB], temperature.gpu, utilization.gpu [%]
+NVIDIA GeForce RTX 3090 Ti, 24564 MiB, 23216 MiB, 1098 MiB, 39, 4 %
+L3 PASS: memory.free = 23216 MiB >= 8192 MiB; temperature.gpu = 39 C.
+compute-apps: 654 only. keepalive pid file: 26796 (read only).
+
+--- GATE CAPTURE 3, before the C4 early run and (same values) C5 ---
+UTC=2026-08-31T17:49:0xZ region; two captures taken, both quoted.
+Capture before the early run (16:36 region):
+$ free -m
+               total        used        free      shared  buff/cache   available
+Mem:           24029         910        2368          74       21160       23119
+Swap:           6144        4082        2061
+L2 PASS: available = 23119 MiB > 12288 MiB.
+$ nvidia-smi --query-gpu=name,memory.total,memory.free,memory.used,temperature.gpu,utilization.gpu --format=csv
+name, memory.total [MiB], memory.free [MiB], memory.used [MiB], temperature.gpu, utilization.gpu [%]
+NVIDIA GeForce RTX 3090 Ti, 24564 MiB, 22987 MiB, 1327 MiB, 38, 7 %
+L3 PASS: memory.free = 22987 MiB >= 8192 MiB; temperature.gpu = 38 C.
+Capture before C5:
+$ free -m
+               total        used        free      shared  buff/cache   available
+Mem:           24029         991        2987          75       20432       23038
+Swap:           6144        4066        2077
+L2 PASS: available = 23038 MiB > 12288 MiB.
+$ nvidia-smi --query-gpu=name,memory.total,memory.free,memory.used,temperature.gpu,utilization.gpu --format=csv
+name, memory.total [MiB], memory.free [MiB], memory.used [MiB], temperature.gpu, utilization.gpu [%]
+NVIDIA GeForce RTX 3090 Ti, 24564 MiB, 23176 MiB, 1138 MiB, 41, 6 %
+L3 PASS: memory.free = 23176 MiB >= 8192 MiB; temperature.gpu = 41 C.
+Both captures: busy-flag search empty, compute-apps 654 only, keepalive
+pid file 26796, all read only.
+
+WALLS: nothing touched the mini, the Telegram messenger, the demo
+frame, or the 4B serve path. The completed-run tree
+F:\f32\stage\lowint\moe0-ckpt\stage2\ was opened READ-ONLY; this leg
+wrote nothing under it. All raw tool output was written to a sibling
+off-repo directory F:\f32\stage\lowint\moe0-collect-b\. Checkpoint
+bytes are not in git; only CSV/text evidence is committed.
+
+
+2. WHAT WAS RUN (the exact invocations)
+=======================================
+Venv: /root/openbob-train/venv/bin/python; torch=2.13.0+cu130,
+threads=8, interop=1, CUDA_VISIBLE_DEVICES=[], cuda.is_available=False
+(logged by every process).
+
+C4, per pass (cwd = the train dir so `import bobmoe0` resolves):
+  cd /mnt/f/f32/openbob-wt/low-int/lowint/moe0/train
+  /root/openbob-train/venv/bin/python route_stats.py \
+    --stage 2 \
+    --ckpt /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/moe/step<STEP>.safetensors \
+    --data /mnt/f/f32/stage/lowint/data/enwik8/enwik8 \
+    --split val --batch 32 --threads 8 \
+    --out-prefix <OUTDIR>/route --progress <OUTDIR>/progress.txt
+  STEP in {015259 (twice, two clean separate OS processes), 002000}.
+
+C5, one pass, both arms sequential in one process each:
+  /root/openbob-train/venv/bin/python compress_curve.py \
+    --arm <moe|dense> \
+    --ckpt-dir /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/<arm> \
+    --steps 2000,3000,4000,5000,6000,7000,8000,9000,10000,11000,12000,13000,14000,15000,15259 \
+    --out <OUTDIR>/compress-curve-stage2-<arm>.csv
+
+SPLIT USED, DISCLOSED: --split val, i.e. the VALIDATION split
+[90000000, 95000000). This is what plan s.4 C4 names ("over the frozen
+val split") and what the instrument's own named choice D-L2-1 fixed in
+stage 1 (the TEST split is reserved for the bpb metric, which
+collect-a consumed). The header line each artifact carries:
+  split=val split_start=90000000 split_end=95000000 ctx=512
+  windows=9765 positions=4999680
+  moe_layers=12 E=8 k=2 eval_batch=32
+
+PINS VERIFIED IN-PROCESS (printed by the instrument itself):
+  CORPUS_SHA256=2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8
+  CORPUS_BYTES=100000000 TRAIN_END=90000000 VAL_END=95000000
+  CKPT_SHA256 step015259 = 9e7f5cf87d4b934d64d3d4c629bc577ffcf30ca7c1f79595bb9b7618352d9511
+  CKPT_SHA256 step002000 = 936462e5dc415cd29dc8eeaa41a7a9a6249f0e10b05b7e06422ceb485784bf73
+Both CKPT_SHA256 values equal the digests banked in the funded run's
+own moe/CKPT-DIGESTS.txt:
+$ grep -E "step015259|step002000" .../stage2/moe/CKPT-DIGESTS.txt
+936462e5dc415cd29dc8eeaa41a7a9a6249f0e10b05b7e06422ceb485784bf73  step002000.safetensors
+04875d93e95ebb9d87c220bcccef5fbbfbfab82fe58cee55d916df691e848818  step002000.resume.pt
+9e7f5cf87d4b934d64d3d4c629bc577ffcf30ca7c1f79595bb9b7618352d9511  step015259.safetensors
+5af471c6564b901cd0d0a1aced378400b6a4cf2d763caf9bf07cb036fa2e45c2  step015259.resume.pt
+
+INSTRUMENT SELF-CHECKS, both checkpoints, every pass:
+  LOAD missing=0 unexpected=0 tensors=374
+  AUX_CROSSCHECK batches=306 max_abs_diff=0.0
+  SLOT_CHECK slots=119992320 expected=119992320 ok=True
+The aux cross-check is the instrument's guard that the hooked router
+logits reproduce the model's OWN aux term; max_abs_diff=0.0 means the
+captured selection sets are the model's, not a re-derivation.
+
+
+3. C4, THE FROZEN DEFINITIONS AND BARS, QUOTED VERBATIM
+=======================================================
+--- BOBMOE0-PREREG-1.md s.2 G2, verbatim ---
+G2 LOCALITY (stage 1 proves the instruments on the tiny MoE twin;
+stage 2 banks the verdict). STAT DEFINITIONS FROZEN NOW. Over the
+frozen eval split, deterministic forward, for each MoE layer l with
+selection sets S(l,t) (the k=2 experts, tie-break as frozen):
+  c_l(e)   = count of positions t with e in S(l,t)
+  P_half(l)= (sum of the E/2=4 largest c_l) / (sum of all c_l)
+             [uniform routing gives 0.50; the field's measured skew on
+             trained MoEs is ~0.95 through half - SYNTHESIS-1 s.3]
+  p_l(e,f) = count of unordered co-activation pairs {e,f} = S(l,t)
+  C_3(l)   = (sum of the 3 largest p_l) / (sum of all p_l)
+             [3 of 28 pairs ~ top 10.7 percent; field: 60-80 percent]
+  H_l      = normalized entropy of c_l/sum(c_l), base ln(E)
+Banked per layer and as layer means, plus dead-expert count (experts
+under 1 percent of a layer's traffic). COLLAPSE NAMED AS ITS OWN
+OUTCOME: P_half near 1.0 with more than half the experts dead is
+reported as routing collapse, never as locality. The stats artifact
+must be byte-identical across two clean replay runs (digest quoted).
+--- END QUOTE ---
+
+--- BOBMOE0-PREREG-1.md s.3, the two limbs this leg evaluates ---
+LOCALITY THESIS KILLED (independently) if layer-mean P_half < 0.60 at
+the final checkpoint (uniform is 0.50; below 0.60 means no meaningful
+skew survived, so a region-leased brain gains nothing from popularity-
+ranked residency at this scale). C_3 and H are banked as evidence but
+the kill rides on P_half alone - one number, hard to lawyer.
+Routing COLLAPSE (the named outcome above) kills the MoE arm even with
+a passing bpb, because a 2-of-8 MoE that uses 2 experts is a dense
+model wearing a router.
+--- END QUOTE ---
+
+Reference points for reading the tables: uniform routing gives
+P_half = 0.50, C_3 = 3/28 = 0.107142857, H = 1.0, dead = 0.
+
+
+4. C4 RESULT, THE FINAL CHECKPOINT step015259 (THE BAR APPLIES HERE)
+====================================================================
+$ cat route-stats-moe-s2-step015259.csv
+# BOBMOE0 G2 ROUTE STATS, prereg s.2 G2 definitions, frozen
+# arm=moe stage=2 ckpt_step=500
+# ckpt_sha256=9e7f5cf87d4b934d64d3d4c629bc577ffcf30ca7c1f79595bb9b7618352d9511
+# corpus_sha256=2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8
+# corpus_bytes=100000000 train_end=90000000 val_end=95000000
+# split=val split_start=90000000 split_end=95000000 ctx=512 windows=9765 positions=4999680
+# moe_layers=12 E=8 k=2 eval_batch=32
+# all floats are %.17e; dead_count is emitted as a float in every row
+scope,layer,n_positions,slots,pair_total,P_half,C_3,H,dead_count
+layer,0,4999680,9999360,4999680,5.71602082533282152e-01,2.89617135496671785e-01,9.92092022378581628e-01,0.00000000000000000e+00
+layer,1,4999680,9999360,4999680,5.31550019201228907e-01,2.73697516641065008e-01,9.98163125980008337e-01,0.00000000000000000e+00
+layer,2,4999680,9999360,4999680,5.23781722030209895e-01,2.71333365335381438e-01,9.98822944510372568e-01,0.00000000000000000e+00
+layer,3,4999680,9999360,4999680,5.34950336821556571e-01,1.82439476126472100e-01,9.98178480085142650e-01,0.00000000000000000e+00
+layer,4,4999680,9999360,4999680,5.48021573380696347e-01,1.63958893369175629e-01,9.96515331096801127e-01,0.00000000000000000e+00
+layer,5,4999680,9999360,4999680,5.22820260496671740e-01,1.66893881208397349e-01,9.98964478829775016e-01,0.00000000000000000e+00
+layer,6,4999680,9999360,4999680,5.51128672235023043e-01,1.78374415962621602e-01,9.96439425454392236e-01,0.00000000000000000e+00
+layer,7,4999680,9999360,4999680,5.39080401145673349e-01,2.00166610663082445e-01,9.96934867989208717e-01,0.00000000000000000e+00
+layer,8,4999680,9999360,4999680,5.51853018593189915e-01,1.83585349462365599e-01,9.96926541427430646e-01,0.00000000000000000e+00
+layer,9,4999680,9999360,4999680,5.59934435803891462e-01,2.36888160842293916e-01,9.93721794445892037e-01,0.00000000000000000e+00
+layer,10,4999680,9999360,4999680,5.72161218317972398e-01,2.40448988735279062e-01,9.93045025342008447e-01,0.00000000000000000e+00
+layer,11,4999680,9999360,4999680,6.16665066564260123e-01,3.07703293010752665e-01,9.79888488289439197e-01,0.00000000000000000e+00
+mean,-1,4999680,9999360,4999680,5.51962400593637992e-01,2.24592257237796550e-01,9.94974377152421208e-01,0.00000000000000000e+00
+
+LAYER MEANS (the row scope=mean):
+  P_half mean 5.51962400593637992e-01
+  C_3    mean 2.24592257237796550e-01
+  H      mean 9.94974377152421208e-01
+  dead   mean 0.00000000000000000e+00
+DEAD-EXPERT COUNT: 0 in every one of the 12 layers; TOTAL 0 of 96
+expert slots.
+
+c_l PER LAYER, step015259 (route-experts-moe-s2-step015259.csv, counts
+in expert index order 0..7; the shares are in the committed CSV):
+  layer 0 :  871878 1499559 1627673 1108322 1382384 1187576 1115929 1206039
+  layer 1 : 1046802 1251810 1404874 1407608 1250868 1193281 1220815 1223302
+  layer 2 : 1060011 1304087 1288376 1331064 1313955 1165216 1280371 1256280
+  layer 3 : 1095514 1237615 1174233 1470521 1276466 1307852 1142837 1294322
+  layer 4 : 1208873 1513555 1211497 1380778 1339147 1246385 1088203 1010922
+  layer 5 : 1409958 1262538 1299266 1096398 1216363 1256106 1234673 1224058
+  layer 6 : 1326297 1575363 1334204 1062937 1141395 1275070 1164113 1119981
+  layer 7 : 1008265 1173575 1320525 1213838 1548780 1255047 1213223 1266107
+  layer 8 : 1343145 1063383 1128382 1357291 1096042 1327893 1489848 1193376
+  layer 9 : 1124530 1178901 1119752 1134014 1238999 1022078 1536850 1644236
+  layer 10: 1357807 1034772 1541629  951132 1390280  992248 1431530 1299962
+  layer 11: 1816859 1085009 1041554  797976 1303881 1856083 1189433  908565
+Every layer sums to 9999360 slots (n_positions 4999680 times k=2).
+
+--- VERDICT 1: THE P_half BAR, AT THE FINAL CHECKPOINT ---
+Bar (frozen, quoted above): LOCALITY THESIS KILLED if layer-mean
+P_half < 0.60 at the final checkpoint.
+Measured layer-mean P_half at step015259 = 5.51962400593637992e-01.
+5.51962400593637992e-01 < 0.60 -> TRUE.
+VERDICT: THE LOCALITY THESIS IS KILLED BY ITS OWN PREREGISTERED BAR.
+No bar was moved and no threshold was reinterpreted. Every one of the
+12 layers is individually below 0.60 as well (layer max 6.16665066564260123e-01
+at layer 11, layer min 5.22820260496671740e-01 at layer 5), so the
+kill does not rest on the mean smoothing over a passing layer.
+
+--- VERDICT 2: THE COLLAPSE CLAUSE, PREREG DEFINITION ---
+Clause (frozen, quoted above): "P_half near 1.0 with more than half
+the experts dead is reported as routing collapse", dead = "experts
+under 1 percent of a layer's traffic".
+Measured: dead_count = 0 in every layer (total 0), so "more than half
+the experts dead" is FALSE in all 12 layers; and P_half is nowhere
+near 1.0 (layer max 0.616665). The smallest single-expert share
+anywhere in the final checkpoint is layer 11 expert 3 at
+7.98027073732718861e-02, i.e. 7.98 percent, about eight times the
+1 percent dead threshold.
+VERDICT: NO ROUTING COLLAPSE. The collapse clause does not fire, so it
+does not kill the MoE arm. This is the measured ABSENCE of collapse,
+stated as such and not as a locality claim.
+
+THE TWO VERDICTS ARE INDEPENDENT, as the prereg requires: the bpb limb
+(collect-a: MATCH, MoE survives) and the collapse limb (no collapse)
+both stand, while the locality thesis is killed on its own bar.
+
+
+5. C4 BIT-REPRO OF THE INSTRUMENT (two clean separate OS processes)
+===================================================================
+Stage 1 proved route_stats.py bit-reproducible; the final-checkpoint
+pass was therefore run TWICE, in two clean separate OS processes,
+about one minute apart (run 1 14:10:48Z to 15:16:39Z, run 2 15:17:18Z
+to 16:35:45Z, so under different concurrent load and different wall
+clock: 3951 s vs 4707 s).
+
+$ cmp .../final-run1/route-stats.csv   .../final-run2/route-stats.csv
+CMP_RC_route-stats.csv=0
+$ cmp .../final-run1/route-experts.csv .../final-run2/route-experts.csv
+CMP_RC_route-experts.csv=0
+$ cmp .../final-run1/route-pairs.csv   .../final-run2/route-pairs.csv
+CMP_RC_route-pairs.csv=0
+
+$ sha256sum (both runs, all three artifacts)
+a067fb18a1a6537ed710304eac3abf7e38c33360de1c28e1199d62220ac8964b  final-run1/route-stats.csv
+640b8ca573a2a79e6d16caa3c3e47ca5a14ed7ed70664d695a242ef19ed86df0  final-run1/route-experts.csv
+43534373dbadab09d21f79b2d662deddd441bb92a0d130583698dd462bd19e62  final-run1/route-pairs.csv
+a067fb18a1a6537ed710304eac3abf7e38c33360de1c28e1199d62220ac8964b  final-run2/route-stats.csv
+640b8ca573a2a79e6d16caa3c3e47ca5a14ed7ed70664d695a242ef19ed86df0  final-run2/route-experts.csv
+43534373dbadab09d21f79b2d662deddd441bb92a0d130583698dd462bd19e62  final-run2/route-pairs.csv
+
+G2 INSTRUMENT BIT-REPRO ON THE FUNDED ARTIFACT: PASS, 3 of 3 artifacts
+byte-identical (cmp AND sha256), the stage-1 standard held at
+stage-2 scale on a 163.8M-parameter checkpoint over 4,999,680 eval
+positions and 119,992,320 selection slots.
+
+
+6. C4 EVOLUTION MEASUREMENT, THE EARLY CHECKPOINT step002000
+============================================================
+NO BAR APPLIES HERE. The prereg's kill line is defined on the FINAL
+checkpoint only. These numbers exist so the lead can state the
+trajectory of routing structure over training. Provenance note:
+step002000 is the funded run's seg01-era anchor, the checkpoint seg02
+resumed from (BOBMOE0-STAGE2B-LAUNCH.txt s.4); the epoch-wrap fix left
+steps 1..2746 byte-identical, so this checkpoint is on the same
+lineage as the final one.
+
+$ cat route-stats-moe-s2-step002000.csv
+# BOBMOE0 G2 ROUTE STATS, prereg s.2 G2 definitions, frozen
+# arm=moe stage=2 ckpt_step=500
+# ckpt_sha256=936462e5dc415cd29dc8eeaa41a7a9a6249f0e10b05b7e06422ceb485784bf73
+# corpus_sha256=2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8
+# corpus_bytes=100000000 train_end=90000000 val_end=95000000
+# split=val split_start=90000000 split_end=95000000 ctx=512 windows=9765 positions=4999680
+# moe_layers=12 E=8 k=2 eval_batch=32
+# all floats are %.17e; dead_count is emitted as a float in every row
+scope,layer,n_positions,slots,pair_total,P_half,C_3,H,dead_count
+layer,0,4999680,9999360,4999680,6.33774361559139798e-01,2.94818868407578094e-01,9.75726081245473886e-01,0.00000000000000000e+00
+layer,1,4999680,9999360,4999680,6.36222618247567873e-01,2.62512000768049147e-01,9.69842980284715717e-01,0.00000000000000000e+00
+layer,2,4999680,9999360,4999680,5.89229910714285765e-01,3.22359431003584218e-01,9.88534642424276355e-01,0.00000000000000000e+00
+layer,3,4999680,9999360,4999680,5.66811475934459796e-01,1.85999103942652316e-01,9.91454164886404254e-01,0.00000000000000000e+00
+layer,4,4999680,9999360,4999680,5.68177363351254461e-01,1.69333437339989762e-01,9.92713298031451474e-01,0.00000000000000000e+00
+layer,5,4999680,9999360,4999680,5.47587745615719435e-01,1.81731030785970304e-01,9.95451023459151707e-01,0.00000000000000000e+00
+layer,6,4999680,9999360,4999680,5.60713785682283694e-01,1.76902521761392734e-01,9.94023466412228385e-01,0.00000000000000000e+00
+layer,7,4999680,9999360,4999680,5.51683807763696854e-01,1.85436667946748596e-01,9.95962321523445993e-01,0.00000000000000000e+00
+layer,8,4999680,9999360,4999680,5.47370431707629335e-01,1.63862087173579113e-01,9.95421195114660873e-01,0.00000000000000000e+00
+layer,9,4999680,9999360,4999680,5.71829597094213993e-01,2.17541322644649260e-01,9.92490069766384320e-01,0.00000000000000000e+00
+layer,10,4999680,9999360,4999680,5.86065508192524343e-01,2.23010872695852541e-01,9.89257287173162414e-01,0.00000000000000000e+00
+layer,11,4999680,9999360,4999680,6.47216621863799246e-01,3.04605094726062453e-01,9.68843455938982911e-01,0.00000000000000000e+00
+mean,-1,4999680,9999360,4999680,5.83890268977214522e-01,2.24009369933009045e-01,9.87476665521694774e-01,0.00000000000000000e+00
+
+LAYER MEANS (step002000):
+  P_half mean 5.83890268977214522e-01
+  C_3    mean 2.24009369933009045e-01
+  H      mean 9.87476665521694774e-01
+  dead   mean 0.00000000000000000e+00
+DEAD-EXPERT COUNT: 0 in every one of the 12 layers; TOTAL 0 of 96.
+Collapse clause at step002000: does not fire (0 dead, P_half layer max
+6.47216621863799246e-01). Smallest single-expert share anywhere:
+layer 1 expert 6 at 5.87982630888376837e-02 (5.88 percent).
+
+c_l PER LAYER, step002000 (counts, expert index order 0..7):
+  layer 0 :  671529 1357021 2063794 1009016 1020906  960571 1413069 1503454
+  layer 1 : 1061176 1243136 2214318 1020498 1523305  967922  587945 1381060
+  layer 2 : 1232535  880062 1620938 1416285 1467805  807954 1386894 1186887
+  layer 3 : 1082858 1267395 1225684 1594367 1504944  792258 1301046 1230808
+  layer 4 :  960007 1686033 1058041 1396958 1266104 1328567 1033798 1269852
+  layer 5 : 1400584 1287857 1274467 1065638 1282226 1422079  901502 1365007
+  layer 6 : 1236915 1557273 1240390 1143750 1125863 1372590 1436526  886053
+  layer 7 : 1012842 1079601 1295549 1320456 1582098 1194258 1196174 1318382
+  layer 8 : 1308832 1242842  992415 1298703 1072987 1226181 1622977 1234423
+  layer 9 : 1165172  924727 1030980 1195730 1420575 1160551 1478024 1623601
+  layer 10: 1308248 1022909 1432110  843628 1458360  964295 1653328 1316482
+  layer 11: 1994603 1194886 1038496  820895 1437038 1845225 1061049  607168
+
+--- THE TRAJECTORY, STATED AS MEASURED FACTS ONLY ---
+Layer-mean P_half:  step002000 5.83890268977214522e-01
+                    step015259 5.51962400593637992e-01
+  The skew statistic the kill bar rides on is LOWER at the final
+  checkpoint than at the early one. Routing moved TOWARD uniform over
+  the funded budget, not away from it.
+Layer-mean H:       step002000 9.87476665521694774e-01
+                    step015259 9.94974377152421208e-01
+  Normalized routing entropy rose toward the maximum 1.0, the same
+  direction.
+Layer-mean C_3:     step002000 2.24009369933009045e-01
+                    step015259 2.24592257237796550e-01
+  Co-activation concentration is essentially unchanged between the two
+  checkpoints at this precision, and both sit about 2.1x the uniform
+  0.107142857 rather than in the field's 0.60 to 0.80 band.
+Dead experts:       0 at both checkpoints, all 12 layers.
+Per-layer direction, checked layer by layer: P_half FELL at 11 of the
+  12 layers and ROSE at exactly one, layer 8
+  (5.47370431707629335e-01 early -> 5.51853018593189915e-01 final).
+  The largest fall is layer 1 (6.36222618247567873e-01 ->
+  5.31550019201228907e-01).
+Depth shape, both checkpoints: skew highest at the two ENDS of the
+  stack (early: layer 11 0.647217, layer 1 0.636223, layer 0 0.633774;
+  final: layer 11 0.616665, layer 10 0.572161, layer 0 0.571602) and
+  lowest in the middle band (early min layer 8 0.547370; final min
+  layer 5 0.522820). The stage-1 tiny twin showed the same ends-high,
+  middle-low shape (BOBMOE0-STAGE1.txt s.4).
+Stage-1 tiny-twin reference (5 layers, 500 steps, NOT comparable as a
+  verdict, quoted for scale): P_half mean 5.97660990060672748e-01.
+
+NO INTERPRETATION BEYOND THE NUMBERS IS OFFERED HERE. Whether the
+downward P_half trajectory is the Switch aux loss winning over
+training, or something else, is the lead's call in the RESULT receipt.
+
+
+7. C5, THE COMPRESSIBILITY CURVE, BOTH ARMS, ALL 15 BANKED STEPS
+================================================================
+Method: the stage-1 instrument compress_curve.py, unchanged, per
+prereg s.2 G3 COEQUAL MEASUREMENT: per-tensor-class and pooled order-0
+entropy in bits/trit of the absmean-quantized weights (the s.1 law
+W_t = round(clip(W/gamma, -1, +1)), gamma = mean(|W|)), plus trit
+counts. Norms, embeddings and the router are excluded as float per
+prereg s.1; MoE experts pool into the same ffn.* classes as the dense
+arm's FFN, so the classes are comparable across arms.
+Reference points: the ternary maximum is log2(3) = 1.5849625, and the
+BitNet-2B pin measured 1.560314 bits/trit pooled (BOBMOE0-STAGE1.txt
+s.4). Stage-1 tiny twins at step 500 sat at 1.583958 (moe) and
+1.584072 (dense).
+Rows: 120 per arm (15 steps x 7 classes + 15 pooled). Both CSVs are
+committed in full; the pooled curve is transcribed below with no row
+omitted, at the tool's own printed precision (%.6f).
+
+--- MoE ARM, pooled order-0 entropy, bits/trit ---
+step   bits_per_trit   n_trits     c_neg     c_zero    c_pos
+2000   1.584358        163577856   55531780  52303950  55742126
+3000   1.584565        163577856   55318917  52725308  55533631
+4000   1.584713        163577856   55133523  53100264  55344069
+5000   1.584812        163577856   54973521  53420079  55184256
+6000   1.584878        163577856   54838168  53702492  55037196
+7000   1.584920        163577856   54714473  53946726  54916657
+8000   1.584943        163577856   54616156  54144821  54816879
+9000   1.584954        163577856   54543665  54290354  54743837
+10000  1.584959        163577856   54495606  54390831  54691419
+11000  1.584960        163577856   54460499  54460017  54657340
+12000  1.584961        163577856   54444098  54496889  54636869
+13000  1.584961        163577856   54439816  54507821  54630219
+14000  1.584961        163577856   54442192  54503103  54632561
+15000  1.584961        163577856   54451903  54482954  54642999
+15259  1.584961        163577856   54452436  54482559  54642861
+
+--- DENSE ARM, pooled order-0 entropy, bits/trit ---
+step   bits_per_trit   n_trits    c_neg     c_zero    c_pos
+2000   1.584623        50331648   17027006  16264128  17040514
+3000   1.584773        50331648   16963156  16393904  16974588
+4000   1.584861        50331648   16910999  16495910  16924739
+5000   1.584914        50331648   16869373  16582168  16880107
+6000   1.584945        50331648   16832021  16659568  16840059
+7000   1.584958        50331648   16802680  16721214  16807754
+8000   1.584962        50331648   16776041  16770811  16784796
+9000   1.584961        50331648   16758682  16807217  16765749
+10000  1.584957        50331648   16741411  16840158  16750079
+11000  1.584953        50331648   16731370  16862871  16737407
+12000  1.584948        50331648   16721174  16882316  16728158
+13000  1.584944        50331648   16713786  16897808  16720054
+14000  1.584942        50331648   16711397  16902735  16717516
+15000  1.584941        50331648   16708690  16907625  16715333
+15259  1.584940        50331648   16708019  16908691  16714938
+
+--- MONOTONICITY, STATED FACTUALLY ---
+MoE arm: non-decreasing at every consecutive pair of banked steps.
+  Strictly increasing from 2000 through 12000 (1.584358 to 1.584961);
+  flat at 1.584961 for the five steps 12000, 13000, 14000, 15000,
+  15259 at the tool's printed precision. No decrease anywhere.
+Dense arm: NOT monotone. It rises from 2000 to a maximum of 1.584962
+  at step 8000, then DECREASES at every subsequent banked step:
+  9000 1.584961, 10000 1.584957, 11000 1.584953, 12000 1.584948,
+  13000 1.584944, 14000 1.584942, 15000 1.584941, 15259 1.584940.
+  The turning point is step 8000; the decrease is monotone from there
+  to the final checkpoint. In trit terms the dense arm's c_zero keeps
+  rising past the balance point (16770811 at 8000 to 16908691 at
+  15259) while c_neg and c_pos fall, so the marginal distribution
+  moves past uniform-over-three and back down the entropy curve.
+Both arms end BELOW the ternary maximum 1.5849625 and ABOVE the
+BitNet-2B pin 1.560314: final pooled moe 1.584961, dense 1.584940.
+No further interpretation is offered here.
+
+--- PER-CLASS ROWS AT THE TWO ENDPOINT STEPS (the full 120 rows per
+    arm are in the committed CSVs) ---
+MoE step 2000:
+moe,2000,class,attn.wk,3145728,1041561,1062322,1041845,0.331103325,0.337703069,0.331193606,1.584901
+moe,2000,class,attn.wo,3145728,1048445,1048283,1049000,0.333291690,0.333240191,0.333468119,1.584962
+moe,2000,class,attn.wq,3145728,1041769,1061584,1042375,0.331169446,0.337468465,0.331362089,1.584907
+moe,2000,class,attn.wv,3145728,1056612,1030978,1058138,0.335887909,0.327739080,0.336373011,1.584860
+moe,2000,class,ffn.down,50331648,17137482,16050198,17143968,0.340491176,0.318888783,0.340620041,1.584280
+moe,2000,class,ffn.gate,50331648,17064676,16005360,17261612,0.339044650,0.317997932,0.342957417,1.584177
+moe,2000,class,ffn.up,50331648,17141235,16045225,17145188,0.340565741,0.318789979,0.340644280,1.584271
+MoE step 15259:
+moe,15259,class,attn.wk,3145728,1017737,1110290,1017701,0.323529879,0.352951686,0.323518435,1.583725
+moe,15259,class,attn.wo,3145728,1040717,1062338,1042673,0.330835025,0.337708155,0.331456820,1.584900
+moe,15259,class,attn.wq,3145728,1016179,1114465,1015084,0.323034604,0.354278882,0.322686513,1.583552
+moe,15259,class,attn.wv,3145728,1048932,1046079,1050717,0.333446503,0.332539558,0.334013939,1.584960
+moe,15259,class,ffn.down,50331648,16874159,16579612,16877877,0.335259418,0.329407295,0.335333288,1.584912
+moe,15259,class,ffn.gate,50331648,16650542,16840805,16840301,0.330816547,0.334596733,0.334586720,1.584942
+moe,15259,class,ffn.up,50331648,16804170,16728970,16798508,0.333868861,0.332374771,0.333756367,1.584960
+Dense step 2000:
+dense,2000,class,attn.wk,3145728,1049644,1048114,1047970,0.333672841,0.333186467,0.333140691,1.584962
+dense,2000,class,attn.wo,3145728,1048378,1048238,1049112,0.333270391,0.333225886,0.333503723,1.584962
+dense,2000,class,attn.wq,3145728,1047998,1048928,1048802,0.333149592,0.333445231,0.333405177,1.584962
+dense,2000,class,attn.wv,3145728,1055100,1036378,1054250,0.335407257,0.329455694,0.335137049,1.584914
+dense,2000,class,ffn.down,12582912,4273927,4036321,4272664,0.339661201,0.320777973,0.339560827,1.584447
+dense,2000,class,ffn.gate,12582912,4266211,4032210,4284491,0.339047988,0.320451260,0.340500752,1.584418
+dense,2000,class,ffn.up,12582912,4285748,4013939,4283225,0.340600650,0.318999211,0.340400139,1.584291
+Dense step 15259:
+dense,15259,class,attn.wk,3145728,1027409,1091874,1026445,0.326604525,0.347097397,0.326298078,1.584352
+dense,15259,class,attn.wo,3145728,1043935,1058003,1043790,0.331857999,0.336330096,0.331811905,1.584933
+dense,15259,class,attn.wq,3145728,1022288,1098782,1024658,0.324976603,0.349293391,0.325730006,1.584141
+dense,15259,class,attn.wv,3145728,1051180,1043431,1051117,0.334161123,0.331697782,0.334141095,1.584954
+dense,15259,class,ffn.down,12582912,4178750,4225109,4179053,0.332097212,0.335781495,0.332121293,1.584943
+dense,15259,class,ffn.gate,12582912,4185200,4208559,4189153,0.332609812,0.334466219,0.332923969,1.584958
+dense,15259,class,ffn.up,12582912,4199257,4182933,4200722,0.333726962,0.332429647,0.333843390,1.584960
+Factual note on the class rows: at the final checkpoint the lowest
+per-class bits/trit in either arm is the MoE arm's attn.wq at 1.583552
+and attn.wk at 1.583725; the dense arm's same classes read 1.584141
+and 1.584352. Every ffn.* class in both arms sits at or above 1.584912
+at the final checkpoint.
+
+
+8. FINDINGS, NAMED
+==================
+F1 (COSMETIC, in the instrument, NOT fixed by this leg). route_stats.py
+   hardcodes the checkpoint step in its artifact header:
+     "# arm=moe stage=%d ckpt_step=500" % args.stage
+   so every stage-2 artifact header reads "ckpt_step=500" regardless of
+   which checkpoint was loaded. All three of this leg's stat artifacts
+   carry that wrong step in the header line. IMPACT: none on any
+   statistic. The header's own ckpt_sha256 line carries the true
+   identity of the loaded checkpoint (verified equal to the funded
+   run's banked digests, s.2 above), and every count is computed from
+   the loaded tensors. The tool was used AS IT EXISTS per the leg
+   brief; no replacement statistic was improvised and no source file
+   was edited. Named here so the lead can decide whether to correct
+   the header before the RESULT receipt quotes these artifacts.
+F2 (VENUE, not a lane finding). Passing a bash body inline through
+   PowerShell to wsl.exe mangles pipes and redirections (observed:
+   "/bin/bash: line 1: c4run | grep -v grep: command not found").
+   Every command in this leg was therefore run SCRIPT-TO-FILE, per the
+   venue law. No lane artifact was produced by a mangled command.
+REFUSALS: NONE. No script failed, no checkpoint was missing, and no
+   definition ambiguity against the prereg was found. Both C4 tools
+   supported every mode this leg needed.
+NOT_MEASURED: NOTHING. Every item C4 and C5 ask for was measured.
+
+
+9. GATE -1, AFTER (captured while this evidence file was still
+   untracked, before the landing commit)
+==============================================================
+$ git rev-parse HEAD
+df85ff4c59f267987c3a84070346238313d2b6ad
+$ git rev-parse --abbrev-ref HEAD
+low-int
+$ git merge-base --is-ancestor cc19ae4 HEAD
+exit code 0
+$ git merge-base --is-ancestor cc19ae4 origin/master
+exit code 0
+$ git status --porcelain
+?? .scratch-s11/
+?? lowint/moe0/evidence/compress-curve-s2-dense.csv
+?? lowint/moe0/evidence/compress-curve-s2-moe.csv
+?? lowint/moe0/evidence/leg-collect-b.txt
+?? lowint/moe0/evidence/route-experts-moe-s2-step002000.csv
+?? lowint/moe0/evidence/route-experts-moe-s2-step015259.csv
+?? lowint/moe0/evidence/route-pairs-moe-s2-step002000.csv
+?? lowint/moe0/evidence/route-pairs-moe-s2-step015259.csv
+?? lowint/moe0/evidence/route-stats-moe-s2-step002000.csv
+?? lowint/moe0/evidence/route-stats-moe-s2-step015259.csv
+$ git diff HEAD --stat
+(empty: this leg MODIFIED no tracked file; it only added new ones)
+$ cat F:\f32\stage\lowint\moe0-ckpt\stage2\DONE
+2026-08-31T13:10:57Z
+
+
+10. LEG SUMMARY
+===============
+C4 RAN: route_stats.py, stage 2, val split, on the MoE arm's final
+  checkpoint step015259 (TWICE, byte-identical) and on the early
+  checkpoint step002000 (once, evolution measurement, no bar).
+C4 VERDICT 1, the frozen locality bar at the FINAL checkpoint:
+  layer-mean P_half = 5.51962400593637992e-01 < 0.60
+  -> THE LOCALITY THESIS IS KILLED. All 12 layers individually below
+  the bar as well.
+C4 VERDICT 2, the prereg's own collapse clause:
+  dead-expert count 0 in every layer (total 0 of 96), P_half layer max
+  0.616665, smallest expert share 7.98027073732718861e-02
+  -> NO ROUTING COLLAPSE. The clause does not fire and does not kill
+  the MoE arm.
+C4 INSTRUMENT BIT-REPRO: PASS, 3 of 3 artifacts byte-identical across
+  two clean separate OS processes (cmp rc 0 and equal sha256).
+C4 EVOLUTION: layer-mean P_half fell from 5.83890268977214522e-01
+  (step002000) to 5.51962400593637992e-01 (step015259); layer-mean H
+  rose from 9.87476665521694774e-01 to 9.94974377152421208e-01; C_3
+  essentially flat (2.24009369933009045e-01 to
+  2.24592257237796550e-01); 0 dead experts throughout.
+C5 RAN: compress_curve.py at all 15 banked checkpoints, both arms,
+  120 rows per arm. MoE pooled bits/trit non-decreasing 1.584358 to
+  1.584961. Dense pooled bits/trit rises to a maximum 1.584962 at step
+  8000 then decreases monotonically to 1.584940 at step 15259 (the one
+  non-monotone arm).
+FINDINGS: F1 (cosmetic header step in route_stats.py), F2 (venue
+  quoting trap). REFUSALS: none. Card: not used (CPU-only leg); gates
+  read and logged anyway; highest GPU temperature observed at any gate
+  41 C; the serve pid 654 was read and never signalled; no keepalive
+  touched.
+
+END LEG COLLECT-B

@@ -1,0 +1,31 @@
+# OB-5b C3-T2 RUNLOG -- P08 THE TRUNK MANIFEST AND THE CLOSED-FORM BANK
+venue: hyde, /mnt/f/f32/openbob-wt/research-2/research/ob3t/trunk_manifest.py
+no model process, no runlock (matches T1/T2 venue note); guard pids checked before and after
+
+--- guard pids before ---
+    PID CMD
+    654 /root/.local/bin/openbob serve --tmax 6
+    PID CMD
+    489 /opt/searxng/venv/bin/python -m searx.webapp
+
+--- BUILD 1 (20B) ---
+
+--- BUILD 1 stdout was captured live above during the interactive run; row_count=25481 covered_bytes=1917670656 for 20B, row_count=25637 covered_bytes=2300997888 for 120B (both matched SUM_TRUNK_BYTES exactly, asserted in trunk_manifest.py) ---
+
+--- A/A BYTE-STABILITY CHECK (B2-2): two independent builds ---
+20B manifest sha256 (full file, includes ELAPSED_SECONDS footer):
+6583de598f0148eebe33d96bce8b1f600310a5d7c52a08cfa8b366d5fd9acc43  /mnt/f/f32/stage/research/ob3t/build1/TRUNK-MANIFEST-20B.sha256
+6da93e8dd659a45348f449fbfdac8faef8e06bdf4ad4090d66aa030f2a14010b  /mnt/f/f32/stage/research/ob3t/build2/TRUNK-MANIFEST-20B.sha256
+120B manifest sha256 (full file, includes ELAPSED_SECONDS footer):
+802b533a7a3854746f3b6a8979add0867721cb49614b5fa20b8895fbb779bf56  /mnt/f/f32/stage/research/ob3t/build1/TRUNK-MANIFEST-120B.sha256
+e1ded4f2b38cdd9ff8f3b8fde1bddc8a3b3f80c099a8283851c5129b17dce0ed  /mnt/f/f32/stage/research/ob3t/build2/TRUNK-MANIFEST-120B.sha256
+
+diff excluding the ELAPSED_SECONDS footer line (the only line that legitimately varies build to build, being wall-clock telemetry and not lease-unit content):
+20B: BYTE-IDENTICAL modulo ELAPSED_SECONDS -- B2-2 PASS
+120B: BYTE-IDENTICAL modulo ELAPSED_SECONDS -- B2-2 PASS
+
+--- guard pids after ---
+    PID CMD
+    654 /root/.local/bin/openbob serve --tmax 6
+    PID CMD
+    489 /opt/searxng/venv/bin/python -m searx.webapp

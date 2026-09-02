@@ -1,0 +1,58 @@
+== IDENTITY REFERENCES (this leg's fully resident CPU runs) ==
+  code   res-code-a             identity=9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8
+                                route   =f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77
+  prose  res-prose-a            identity=96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925
+                                route   =4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df
+
+== PER-RUN ROWS ==
+run                      K corpus    tok ident  route    leases    bytes_moved    B/tok   wall_s     rss_KB   p50_ms   p95_ms p95/tok_us
+lease-k16-code          16 code    32768 MATCH  MATCH     12092   160264465920 4890883.4   703.02    8253928  20111.8  20746.2    20260.0
+lease-k16-prose-a       16 prose   32768 MATCH  MATCH     10836   143617743360 4382865.7   685.27    8237136  19594.5  20090.3    19619.5
+lease-k16-prose-b       16 prose   32768 MATCH  MATCH     10836   143617743360 4382865.7   680.24    8236956  19578.9  20583.7    20101.2
+lease-k16-prose-c       16 prose   32768 MATCH  MATCH     10836   143617743360 4382865.7   688.71    8237020  19852.8  20533.2    20052.0
+lease-k16-prose-fadv    16 prose   32768 MATCH  MATCH     10836   143617743360 4382865.7   788.06    8236424  22977.2  24691.8    24113.1
+lease-k4-code            4 code    32768 MATCH  MATCH     21115   279853142400 8540440.1   812.90    4688856  23759.1  24767.8    24187.3
+lease-k4-prose           4 prose   32768 MATCH  MATCH     20024   265393290240 8099160.5   806.70    4669004  23688.1  24323.7    23753.6
+lease-k8-code            8 code    32768 MATCH  MATCH     18100   239893056000 7320955.1   778.10    5877468  22343.5  24334.4    23764.0
+lease-k8-prose           8 prose   32768 MATCH  MATCH     16954   224704247040 6857429.4   757.09    5860332  21944.7  22667.9    22136.6
+res-code-a              -1 code    32768 MATCH  MATCH         0              0      0.0   550.20   13008972  15549.0  16073.7    15696.9
+res-prose-a             -1 prose   32768 MATCH  MATCH         0              0      0.0   549.04   12991752  15709.3  16025.8    15650.2
+res-prose-b             -1 prose   32768 MATCH  MATCH         0              0      0.0   550.97   12991844  15691.6  15889.5    15517.1
+
+== EXPOSURE ==
+run                      K      RSS_bytes    EXP_rss     ACCT_bytes   EXP_acct peak_lease_bytes
+lease-k16-code          16     8452022272   1.432742     7232182944   1.674400        212060160
+lease-k16-prose-a       16     8434827264   1.435663     7232182944   1.674400        212060160
+lease-k16-prose-b       16     8434642944   1.435694     7232182944   1.674400        212060160
+lease-k16-prose-c       16     8434708480   1.435683     7232182944   1.674400        212060160
+lease-k16-prose-fadv    16     8434098176   1.435787     7232182944   1.674400        212060160
+lease-k4-code            4     4801388544   2.522097     3574145184   3.388101        371105280
+lease-k4-prose           4     4781060096   2.532820     3574145184   3.388101        371105280
+lease-k8-code            8     6018527232   2.012048     4793491104   2.526252        318090240
+lease-k8-prose           8     6000979968   2.017932     4793491104   2.526252        318090240
+res-code-a              -1    13321187328   0.909046    12109566624   1.000000                0
+res-prose-a             -1    13303554048   0.910250    12109566624   1.000000                0
+res-prose-b             -1    13303648256   0.910244    12109566624   1.000000                0
+
+== VERIFY / READ COST (lease runs) ==
+run                            read_s       verify_s     drop_bytes   res_verify_s
+lease-k16-code                 67.014         64.330   159771709440          2.061
+lease-k16-prose-a              59.168         57.670   143169011712          2.117
+lease-k16-prose-b              58.928         58.003   143169011712          2.051
+lease-k16-prose-c              60.465         57.676   143169011712          2.100
+lease-k16-prose-fadv          138.106         59.057   143169011712          2.135
+lease-k4-code                 120.649        112.701   278980349952          0.514
+lease-k4-prose                115.409        107.870   264560381952          0.502
+lease-k8-code                 100.589         95.870   239145369600          0.999
+lease-k8-prose                 94.501         89.689   223997730816          1.027
+
+== COST LIMB (prereg section 8: leased p95 <= 3.0x baseline p95 at K=16) ==
+  lease-k16-code         p95  20746.2 ms vs baseline  16073.7 ms  ratio 1.2907  PASS
+  lease-k16-prose-a      p95  20090.3 ms vs baseline  16025.8 ms  ratio 1.2536  PASS
+  lease-k16-prose-b      p95  20583.7 ms vs baseline  16025.8 ms  ratio 1.2844  PASS
+  lease-k16-prose-c      p95  20533.2 ms vs baseline  16025.8 ms  ratio 1.2813  PASS
+  lease-k16-prose-fadv   p95  24691.8 ms vs baseline  16025.8 ms  ratio 1.5407  PASS
+  lease-k4-code          p95  24767.8 ms vs baseline  16073.7 ms  ratio 1.5409  PASS
+  lease-k4-prose         p95  24323.7 ms vs baseline  16025.8 ms  ratio 1.5178  PASS
+  lease-k8-code          p95  24334.4 ms vs baseline  16073.7 ms  ratio 1.5139  PASS
+  lease-k8-prose         p95  22667.9 ms vs baseline  16025.8 ms  ratio 1.4145  PASS

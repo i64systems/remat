@@ -1,0 +1,114 @@
+==============================================================================
+OB5A P3: THE 120b K=8 LEASED ROW ON THE RESERVE/COMMIT ALLOCATOR
+==============================================================================
+run A /root/ob5a/runs/p3-120b-k8-prose-a
+run B /root/ob5a/runs/p3-120b-k8-prose-b
+all expectations below are literals of OB5A-ALLOC-1-PREREG.md at f7a96a0
+
+--- P3a IDENTITY AND ROUTE vs THE BANKED PAGED REFERENCE PAIR ---
+  banked identity 9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019
+  banked route    a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1
+  run A identity  9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019
+  run A route     a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1
+  run B identity  9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019
+  run B route     a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1
+  A identity == banked paged reference                       PASS 
+  A route    == banked paged reference                       PASS 
+  B identity == banked paged reference                       PASS 
+  B route    == banked paged reference                       PASS 
+  identity line, verbatim:
+    A: [1]88.3425,[2]50.2396,[3]30.1827,[4]30.7592,[5]25.4183,[6]21.7583,[7]20.3296,[8]19.6660,
+    B: [1]88.3425,[2]50.2396,[3]30.1827,[4]30.7592,[5]25.4183,[6]21.7583,[7]20.3296,[8]19.6660,
+    ref: [1]88.3425,[2]50.2396,[3]30.1827,[4]30.7592,[5]25.4183,[6]21.7583,[7]20.3296,[8]19.6660,
+
+--- P3e A/A: THE TWO RUNS AGAINST EACH OTHER ---
+  A/A identity byte-identical                                PASS 
+  A/A route byte-identical                                   PASS 
+  A/A lease_events                                           PASS 27403
+  A/A peak_concurrent_lease_bytes                            PASS 1590451200
+  A/A lease_bytes_read                                       PASS 363192785280
+  A/A lease_drop_bytes                                       PASS 361453068288
+  A/A route_calls                                            PASS 288
+  A/A per_layer_lease_events                                 PASS 957,918,863,812,811,822,...
+  A/A alloc_journal_sha256                                   PASS ff7c4b1d851cb57f4243ce9d...
+  A/A alloc_commit_calls                                     PASS 166617
+  A/A alloc_decommit_calls                                   PASS 163920
+  A/A alloc_commit_model_peak                                PASS 7806517248
+  A/A alloc_commit_peak_single                               PASS 615333888
+  A/A alloc_commit_total_bytes                               PASS 369961222144
+  A/A alloc_va_model_bytes                                   PASS 63374323968
+
+--- P3b COUNTERS vs THE BANKED PREDICTIONS ---
+  lease_events                                               PASS 27403  predicted 27403
+  peak_concurrent_lease_bytes                                PASS 1590451200  predicted 1590451200
+  lease_bytes_read                                           PASS 363192785280  predicted 363192785280
+  per_layer_lease_events (36 layers)                         PASS vs the banked series
+
+--- P2b THE N-PROPORTIONAL REQUEST ---
+  alloc_va_model_bytes      63374323968   (the reservation: DECLARED, not charged, prereg s4.3)
+  alloc_commit_peak_single  615333888   (586.83 MB)
+  peak single commit <= 1 GB ceiling                         PASS 615333888 <= 1073741824
+  no commit request of 63374323968 bytes                     PASS 
+  reduction of the peak single request vs the old allocator's one call:
+    63374323968 / 615333888 = 102.9918x
+
+--- P2a THE ALLOCATION BAR (peak SIMULTANEOUSLY COMMITTED model state) ---
+  measured alloc_commit_model_peak   7806517248
+  prereg P2a bar (ACCT + edge)       7833915680
+  re-derived from the buffer:
+    buffer trunk      63374323968 - 61073326080 = 2300997888
+    K x L x per_expert  8 x 36 x 13253760 = 3817082880
+    peak concurrent     1590451200
+    sum before edge     7708531968
+    edge actually paid  97985280   (census bound 112361472)
+  commit peak <= P2a bar                                     PASS 7806517248 <= 7833915680, headroom 27398432
+  edge within the page census                                PASS 97985280 of 112361472 (87.21 pct)
+  against the model-state request the OLD allocator makes for this run:
+    63374323968 / 7806517248 = 8.1181x smaller
+    commit peak as pct of the model: 12.3156 pct
+
+--- P3c EXPOSURE ---
+  ACCT = resident_always + K x L x per_expert + peak_concurrent
+       = 2314020128 + 3817082880 + 1590451200
+       = 7721554208      (predicted 7721554208)
+  ACCT == the banked prediction                              PASS 
+  EXPOSURE_acct = 63387346208 / 7721554208 = 8.209143      (predicted 8.209143)
+  EXPOSURE_acct == the banked prediction                     PASS 8.209143
+  ACCT as pct of the model: 12.1815 pct
+  run A VmHWM 8822496 kbytes = 9034235904 bytes
+    EXPOSURE_rss = 63387346208 / 9034235904 = 7.016348
+  run B VmHWM 8824240 kbytes = 9036021760 bytes
+    EXPOSURE_rss = 63387346208 / 9036021760 = 7.014962
+
+--- P2c VmHWM vs COMMITTED MODEL STATE PLUS THE ENGINE'S BUFFERS ---
+  engine buffers at load (measured on the 120b): 941195736 bytes
+  run A  VmHWM 9034235904   commit_peak+buffers 8747712984   unaccounted 286522920   ratio 1.0328  bar 1.25
+  P2c run A VmHWM within 1.25x                               PASS 1.0328
+  run B  VmHWM 9036021760   commit_peak+buffers 8747712984   unaccounted 288308776   ratio 1.0330  bar 1.25
+  P2c run B VmHWM within 1.25x                               PASS 1.0330
+
+--- P3d LATENCY: p95 PER CHUNK vs THE PAGED REFERENCE ---
+  tau_0 is the PAGED pair. A fully resident 120b baseline is UNMEASURABLE
+  on this 24029 MB box and is named as such, never substituted.
+  run A chunk_ms (7 chunks): 89174.2, 87108.5, 85932.0, 87317.0, 86867.5, 86506.5, 86457.2
+    p95 (nearest-rank) 89174.2 ms   mean 87051.8 ms   max 89174.2 ms
+  run B chunk_ms (7 chunks): 89061.1, 88265.7, 87257.9, 87166.7, 85774.5, 86111.0, 86028.6
+    p95 (nearest-rank) 89061.1 ms   mean 87095.1 ms   max 89061.1 ms
+  paged reference pag120-prose-a chunk_ms: 45420.9, 48257.2, 48186.1, 49259.2, 49619.8, 49559.3, 49164.4
+    its p95 (nearest-rank) 49619.8 ms   prereg tau_0 49619.8 ms
+  RATIO run A p95 / paged reference p95 = 89174.2 / 49619.8 = 1.7971x
+  bar: 2.0x = 99239.6 ms
+  (the friendlier partner pag120-prose-b was 46732.3 ms, implying 93464.6 ms;
+   the prereg fixed the binding number at 99239.6 ms before any run)
+  P3d p95 <= 2.0x the paged reference                        PASS 89174.2 <= 99239.6 ms
+
+--- P4b/P4d ALLOCATOR DETERMINISM ---
+  P4b alloc_journal_sha256 A == B                            PASS ff7c4b1d851cb57f4243ce9d5251166e6484aec3bca80841c205af30dc308d76
+  P4d A decommits + active_at_exit == 6 x lease_events       PASS 163920 + 498 = 164418 vs 164418
+      A commits 166617 - resident slices 1728 - 6 x lease_events 164418 = 471 trunk tensors
+  P4d B decommits + active_at_exit == 6 x lease_events       PASS 163920 + 498 = 164418 vs 164418
+      B commits 166617 - resident slices 1728 - 6 x lease_events 164418 = 471 trunk tensors
+
+==============================================================================
+OB5A_120B_ANALYZE_FAILURES=0
+==============================================================================

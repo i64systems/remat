@@ -1,0 +1,119 @@
+=== OB5A 120B STARTABILITY SMOKE (1 chunk, K=8 of 128, leased) ===
+utc_start 2026-09-01T14:48:28Z
+guard_pids: 1 openbob, 1 searxng
+bin:
+f9965806c98f5dce6cc7f4f44e52dd57e8d9b51cf27826ad4608db4599e23249  /root/ob5a/llama.cpp/build/bin/llama-perplexity
+6f1ba2c7a215c8c33594afdce199530138272697b7d6d29aa677bd4a3c27318d  /root/ob5a/llama.cpp/build/bin/libggml-base.so.0
+model:
+-rw-r--r-- 1 root root 63387346208 Aug 28 03:15 /root/openbob-baselines/models/gpt-oss-120b-MXFP4.gguf
+sets:
+8053f18a70030ad2ac2e59fe220a064ee26f35ad4eb3876bbb7c65f6e994530b  /mnt/f/f32/openbob-wt/research-2/research/ob1b/RESIDENT-SETS-120B-K8.json
+manifest:
+c71ce2ceec07db8932c8bbb3155029ca5f6b49b940dc46066240b2a47dbf1c80  /mnt/f/f32/openbob-wt/research-2/research/ob1b/EXPERT-MANIFEST-120B.sha256
+the failure this is testing against, from OB1B-KNEE-1.md section 9, verbatim:
+  E ggml_aligned_malloc: insufficient memory (attempted to allocate 60438.47 MB)
+  E alloc_tensor_range: failed to allocate CPU buffer of size 63374323968
+  exit_rc 1   wallclock_s 1.068426206
+### LOCK REQUEST at 2026-09-01T14:48:28Z
+### LOCK ACQUIRED after 0s
+### free RAM available: 22 GB (house bar: 6 GB)
+               total        used        free      shared  buff/cache   available
+Mem:           24029         836       15777          75        7751       23193
+Swap:           6144        4105        2038
+cmd: /root/ob5a/llama.cpp/build/bin/llama-perplexity -m /root/openbob-baselines/models/gpt-oss-120b-MXFP4.gguf -f /mnt/f/f32/stage/research/ob1/AC-PROSE.txt --ctx-size 1024 --chunks 1 -b 1024 -ub 1024 --threads 8 --threads-batch 8 --no-warmup --seed 1 -ngl 0 --no-mmap --no-repack
+### LOCK RELEASED rc=0
+exit_rc 0
+wallclock_s 104.071809667
+--- did the 63374323968-byte allocation appear at all? ---
+NO ggml_aligned_malloc FAILURE, NO 63374323968-BYTE REQUEST: the model-state
+     allocation that blocked OB-1b did not happen.
+--- allocator lines, verbatim ---
+OB1: allocation journal -> /root/ob5a/runs/smoke120-k8-prose/alloc-journal.txt
+OB1: OB5A reserve allocator ON (page size 4096)
+OB1: lease engine ON  K=8 L=36 E=128 sha=sha-ni fadvise=0
+--- any fatal, verbatim ---
+(none)
+--- peak rss ---
+	Maximum resident set size (kbytes): 8494872
+--- IDENTITY: must be the byte-exact first-chunk prefix of the banked paged reference ---
+  got:  [1]88.3425,
+  ref:  [1]88.3425,[   (first chunk of /root/ob1b/runs/pag120-prose-a/identity.txt)
+  got  sha256 59d9369f09d49f2cecfcc3454f8ab6e8378a7facc2d70b6ea4e84fb5aaefd759
+  want sha256 59d9369f09d49f2cecfcc3454f8ab6e8378a7facc2d70b6ea4e84fb5aaefd759
+  IDENTITY: MATCH
+--- ROUTE: must be the byte-exact prefix of the banked route log ---
+  this run's route.log lines: 36864   banked 8-chunk route.log lines: 294912
+  ROUTE PREFIX: MATCH (this run's route trace is the banked trace's first 36864 lines, byte for byte)
+  route sha256 f08051e653f904ac73382bd0dbb5a306362a8c4facc28b1009a4c2f25b7ac998
+--- ob1 stats, verbatim ---
+ob1_mode=lease
+ob1_k=8
+ob1_sha_impl=sha-ni
+ob1_fadvise=0
+layers=36
+experts=128
+manifest_rows=27648
+registered_expert_tensors=216
+resident_slices_loaded=1728
+resident_bytes_loaded=3817082880
+resident_read_ns=5152048807
+resident_verify_ns=1596344283
+lease_events=3641
+lease_bytes_read=48256940160
+lease_read_ns=36277810633
+lease_verify_ns=20697210688
+lease_drop_bytes=46981091328
+lease_drop_ns=2908415540
+peak_concurrent_lease_bytes=1590451200
+route_calls=36
+process_ns_since_ob1_init=100695794077
+per_layer_lease_events=120,117,113,112,106,106,113,107,105,96,89,90,92,84,100,98,93,99,97,106,99,100,102,94,99,104,101,106,106,100,102,112,99,96,88,90
+chunk_count=0
+chunk_ns=
+alloc_reserve_mode=1
+alloc_page_size=4096
+alloc_regions_live=0
+alloc_va_model_bytes=63374323968
+alloc_commit_peak_single=615333888
+alloc_commit_model_peak=7715102720
+alloc_commit_total_bytes=54468960256
+alloc_commit_calls=24045
+alloc_decommit_calls=21306
+alloc_decommit_bytes=46981091328
+alloc_commit_live_at_exit=0
+alloc_vma_peak=46657
+alloc_journal_records=45351
+alloc_journal_bytes=1290634
+alloc_journal_sha256=e383b8f7a0251f2f95d6f5f4bb8417b4513476a1820c9556f2c915c14d48ff89
+lease_active_slices_at_exit=540
+proc_vmpeak_kb=65029296
+proc_vmsize_kb=1473672
+proc_vmhwm_kb=8494872
+proc_vmrss_kb=274252
+--- P4c on the 120b ---
+  file   e383b8f7a0251f2f95d6f5f4bb8417b4513476a1820c9556f2c915c14d48ff89
+  engine e383b8f7a0251f2f95d6f5f4bb8417b4513476a1820c9556f2c915c14d48ff89
+  P4c: MATCH
+--- THE ARITHMETIC, shown ---
+  120b file bytes            63387346208
+  L x E x per_expert         36 x 128 x 13253760 = 61073326080
+  reservation (VA)           63374323968
+  buffer trunk               63374323968 - 61073326080 = 2300997888
+  K=8 pool                   8 x 36 x 13253760 = 3817082880
+  peak concurrent (1 chunk)  1590451200
+  predicted commit peak      7708531968
+  measured commit peak       7715102720
+  edge actually paid         6570752
+  120b edge census bound     112361472
+  prereg P3 ACCT (8 chunks)  7721554208   EXPOSURE_acct 8.209143
+  NOTE: the peak_concurrent above is ONE chunk's worst micro-batch. The banked
+        prediction 1590451200 is the worst over all EIGHT chunks, so this figure
+        is a lower bound on it and is not a P3b comparison.
+free_after:
+               total        used        free      shared  buff/cache   available
+Mem:           24029         946        8264          75       15180       23083
+Swap:           6144        4105        2038
+guard_pids_after: 1 openbob, 1 searxng
+### courtesy yield 75s
+utc_end 2026-09-01T14:51:29Z
+=== END 120B STARTABILITY SMOKE rc=0 ===

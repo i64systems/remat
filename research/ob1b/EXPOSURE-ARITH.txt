@@ -1,0 +1,34 @@
+== ACCOUNTING IDENTITIES ==
+  gpt-oss-20b   total=12109566624  L=24 E=32 per_expert=13253760
+                total_expert_bytes = 24 x 32 x 13253760 = 10178887680
+                resident_always    = 12109566624 - 10178887680 = 1930678944  (15.94 pct of the model)
+  gpt-oss-120b  total=63387346208  L=36 E=128 per_expert=13253760
+                total_expert_bytes = 36 x 128 x 13253760 = 61073326080
+                resident_always    = 63387346208 - 61073326080 = 2314020128  (3.65 pct of the model)
+  CHECK resident_always(20b)  == 1930678944 : True
+  CHECK resident_always(120b) == 2314020128 : True
+
+== THE PREDICTION RULE, CHECKED AGAINST OB-1'S THREE MEASURED POINTS ==
+  rule: peak_concurrent_lease_bytes(K) = (E - K) * PER_EXPERT_BYTES_PER_LAYER
+  K=16  predicted 212060160  measured 212060160  MATCH | ACCT 7232182944 (OB-1 7232182944) EXP 1.674400 (OB-1 1.674400) OK
+  K=8   predicted 318090240  measured 318090240  MATCH | ACCT 4793491104 (OB-1 4793491104) EXP 2.526252 (OB-1 2.526252) OK
+  K=4   predicted 371105280  measured 371105280  MATCH | ACCT 3574145184 (OB-1 3574145184) EXP 3.388101 (OB-1 3.388101) OK
+  RULE REPRODUCES ALL THREE MEASURED POINTS EXACTLY: True
+
+== 20b PREDICTED CURVE, K in {2,1,0} (peak term PREDICTED, not measured) ==
+  K       pool_bytes      peak_pred      ACCT_pred     EXP_pred
+  2        636180480      397612800     2964472224     4.084898
+  1        318090240      410866560     2659635744     4.553092
+  0                0      424120320     2354799264     5.142505
+
+== 120b PREDICTED POINT, K=8 of 128 ==
+  pool_bytes  = 8 x 36 x 13253760 = 3817082880
+  peak_pred   = (128 - 8) x 13253760 = 1590451200
+  ACCT_pred   = 2314020128 + 3817082880 + 1590451200 = 7721554208
+  EXP_pred    = 63387346208 / 7721554208 = 8.209143
+
+== THE FLOOR OF THIS DESIGN (why K=0 is the end of the curve) ==
+  gpt-oss-20b   K=0 ACCT = resident_always 1930678944 + peak 424120320 = 2354799264
+                    max exposure at K=0 = 5.142505 ; resident_always is 82.0 pct of that floor
+  gpt-oss-120b  K=0 ACCT = resident_always 2314020128 + peak 1696481280 = 4010501408
+                    max exposure at K=0 = 15.805342 ; resident_always is 57.7 pct of that floor

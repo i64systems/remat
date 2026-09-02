@@ -1,0 +1,10 @@
+P0-STATIC-PROSE reproduction check at K=4 (not in the K in {16,8} main sim
+sweep; run separately with the same sim_residency.py load_route_log/
+sim_p0_static functions, RESIDENT-SETS.json K=4 sets).
+
+corpus K  total_picks misses  miss_pct
+prose  4  3145728     1953318 62.09430694580078
+code   4  3145728     2841526 90.32967885335286
+
+OB1-EXPOSURE-1.md section 3 reference figures: prose 62.0943%, code 90.3297%.
+MATCH (both figures, to the 4 decimal places OB1-EXPOSURE-1.md reports).

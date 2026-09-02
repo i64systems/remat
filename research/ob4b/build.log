@@ -1,0 +1,79 @@
+=== OB4B BUILD ===
+utc_start 2026-09-01T02:52:15Z
+free before:
+               total        used        free      shared  buff/cache   available
+Mem:              23           4           7           0          11          18
+--- restore src/ob1-lease.cpp to the ob4b baseline (the OB-4 engine) ---
+04d44c9 ob4b baseline: the OB-4 remat engine (uncommitted working-tree state of /root/ob4/llama.cpp) applied from research/ob4/remat-engine.patch, all four source files digest-verified equal to the OB-4 tree
+c087083 OB-1: fix resident-set JSON key scan to walk direct children (a bare search for K=8 matched layer key 8 inside the K=16 set and aborted)
+baseline source digests vs the OB-4 working tree:
+  MATCH  src/CMakeLists.txt  b17157cad5411a5516bf9e5990dabfeb48345fd3105ec72afad4d45220bed753
+  MATCH  src/ob1-lease.cpp  05f7944b2acefcf63a5f2f3353bd94986a22d1717f4312218e754bb3976a6661
+  MATCH  src/ob4-remat.cpp  7ef07d51aac3d58b7e63b28ccaf32a7d87fa6f4ba00a41cc6f55c106b8357b72
+  MATCH  src/ob4-remat.h  daf0dc28defd3efed01d147166faba58fb8e7474824eaf7c8f3209e896925464
+--- OB-4 binaries (the reference) ---
+a3cb0e0f20c73c3054978957d193a7e50de67d62646426f77dabbd8a887b819f  /root/ob4/llama.cpp/build/bin/llama-perplexity
+63ce0a6e9d9f2da8b0f9cac6699b524becab162bc7f00d9fe062925c68963efd  /root/ob4/llama.cpp/build/bin/libllama.so.0.3.0
+26fe63ce31379ebb2e032c664e117e4b8fce592073bb25305c2ec22556a57239  /root/ob4/llama.cpp/build/bin/libllama-perplexity-impl.so
+--- copy the OB-4 build tree ---
+--- rewrite absolute source paths in text files only (grep -I skips binaries) ---
+text files referencing the old source dir: 469
+remaining after rewrite: 0
+--- cmake reconfigure against the new source root ---
+-- Configuring done (2.1s)
+-- Generating done (0.1s)
+-- Build files have been written to: /root/ob4b/llama.cpp/build
+--- age the checked-out sources so make does not rebuild the world ---
+--- confirm the tree is up to date (make should have nothing to do) ---
+[100%] Built target llama-perplexity
+make[2]: Leaving directory '/root/ob4b/llama.cpp/build'
+make[1]: Leaving directory '/root/ob4b/llama.cpp/build'
+make: Leaving directory '/root/ob4b/llama.cpp/build'
+=== PHASE A: recompile ob1-lease.cpp UNCHANGED, must reproduce the OB-4 binaries ===
+make[3]: Leaving directory '/root/ob4b/llama.cpp/build'
+make[3]: Entering directory '/root/ob4b/llama.cpp/build'
+[100%] Linking CXX executable ../../bin/llama-perplexity
+make[3]: Leaving directory '/root/ob4b/llama.cpp/build'
+[100%] Built target llama-perplexity
+make[2]: Leaving directory '/root/ob4b/llama.cpp/build'
+make[1]: Leaving directory '/root/ob4b/llama.cpp/build'
+make: Leaving directory '/root/ob4b/llama.cpp/build'
+--- phase A digests ---
+4e1c41552e0a528500410215e4603700a5e3293c868332d079d8be6a6b8d6ec1  /root/ob4b/llama.cpp/build/bin/llama-perplexity
+a81b46bda13ac697a2f1c9c0ded16d0098d0236595b7e09455144921f3204b12  /root/ob4b/llama.cpp/build/bin/libllama.so.0.3.0
+c71a2c820d812a6ff293d067ee4cdd7c1e855743892ef454712d7bf547450281  /root/ob4b/llama.cpp/build/bin/libllama-perplexity-impl.so
+PHASE A: DIFFER
+  llama-perplexity ob4=a3cb0e0f20c73c3054978957d193a7e50de67d62646426f77dabbd8a887b819f ob4b=4e1c41552e0a528500410215e4603700a5e3293c868332d079d8be6a6b8d6ec1
+  libllama.so      ob4=63ce0a6e9d9f2da8b0f9cac6699b524becab162bc7f00d9fe062925c68963efd ob4b=a81b46bda13ac697a2f1c9c0ded16d0098d0236595b7e09455144921f3204b12
+  --- does the binary embed its own source path? (the usual benign cause) ---
+  ob4  hits: 151
+  ob4b hits: 1
+=== PHASE B: the parallel-decode patch ===
+applied E1 includes
+applied E2 forward declarations
+applied E3 stats hook
+applied E4 pool config at init
+applied E5 the pool
+applied E6 lease loop
+wrote /root/ob4b/llama.cpp/src/ob1-lease.cpp
+--- diff stat ---
+ src/ob1-lease.cpp | 224 +++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 222 insertions(+), 2 deletions(-)
+--- patch file digest (the receipt) ---
+2a27ed44ef8015bf5a88f4b56136f33649dc363bdf7235b437d63c743bace432  /mnt/f/f32/openbob-wt/ob4/research/ob4b/pardec.patch
+2a27ed44ef8015bf5a88f4b56136f33649dc363bdf7235b437d63c743bace432  /root/ob4b/pardec-regenerated.patch
+make[3]: Leaving directory '/root/ob4b/llama.cpp/build'
+make[3]: Entering directory '/root/ob4b/llama.cpp/build'
+[100%] Linking CXX executable ../../bin/llama-perplexity
+make[3]: Leaving directory '/root/ob4b/llama.cpp/build'
+[100%] Built target llama-perplexity
+make[2]: Leaving directory '/root/ob4b/llama.cpp/build'
+make[1]: Leaving directory '/root/ob4b/llama.cpp/build'
+make: Leaving directory '/root/ob4b/llama.cpp/build'
+--- phase B digests (the binary every OB-4b run uses) ---
+4e1c41552e0a528500410215e4603700a5e3293c868332d079d8be6a6b8d6ec1  /root/ob4b/llama.cpp/build/bin/llama-perplexity
+90279df234db252d6c29360d6219cba1fb677e0273af5dc908fee2cdc2d83322  /root/ob4b/llama.cpp/build/bin/libllama.so.0.3.0
+c71a2c820d812a6ff293d067ee4cdd7c1e855743892ef454712d7bf547450281  /root/ob4b/llama.cpp/build/bin/libllama-perplexity-impl.so
+PHASE B: libllama.so changed, as the patch requires
+utc_end 2026-09-01T02:52:29Z
+=== END OB4B BUILD ===

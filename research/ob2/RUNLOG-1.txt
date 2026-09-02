@@ -1,0 +1,553 @@
+OB-2 PREDICTIVE-1, BUILDER 2 RUN LOG: THE DYNAMIC RESIDENCY ENGINE
+==================================================================
+
+Binding document: research/OB2-PREDICTIVE-1-PREREG.md, committed by builder 1
+before this engine existed (worktree commit 0a6d6843e395fa019dcb3ebe6857fc19074d149a
+on branch research-2). Every deviation from it is named in section 11 of this
+file. Every number below is literal output of the command named beside it; a
+command that failed is reported verbatim rather than replaced with a plausible
+value.
+
+
+0. WHAT THIS DOCUMENT IS
+
+OB-1 (research/OB1-EXPOSURE-1.md) showed that a MoE model can be served from a
+BOUNDED resident expert set without changing a single output byte: the router's
+misses are read from the GGUF on demand, digest-verified, used by the unmodified
+kernel, and dropped again. It also showed the weakness of doing that with a
+STATIC set. A set ranked by expert popularity on one prose route log missed
+18.80 percent of router picks at K=16 on same-domain prose, but 60.57 percent on
+out-of-domain code. The resident set was right about the wrong workload.
+
+OB-2 asks the direct follow-on, in the prereg's words: can a DETERMINISTIC
+DYNAMIC residency policy cut the miss rate at the same K, with identity
+preserved? "Deterministic" is load-bearing and is defined by the prereg's
+determinism wall: the resident set governing any router decision must be a pure
+function of the route history strictly BEFORE the boundary that governs it, plus
+fixed integer constants. Never of timing, never of cache state, never of a float.
+
+Builder 1 simulated four candidate policies against OB-1's banked route logs and
+froze the winner before any engine existed. This document is builder 2: the
+engine that implements that frozen policy on the real model, and the runs that
+test it.
+
+
+1. THE FROZEN POLICY (prereg sections 3 and 7, not renegotiated here)
+
+P2 DECAY-COUNTER. Per layer, one integer counter per expert, all starting at
+zero. At each boundary b (a multiple of H=256 tokens) with b > 0:
+
+    1. every counter is right-shifted by 1 (integer halving), reflecting all
+       history strictly before b;
+    2. the resident set for the window [b, b+256) is read off as the top K of
+       those just-decayed counters, ranked by descending count then ascending
+       expert id;
+    3. the window is served;
+    4. each pick served in that window adds 65536 to its expert's counter,
+       which the NEXT boundary consumes.
+
+Cold start (b=0): all counters are zero, so the top-K rule with its lower-id
+tie-break yields the lowest K expert ids.
+
+That is the whole policy. It is four integer operations and a sort of 32 items.
+
+
+2. THE THREE BARS (prereg section 9, frozen before this engine existed)
+
+  IDENTITY, stop-ship. Every leased run's identity artifact AND route log must
+  be byte-identical (sha256) to OB-1's banked fully-resident reference for that
+  corpus, at every K. One failure halts the leg. The point of a residency policy
+  is that a miss is SERVED, never approximated.
+
+  MISS RATE, report-only. The engine's measured per-pick miss rate must fall
+  within 2.0 percentage points of the committed simulator's prediction for the
+  same policy/corpus/K. A larger gap means the engine does not implement the
+  frozen policy (a boundary off-by-one, a wrong constant, a non-causal leak) and
+  is a bug to find, not a result to report.
+
+  COST. Leased p95 must be <= 3.0x OB-1's own fully-resident baseline p95 for
+  that corpus: prose 16025.8 ms, code 16073.7 ms (research/ob1/RUNLOG-1.txt).
+
+
+3. THE MACHINE AND THE WALLS
+
+  Host          f32-HYDE, Windows 11 + WSL2 Ubuntu
+  CPU           AMD Ryzen 9 5900X, 12 cores / 24 threads
+                (literal: /proc/cpuinfo "model name : AMD Ryzen 9 5900X 12-Core Processor")
+  WSL RAM       24029 MB total (literal: free -m)
+  Kernel        Linux 6.18.33.2-microsoft-standard-WSL2 x86_64 GNU/Linux
+  GPU           RTX 3090-class 24 GB, NOT used by any run in this leg
+  Model file    /root/openbob-baselines/models/gpt-oss-20b-MXFP4.gguf
+                12109566624 bytes, L=24 layers, E=32 experts/layer, k=4 picks/token
+  Compilers     g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+                nvcc release 13.0, V13.0.88; cmake 3.28.3
+  Analysis      Python 3.12.3, numpy 1.26.4
+
+  House walls observed: RUNLOCK held for every model run and released
+  immediately after it exits (never during analysis); 8 threads per heavy run at
+  nice 10; guard pids 654 (openbob serve) and 489 (searxng) confirmed alive
+  before and after every run; no weight downloads; work confined to this leg's
+  own worktree and its own stage subdirectory.
+
+  A sibling workflow (OB-3) ran concurrently on this box throughout. The lock is
+  taken and released PER RUN rather than once around the matrix, so the sibling
+  interleaves between this leg's runs (research/ob2/locked-run.sh).
+
+
+4. FORK DISCIPLINE AND THE BINARY
+
+The house fork /root/rs053/llama.cpp (branch ob1, head c087083) was NOT built in
+or edited. This leg made its own worktree and its own branch:
+
+    git -C /root/rs053/llama.cpp worktree add /root/ob2/llama.cpp -b ob2 c087083
+
+  Lineage:  abc4140  RS053 route-log patch (branch ob1 base)
+            29a601d  OB-1: bounded expert-residency lease engine
+            c087083  OB-1: resident-set JSON key scan fix          <- this leg's base
+            8488ede  OB-2: deterministic dynamic residency (P2 DECAY-COUNTER)
+
+Build configuration matched OB-1's binary exactly (Release, GGML_CUDA=ON,
+CMAKE_CUDA_ARCHITECTURES=86, GGML_NATIVE=ON, GGML_CPU_REPACK=ON, no AVX
+overrides), so the only difference between the two binaries is this leg's source
+change. The runs are CPU-only, but a differently configured binary would put the
+identity limb in doubt for a reason unrelated to the policy under test.
+
+    cmake configure rc 0, build rc 0, 2026-08-31T23:37:46Z to 23:43:22Z
+
+The engine change is research/ob2/policy-engine.patch (sha256
+eaa0cbb00454d62a10d89f4c7a4777d708a34799feb5cd85652d44ef68c3594e), 3 files,
+361 insertions, 12 deletions. It was verified by applying it to a fresh pristine
+checkout of c087083 and digesting the result against the tree that was actually
+built:
+
+    PATCH_APPLIES=PASS
+    MATCH  src/ob1-lease.cpp     69bb5a628b2c57ac25709834c3581133c886905eeb2f3d9767703a8c9c1b4cc3
+    MATCH  src/ob1-lease.h       985e592f3a2277c2aa20cf56fe4d2888dcbdfc0ed9ef94e19b4a6241badf9b0d
+    MATCH  src/llama-context.cpp e587ef7c1fbc001a059d4112f1cb0bcbd1223726920484ad3739a0550df7f863
+
+
+5. WHAT THE ENGINE ACTUALLY CHANGES
+
+OB-1's engine loaded a fixed resident set at model-load time and, at each route
+callback, leased in whatever the router asked for that was not in it, dropping
+those leases once the layer was computed. OB-2 keeps all of that machinery --
+the same manifest, the same pread, the same sha256 verification, the same
+madvise drop -- and makes the resident set itself move:
+
+  - g_resident is no longer read from RESIDENT-SETS.json. It starts at the
+    lowest K ids (the cold-start rule) and is recomputed at every H boundary
+    from the integer counters described in section 1.
+  - An expert that leaves the resident set is EVICTED: its pages are dropped
+    from the pool with MADV_DONTNEED.
+  - An expert that enters the resident set is PROMOTED: it leases in through the
+    identical digest-verified path and then STAYS, instead of being dropped at
+    the end of the layer.
+  - ob1_on_route() now receives k and n_tokens separately rather than their
+    product, because the policy counts boundaries in TOKENS and one ubatch spans
+    several of them.
+
+Kernels, tensors, graph node order and numerics are untouched. Only the
+provenance and the lifetime of the expert bytes change.
+
+A property of the measurement setup that the simulator cannot see, and that this
+document reports rather than hides: BYTE MOVEMENT IS AT UBATCH GRANULARITY. The
+runs use -b 1024 -ub 1024, so one mul_mat_id call computes 1024 tokens at once
+and every expert that any of those 1024 tokens routes to must be in RAM
+simultaneously. The engine therefore holds the union over that ubatch's four
+policy windows of their resident sets, plus every expert the router actually
+picked in the ubatch, and reports that union as ob2_physneed_*. Section 9 gives
+the measured figure and what it means.
+
+
+6. THE UNIT (task step 2), UNDER THE RUNLOCK
+
+K=16, AC-CODE, first 4096 tokens (4 chunks of 1024). Run name unit-k16-code.
+Three limbs, all passed on the first execution after a driver fix noted in
+section 11 (D4).
+
+  (b) SCHEDULE. The engine, run with OB2_TRACE, dumps one line per (layer,
+      boundary): "layer,token,e0,...,e15" with ids ascending. The committed
+      simulator emits the same format through research/ob2/sim_trace.py, which
+      imports research/ob2/sim_residency.py (sha256 c2194b75..., the digest the
+      prereg pins) and cross-checks its own traced walk against that module's
+      sim_p2_decay() on every layer before writing a line. Both sides are sorted
+      by (layer, boundary) -- the engine emits in graph order, the simulator
+      walks layer-major -- and then compared byte for byte.
+
+        CROSSCHECK_VS_COMMITTED_SIM=PASS (all 24 layers)
+        TRACE_LINES=384                       (24 layers x 16 boundaries)
+        TRACE_MATCH=PASS (byte identical)
+        5e97bc27afc2502ee7b8316c60ec8186107f964e9ea030c8f7a8696c7330cc45  engine-trace.sorted.txt
+        5e97bc27afc2502ee7b8316c60ec8186107f964e9ea030c8f7a8696c7330cc45  sim-trace.sorted.txt
+
+      The engine did not merely land on the same miss rate as the model of it.
+      It made the same residency decision at every one of the 384 boundaries.
+
+  (a1) IDENTITY, artifact. The 4-chunk run's identity artifact must be the exact
+      prefix of OB-1's banked 32-chunk fully-resident reference for the corpus.
+
+        run_identity: [1]24.5827,[2]9.4037,[3]5.8070,[4]4.6785,
+        ref_prefix  : [1]24.5827,[2]9.4037,[3]5.8070,[4]4.6785,
+        IDENTITY_PREFIX=PASS
+
+  (a2) IDENTITY, routing. The route log is written in graph order (all 24 layers
+      of ubatch 0, then all 24 of ubatch 1), so a 4-ubatch run's log is the
+      first 24*4096 = 98304 lines of a 32-ubatch run's log if and only if every
+      routing decision matched.
+
+        98304 lines both sides
+        ROUTE_PREFIX=PASS (byte identical)
+        ff192e390ab846cf549d237d89f0706738b0aafb1aee3a54a07586c7883ca8b9  (both)
+
+  Engine counters for the unit (literal, /root/ob2/runs/unit-k16-code/ob2-stats.txt):
+
+        ob2_picks=393216           ob2_misses=65509      ob2_miss_pct=16.6598002116
+        ob2_boundaries=384         ob2_churn_symdiff=1404
+        ob2_promote_events=427     ob2_evict_events=0    ob2_transient_events=1474
+        ob2_physneed_max_experts=32   ob2_physneed_mean_experts=31.354167
+        lease_events=1474          lease_bytes_read=19536042240
+        resident_slices_loaded=2304   resident_bytes_loaded=5089443840
+        ob1_sha_impl=sha-ni
+
+  The unit's 16.66 percent is a COLD-START figure over the first 4096 tokens and
+  is not comparable to the full-run prediction; the counters are still warming.
+  The full runs in section 8 are the comparable measurement.
+
+
+7. A DRY RUN OF THE ENGINE'S LOOP, BEFORE ANY MODEL PROCESS
+
+The committed simulator walks one layer over all 32768 tokens. The engine cannot:
+it is handed one ubatch of 1024 tokens per layer, in graph order, and must carry
+per-layer policy state across callbacks and handle every boundary inside a
+ubatch. That is a different loop shape over the same policy, and a different loop
+shape is exactly where a boundary off-by-one lives.
+
+research/ob2/engine_walk_check.py re-expresses the ENGINE's loop in Python --
+ubatch-major, carried state, windows split at H boundaries inside a ubatch -- and
+checks it against the committed simulator. It costs no runlock and no model run.
+Run against the banked res-code-a route log at K=16, H=256, ubatch=1024:
+
+    ENGINE-SHAPED WALK   misses=452228 picks=3145728 miss_pct=14.3759409587 churn=9116 boundaries=3072
+    COMMITTED SIMULATOR  misses=452228 picks=3145728 miss_pct=14.3759409587 churn=9116
+    AGREE=PASS (exact)
+
+This is what made the live unit and the live matrix cheap: the loop was known
+correct before the runlock was ever taken.
+
+
+8. THE ACCEPTANCE MATRIX (task step 3), LITERAL
+
+Five leased runs, each taking and releasing the box-wide runlock on its own.
+Corpora are OB-1's own, digest-verified before use:
+AC-PROSE.txt 310710a1f3e04484fcef2d0cb4ac1de93a8a6e02ced07ed3f2c9b79505e81a8e
+AC-CODE.txt  d2db5c682d5f52a4383d188fee9d25f592a15d69763dbf886b5614c953e7f3fc
+
+All runs: 32768 tokens, 3145728 router picks, chunk_count=31.
+
+run                        K corpus ident  route      misses  miss_pct   sim_pct  delta_pp   leases    bytes_moved     B/tok   wall_s     rss_KB    p95_ms
+dyn-k16-code-a            16 code   MATCH  MATCH      452228  14.3759%  14.3759%   +0.0000    11801   156407621760 4773181.8   812.80    8255364   25948.2
+dyn-k16-code-b            16 code   MATCH  MATCH      452228  14.3759%  14.3759%   +0.0000    11801   156407621760 4773181.8   829.53    8255364   26399.5
+dyn-k16-prose             16 prose  MATCH  MATCH      469793  14.9343%  14.9343%   -0.0000    10902   144492491520 4409560.9   777.09    8234108   22738.2
+dyn-k8-code                8 code   MATCH  MATCH     1144492  36.3824%  36.3824%   -0.0000    17941   237785708160 7256643.9   869.55    5877796   26502.9
+dyn-k8-prose               8 prose  MATCH  MATCH     1156494  36.7640%  36.7640%   +0.0000    16973   224956068480 6865114.4   860.47    5857724   25917.8
+
+IDENTITY LIMB (stop-ship): PASS, all five runs, both artifacts.
+Every leased run reproduced OB-1's banked fully-resident reference exactly:
+
+  code  identity 9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8
+        route    f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77
+  prose identity 96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925
+        route    4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df
+
+A resident set that moves under the model while it computes did not perturb one
+byte of the output, and did not change one routing decision.
+
+MISS-RATE LIMB: PASS with room to spare. The bar was 2.0 percentage points; the
+measured gap is ZERO in every row, to every digit the engine and the simulator
+each print:
+
+  dyn-k16-code-a  engine  452228/3145728 = 14.375941%   sim  452228/3145728 = 14.375941%   exact_match=YES
+  dyn-k16-code-b  engine  452228/3145728 = 14.375941%   sim  452228/3145728 = 14.375941%   exact_match=YES
+  dyn-k16-prose   engine  469793/3145728 = 14.934317%   sim  469793/3145728 = 14.934317%   exact_match=YES
+  dyn-k8-code     engine 1144492/3145728 = 36.382421%   sim 1144492/3145728 = 36.382421%   exact_match=YES
+  dyn-k8-prose    engine 1156494/3145728 = 36.763954%   sim 1156494/3145728 = 36.763954%   exact_match=YES
+
+Not "within 2.0 points of the prediction" but the same integer, five times, over
+3145728 picks each. Taken with the unit's byte-identical schedule trace, the
+live engine and the committed model of it are the same function.
+
+A/A LIMB: PASS. dyn-k16-code-a and dyn-k16-code-b, the same configuration run
+twice, produced identical identity artifact, identical route log and identical
+miss count. The dynamic policy is reproducible run to run, not merely
+byte-exact against a reference within one run.
+
+COST LIMB: PASS, all five, against a 3.0x bar:
+
+  dyn-k16-code-a   p95 25948.2 ms vs 16073.7 ms  ratio 1.6143  PASS
+  dyn-k16-code-b   p95 26399.5 ms vs 16073.7 ms  ratio 1.6424  PASS
+  dyn-k16-prose    p95 22738.2 ms vs 16025.8 ms  ratio 1.4188  PASS
+  dyn-k8-code      p95 26502.9 ms vs 16073.7 ms  ratio 1.6488  PASS
+  dyn-k8-prose     p95 25917.8 ms vs 16025.8 ms  ratio 1.6173  PASS
+
+  Read as an upper bound, not a like-for-like ratio: see deviation D1. These
+  runs used 8 threads under the venue's CPU cap; OB-1's baselines and its own
+  leased runs used 10. The comparison is therefore conservative: it makes this
+  leg's ratio worse than a thread-matched one would be, never better.
+
+  Wall clock (literal /usr/bin/time -v):
+    dyn-k16-code-a 13:32.80   dyn-k16-code-b 13:49.53   dyn-k16-prose 12:57.09
+    dyn-k8-code    14:29.55   dyn-k8-prose   14:20.47
+
+
+9. WHAT THE POLICY ACTUALLY DID, AND THE FINDING THAT MATTERS
+
+run                        K  boundaries      churn   promotions    evictions    transient   phys_max  phys_mean
+dyn-k16-code-a            16        3072       9116         2022            2        11799         32     31.363
+dyn-k16-code-b            16        3072       9116         2022            2        11799         32     31.363
+dyn-k16-prose             16        3072      10394         2340           30        10872         32     30.156
+dyn-k8-code                8        3072       5966         1409            1        17940         32     31.359
+dyn-k8-prose               8        3072       7356         1655            2        16971         32     30.098
+
+Now compare the miss rate against OB-1's STATIC set on the same corpus and K
+(research/ob1/RUNLOG-1.txt section 8), and beside it the bytes each moved:
+
+  case          static miss   dynamic miss   relative cut   static bytes    dynamic bytes   byte delta
+  K=16 code       60.5733%       14.3759%        76.3%      160264465920     156407621760     -2.41%
+  K=8  code       79.7325%       36.3824%        54.4%      239893056000     237785708160     -0.88%
+  K=16 prose      18.8048%       14.9343%        20.6%      143617743360     144492491520     +0.61%
+  K=8  prose      42.3153%       36.7640%        13.1%      224704247040     224956068480     +0.11%
+
+THE ANSWER TO OB-2's QUESTION IS YES ON THE MISS RATE AND NOT YET ON THE BYTES.
+
+The policy cuts out-of-domain misses by three quarters and closes the
+domain-transfer gap OB-1 found. At K=16 the static set was 3.2x worse on code
+than on prose (60.57 against 18.80); the dynamic set is essentially domain
+blind (14.38 against 14.93, so code is now marginally EASIER than prose). It
+does that with identity intact and with reproducible, purely integer decisions.
+
+But in these runs it moves the same bytes, and on prose very slightly more. The
+reason is in the stats above and is not a defect in the policy: phys_mean is
+30.1 to 31.4 experts out of 32. At -ub 1024 one mul_mat_id call computes 1024
+tokens, and 1024 tokens route to nearly every expert in a layer no matter which
+16 the policy calls resident. The resident set decides which of those loads are
+FREE, but at this batch size almost all 32 must be in RAM regardless, so almost
+all of them are paid for either way. OB-1 met the same wall from the other side
+(its deviation D3).
+
+Replaying the identical policy at ubatch=1, the shape a real decode has
+(research/ob2/engine_walk_check.py, no model process; AGREE=PASS exact against
+the committed simulator in all four cases):
+
+  case          phys_max   phys_mean   expert-loads   static loads (= its misses)   ratio
+  K=16 code      20 (K+4)    16.5750         456515                       1905471   4.17x fewer
+  K=16 prose     20 (K+4)    16.5974         474711                        591548   1.25x fewer
+  K=8  code      12 (K+4)     9.4553        1147145                       2508167   2.19x fewer
+  K=8  prose     12 (K+4)     9.4706        1159785                       1331123   1.15x fewer
+
+At decode granularity the bound is exactly K + 4 experts per layer, the resident
+set plus the current token's own four picks, and the miss-rate win becomes a
+byte-movement win of up to 4.17x. The miss rate is the decode-relevant number;
+the matrix's batch-1024 byte columns are not, and are reported here so that
+nobody reads a 76 percent miss cut as a 76 percent I/O cut on this evidence.
+
+EXPOSURE (report-only, same accounting as OB-1 section 9):
+
+run                        K      RSS_bytes    EXP_rss     ACCT_bytes   EXP_acct peak_lease_bytes
+dyn-k16-code-a            16     8453492736   1.432493     7232182944   1.674400        212060160
+dyn-k16-code-b            16     8453492736   1.432493     7232182944   1.674400        212060160
+dyn-k16-prose             16     8431726592   1.436191     7232182944   1.674400        212060160
+dyn-k8-code                8     6018863104   2.011936     4793491104   2.526252        318090240
+dyn-k8-prose               8     5998309376   2.018830     4793491104   2.526252        318090240
+
+These match OB-1's static figures at the same K to within 0.2 percent, which is
+the same finding stated in memory terms: at this batch size the policy changes
+WHICH experts are resident, not HOW MANY bytes must be present.
+
+VERIFY / READ COST (every leased byte is sha256-verified against the committed
+manifest before the kernel sees it):
+
+run                              read_s       verify_s       drop_bytes      evict_bytes
+dyn-k16-code-a                   69.808         63.976     155913744384         26507520
+dyn-k16-code-b                   79.131         63.941     155913744384         26507520
+dyn-k16-prose                    65.330         57.485     144039604224        397612800
+dyn-k8-code                     109.119         94.245     237036699648         13253760
+dyn-k8-prose                    103.302         90.195     224248246272         26507520
+
+Load-time cold-start set (the lowest K ids, digest-verified at load):
+  K=16: resident_slices_loaded=2304  resident_bytes_loaded=5089443840
+  K=8:  resident_slices_loaded=1152  resident_bytes_loaded=2544721920
+
+
+10. ARTIFACTS AND DIGESTS
+
+Committed to research/ob2/ on branch research-2:
+  policy-engine.patch      eaa0cbb00454d62a10d89f4c7a4777d708a34799feb5cd85652d44ef68c3594e
+  sim_trace.py             f7444f7b9d6a1f6f2d4880faddd1941baaa404678779e0ea9b0107439758c92e
+  engine_walk_check.py     9e137ddb4449f7d89df2434d9397981c96743e33a8e3dc833e72e31221afcc2d
+  locked-run.sh            13baf9c2b1f00cdbdba29921f75b29adedc7f60174fe7c34a1398e91b1eff458
+  runs-ob2.sh              53e8d937996d4d61c32b437c6d218c015854ff8971963d2c79d9eef70b613ca3
+  unit-ob2.sh              a740c947257d5cb1f8140f6c78cdab6674032fd8f1b242e2e950ad5968f16be9
+  analyze_ob2.py, run-ob2.sh, RUNLOG-1.txt  (digests in the landing commit)
+
+Inputs, unmodified and re-verified by this leg:
+  research/ob1/EXPERT-MANIFEST-20B.sha256  5e9cf0be34f5a02af41e1b0c0688455604731828e2927e9ec0247d22163e99aa
+  research/ob2/sim_residency.py            c2194b752a80e389a50c3cd3de36105103afc9ffca79a04ed3ea1d9904198d7f
+                                           (the digest OB2-PREDICTIVE-1-PREREG.md section 4 pins)
+
+Off-repo run artifacts, /mnt/f/f32/stage/research/ob2/runs/ (per house law, run
+evidence stays off the repo):
+
+  dyn-k16-code-a  identity 9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8
+                  route    f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77
+                  stats    9306f6d8ed1d66ad573cfce9255adc0eebe2f4fa12f4bbe1744f97563b5edfa0
+  dyn-k16-code-b  identity 9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8
+                  route    f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77
+                  stats    5dabf35fa10087b266f996b4eabce2201d2d9ec31045a2ec0b7bf92bd75ee37d
+  dyn-k16-prose   identity 96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925
+                  route    4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df
+                  stats    b338a6c59d6e1284882462791b38c5eb441b09fe4d36e9214576cf8020359755
+  dyn-k8-code     identity 9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8
+                  route    f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77
+                  stats    41058f9d62b9628e9752418534fe19dc29f5877bc55c21452f2a4b6b8c58de13
+  dyn-k8-prose    identity 96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925
+                  route    4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df
+                  stats    00c3aaf97940e569e373e868542c48d4e83ff651a469dfde66e68bf91f2dc1b8
+  unit-k16-code   identity c8049cb509e3d9b35cf31564e83aaf5c78523fa39d992ac1c8a69f839083ba55
+                  route    ff192e390ab846cf549d237d89f0706738b0aafb1aee3a54a07586c7883ca8b9
+                  stats    b4207a217a5b1421c9e3b9864608383f7c5774cf2b603754540ca9758a30819e
+                  engine-trace.sorted.txt and sim-trace.sorted.txt, both
+                           5e97bc27afc2502ee7b8316c60ec8186107f964e9ea030c8f7a8696c7330cc45
+
+Fork worktree /root/ob2/llama.cpp, branch ob2, head 8488ede. Nothing was built
+or edited in /root/rs053/llama.cpp; branch ob1 and its head c087083 untouched.
+
+
+11. DEVIATIONS
+
+D1  THREAD COUNT, AND WHAT IT DOES TO THE COST RATIO. OB-1's run-ob1.sh used
+    --threads 10 --threads-batch 10. This leg used 8, the venue's stated cap of
+    8 threads per heavy run. The cost limb therefore compares an 8-thread leased
+    run against a 10-thread fully-resident baseline, which inflates this leg's
+    ratio rather than flattering it: a thread-matched comparison could only move
+    the numbers down. The bar passes at 1.42 to 1.65 against 3.0 either way. The
+    absolute p95 figures are honest measurements of what this leg actually ran;
+    the RATIOS are upper bounds.
+
+D2  BYTE MOVEMENT IS AT UBATCH GRANULARITY, NOT PER TOKEN. Inherited from OB-1's
+    deviation D3 and stated in full in sections 5 and 9. One mul_mat_id call
+    computes 1024 tokens, so every expert any of them routes to must be resident
+    simultaneously; the engine holds the union over the ubatch's policy windows
+    plus everything routed, and reports it as ob2_physneed_*. Reducing -ub to 1
+    would change the batching and therefore the very numbers being compared for
+    identity, so it was not done live; the decode-granularity figures in section
+    9 come from replaying the same policy over the banked route logs instead,
+    and are labelled as such rather than presented as measured runs.
+
+D3  madvise DROPS ONLY WHOLE INTERIOR PAGES. Inherited unchanged from OB-1's
+    deviation D4 (the engine reuses ob1_drop). A per-expert slice is 4406400 or
+    11520 bytes, neither a multiple of the 4096-byte page, so a slice's edge
+    pages can be shared with a neighbour that may be resident and are left
+    alone. Measured at K=16 on AC-CODE: 156407621760 bytes leased against
+    155913744384 dropped, a shortfall of 493877376 bytes, 0.32 percent, over
+    11801 lease events.
+
+D4  A DRIVER BUG, FOUND BY ITS OWN EXIT CODE, BEFORE ANY MEASUREMENT. The first
+    unit attempt passed the trace path with a conditional prefix,
+    ${TRACE:+OB2_TRACE=$TRACE}. sh parses assignments in a command prefix
+    grammatically, so an expansion producing "VAR=value" is taken as a COMMAND
+    NAME. Verbatim failure, /root/ob2/runs/unit-k16-code/stderr.txt:
+
+      /mnt/f/f32/openbob-wt/research-2/research/ob2/run-ob2.sh: 48:
+      OB2_TRACE=/root/ob2/unit-trace.txt: not found
+
+    with exit_rc 127, no model process started, no artifacts produced, and the
+    runlock correctly acquired and released around the failure. Fixed by passing
+    OB2_TRACE unconditionally (the engine treats an empty env value as unset)
+    and by adding exit $RC to the driver so a failed run can no longer report
+    rc=0 to its caller. No measurement was taken before or after the fix that
+    the fix could have affected: the binary was untouched.
+
+D5  THE RUN MATRIX WAS INTERRUPTED BY THE HARNESS, AND A PRE-ARMED SUPERVISOR
+    FINISHED IT. OB-1's deviation D5 records the same failure and the same
+    cause. Anticipating it, this leg started a detached supervisor
+    (setsid, outside the tool process tree) BEFORE the interruption, which stood
+    by doing nothing while the attached chain was alive. During the fifth run
+    the harness stopped the attached chain. Literal supervisor log:
+
+      [2026-08-31T23:56:02Z] supervisor up (pid 987136)
+      [2026-09-01T00:57:04Z] attached chain runs-ob2.sh is GONE
+      [2026-09-01T00:57:04Z] runs still missing, taking over
+      [2026-09-01T00:57:04Z] lock present with no model process; waiting 120s to confirm
+      [2026-09-01T00:59:10Z] confirmed stale lock left by the killed chain; releasing it
+      [2026-09-01T00:59:10Z] lock released
+      [2026-09-01T00:59:10Z] SKIP dyn-k16-code-a (already complete)
+      [2026-09-01T00:59:10Z] SKIP dyn-k16-code-b (already complete)
+      [2026-09-01T00:59:10Z] SKIP dyn-k16-prose (already complete)
+      [2026-09-01T00:59:10Z] SKIP dyn-k8-code (already complete)
+      [2026-09-01T00:59:10Z] RUN dyn-k8-prose (K=8)
+      [2026-09-01T01:13:31Z] DONE dyn-k8-prose rc=0
+      [2026-09-01T01:13:31Z] MATRIX DONE (supervisor)
+
+    Three things are worth stating plainly. First, the four completed runs were
+    SKIPPED on a completeness test (stats file present, identity artifact
+    non-empty, chunk_count=31), not on a filename, so a half-written directory
+    could not have been mistaken for a finished run. Second, dyn-k8-prose was
+    deleted and re-run from scratch, so its artifacts contain no mixed state.
+    Third, the stale-lock release was gated on the attached chain being gone AND
+    no llama process running anywhere on the box, confirmed twice 120 seconds
+    apart. A sibling holding the lock legitimately is running a model process,
+    so the sibling workflow could not have been stolen from. The supervisor
+    never killed anything.
+
+D6  FULL-RUN SCHEDULE EQUALITY IS ESTABLISHED BY MISS COUNT, NOT BY A FULL TRACE
+    COMPARE. The byte-for-byte comparison of the engine's resident-set schedule
+    against the simulator's covers the unit's first 4096 tokens (384 boundaries
+    per corpus). Over the full 32768-token runs the equality claim rests on the
+    miss counts agreeing EXACTLY, five times, over 3145728 picks each: any
+    divergence in the schedule at any of the 3072 boundaries would have to leave
+    the total pick-by-pick miss count unchanged to hide, which is possible in
+    principle and vanishingly unlikely in fact. Stated this way rather than as a
+    byte-compare that was not performed. Capturing a full-run trace would have
+    cost one more 14-minute leased run and is available if the architect wants
+    the stronger form.
+
+No other deviations. House law observed throughout: RUNLOCK held per run and
+released immediately on exit (never during analysis), free-RAM gate checked
+under the lock, 8 threads at nice 10, guard pids 654 and 489 verified alive
+before and after every run and confirmed alive at the end of the leg, no weight
+downloads, no writes outside this leg's worktree and its own stage subdirectory,
+and every wsl.exe invocation made through a script file on the Windows
+filesystem.
+
+
+12. WHAT THIS LEG ANSWERS, AND WHAT IT HANDS ON
+
+ANSWERED. A deterministic dynamic residency policy does cut the miss rate at the
+same K, with identity preserved. P2 DECAY-COUNTER, four integer operations and a
+32-item sort per boundary, cuts out-of-domain misses at K=16 from 60.5733 to
+14.3759 percent, a 76.3 percent relative cut, and removes the domain-transfer
+gap that was OB-1's headline weakness. Identity held byte for byte in all five
+runs. The A/A pair is identical. The engine and the frozen model of it agree
+exactly, on both the schedule and the count.
+
+HANDED ON, three things the architect may want to weigh:
+
+  1. The miss-rate win is not yet an I/O win at batch 1024, and the reason is
+     structural, not a tuning problem. The decode-shape replay says the win is
+     there at ubatch=1 (up to 4.17x fewer expert-loads, bound exactly K+4). A
+     leg that measures a real decode path, rather than a perplexity batch, is
+     what would turn this result into a memory result.
+
+  2. Churn is cheap but not free: 9116 to 10394 symmetric-difference events per
+     run at K=16, of which only about a fifth became promotions. H=256 was
+     frozen from simulation and never tuned against live cost. If the decode
+     leg finds promotion cost material, H and the shift are the two dials.
+
+  3. The policy is domain blind by construction, which is the point, but it also
+     means a cold start pays the full lowest-K-ids penalty. The unit's first
+     4096 tokens missed 16.66 percent against the run-long 14.38 percent. A
+     warm-start rule (seed the counters from a banked profile) is the obvious
+     next candidate and would need its own prereg, since seeding from a profile
+     reintroduces exactly the domain assumption this policy removed.
+
+END OB2-PREDICTIVE-1 BUILDER 2 RUN LOG

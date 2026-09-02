@@ -1,0 +1,1214 @@
+OB5B-S1-RUNLOG-1: SLICE 1 GATES 0 AND 1, BUILDER A
+
+Lane: research (CUDA/inventor lane), venue f32-HYDE, Windows 11 + WSL2.
+Branch research-2, worktree F:\f32\openbob-wt\research-2.
+Bound by research/OB5-DESIGN-C4-1.md slice S1 gates 0 and 1, against
+research/OB5-DESIGN-SPINE-1.md and research/OB5A-ALLOC-1.md.
+Pure ASCII, no em dashes. Every number below is literal command output from
+this leg's own script runs, or is quoted verbatim from a cited file. Where this
+leg derives a figure, the arithmetic is shown. Deviations are named in section 7
+and are not renegotiated anywhere else.
+
+--------------------------------------------------------------------------
+0. THE TWO VERDICTS, FIRST
+--------------------------------------------------------------------------
+
+GATE 0  THE TOP-8 MASS READ                                          PASS
+        The banked K=8 prose-ranked resident set captures 0.4040035672 of the
+        routing mass on the corpus it was ranked on and 0.0793007745 on the code
+        corpus. Per-layer table in section 3.3, run level in 3.3, cross domain in
+        3.4. A/A reproducible: the analysis run twice on the same input produced
+        byte-identical JSON (DETCHECK_CMP_RC=0 IDENTICAL), and the independent
+        "-b" route logs produced METRICS_EQUAL=True on both corpora.
+
+GATE 1  BYTE-EXACT GENERATION  (STOP-SHIP)                           PASS
+        Three fresh gpt-oss-120b generation runs at the frozen bound state of
+        C4 section 4.3, K=8 of 128 leased, on the reserve/commit allocator with
+        no kernel knob, agree on FIVE limbs byte for byte: the generated token
+        ids, the generated text, the tokenizer's output on the frozen prompt,
+        every routing decision of every layer of every token, and the
+        allocator's commit/decommit journal.
+
+          gen-ids.txt        5855bcebe6b98f73879a79527b2a9e32fc7b8e43ca8808ac48e6d17634e993e4
+          gen-text.txt       99417b7488e53ca611f5d9a9e1211ea3491ec0e34e38c4353520ed8f7fe805b4
+          prompt-ids.txt     a5e714dacc907126af664f8d512a3bed55a54a325692e4e44cd5eef2c21715d5
+          route.log          50b8554c38627be594c5ab4314f680380e43fb9f60aaf5e42bc30a742cad5b32
+          alloc-journal.txt  0beefc532904765a029f2ab8dee6ddf72e2b6ebd87fa3b58cb4caaaaef14b6f0
+
+        C4 kill line K1 (byte-exact generation fails) is NOT tripped. This is
+        the first GENERATION identity in this program; every prior identity
+        result, including the 120b row itself, is an identity of a perplexity
+        vector (C4 section 4.4 named this as slice 1's main risk).
+
+AND ONE MEASUREMENT THE GATES DID NOT ASK FOR BUT PRODUCED. Gate 1's runs are
+real decodes, so they carry the first honest decode numbers this program has:
+
+          tok/s DECODE          0.415512616 / 0.443048277 / 0.438939230
+          tok/s DECODE excl.
+            first token         0.402528978 / 0.429203944 / 0.425223065
+          time to first token    40.421992879 / 37.165344090 / 36.840228521 s
+                                 on a 56-token prompt
+
+They are reported here as what they are, at K=8, with no policy stack and no
+prefetch, and they belong to gate 2 to complete. Labelled DECODE throughout per
+the distinction C4 section 2.1 draws and its scope-ledger entry OB5-024.
+
+--------------------------------------------------------------------------
+1. INPUTS, ALL DIGEST-PINNED
+--------------------------------------------------------------------------
+
+  gpt-oss-120b-MXFP4.gguf      63387346208 bytes
+                               /root/openbob-baselines/models/
+                               sha256 banked by OB5A-ALLOC-1 as 582bd40f...;
+                               NOT re-hashed by this leg (deviation D7), byte
+                               size verified literally
+  gpt-oss-20b-MXFP4.gguf       12109566624 bytes (smoke only, section 4.2)
+  RESIDENT-SETS-120B-K8.json   8053f18a70030ad2ac2e59fe220a064ee26f35ad4eb3876bbb7c65f6e994530b
+                               research/ob1b/, K=8 of 128, prose-ranked
+  EXPERT-MANIFEST-120B.sha256  c71ce2ceec07db8932c8bbb3155029ca5f6b49b940dc46066240b2a47dbf1c80
+                               research/ob1b/, 27648 rows
+  route.log 120b-prose-a       5aa8464d3c71a73648c2323456d656cd40cfcf9dc88b603e1f10da69f9efa129
+  route.log 120b-prose-b       5aa8464d3c71a73648c2323456d656cd40cfcf9dc88b603e1f10da69f9efa129
+  route.log 120b-code-a        114db00490a2346ddedb84b10c9c8348521d58c0c260e55fa4a6ff641ed19d87
+  route.log 120b-code-b        114db00490a2346ddedb84b10c9c8348521d58c0c260e55fa4a6ff641ed19d87
+                               all four under /mnt/f/f32/stage/research/rs053/
+                               runs/<label>/, banked by RS053
+  PROMPT-1.txt                 51cb66644b3c513381d6fc641b4d7c89f1c5b9fccfb10f339e8cfde8a1549ffb
+                               264 bytes, written by research/ob5b1/make-prompt.sh
+
+FROZEN FACTS CARRIED, EACH CITED, NONE RE-DERIVED LOOSELY:
+  L = 36, E = 128, expert_used_count k = 4        RS053 prereg fact table
+  per_expert_bytes_per_layer = 13253760           OB5A-ALLOC-1 s6.1, RS053 s8
+  resident_always trunk = 2314020128              OB5A-SCOUT-1 s4
+  batch-regime peak concurrent = 1590451200       OB5A-ALLOC-1 s6 (120 experts)
+  batch-regime ACCT = 7721554208, exposure 8.209143   OB5A-ALLOC-1 s6
+  lease_bytes_read = 363192785280                 OB5A-ALLOC-1 s6
+  measured read time 286.711586 s                 OB5A-ALLOC-1 F-B3-1
+  measured verify time 154.163691 s               OB5A-ALLOC-1 F-B3-1
+
+The two rates C4 section 2.2 prints rounded are re-derived here from those
+literals, and both forms are shown so the rounding is visible:
+
+  read   363192785280 / 286.711586 = 1266753082.242027 bytes/s  (C4 prints 1267000000)
+  verify 363192785280 / 154.163691 = 2355890566.216399 bytes/s  (C4 prints 2356000000)
+
+Every decode figure this leg derives uses the re-derived rates, not the rounded
+ones. The difference is -246917.757973 and -109433.783601 bytes/s respectively.
+
+--------------------------------------------------------------------------
+2. THE BOX, THE GUARDS, THE LOCK
+--------------------------------------------------------------------------
+
+  BOX          f32-HYDE, 24029 MB WSL RAM, 6144 MB swap
+  vm.overcommit_memory  0 before, during and after every run. Read INSIDE the
+               locked window on every model run and a non-zero value was made
+               fatal by the driver. It never read anything but 0.
+  vm.overcommit_ratio 50   vm.max_map_count 1048576   page_size 4096
+  transparent_hugepage  always [madvise] never
+  GUARDS       pid 654 (openbob serve, /root/.local/bin/openbob serve --tmax 6)
+               and pid 489 (searxng) were confirmed alive before and after every
+               run of both gates and of both controls, and are alive now. Neither
+               was touched, signalled, restarted or reconfigured. Every driver
+               logs guard_pids and guard_pids_after; all read 1 openbob, 1 searxng.
+  RUNLOCK      /mnt/f/f32/stage/research/runlock, taken per run by mkdir with a
+               5 s poll, released immediately after the model process exited,
+               75 s courtesy yield after each. Free RAM was checked against the
+               6 GB house bar inside the lock on every run: 22 GB available on
+               every model run. The lock was free on every request (0 s wait).
+  THREADS      8, nice -n 10, on every model run. CUDA_VISIBLE_DEVICES="" and
+               n_gpu_layers 0: CPU only.
+  READ-NEVER   ~/.config/openbob/, the journals and lowint/fixtures/
+               LI-S5-ROUTES-1.txt were never opened. No weights were downloaded.
+               No Telegram was sent. The mini, the messenger, the demo frame and
+               the 4B serve path were never touched.
+  SIBLINGS     No sibling worktree or branch was written to. /root/ob5a/llama.cpp
+               was read only (section 4.1).
+
+--------------------------------------------------------------------------
+3. GATE 0: THE TOP-8 MASS READ
+--------------------------------------------------------------------------
+
+Analysis only: no model run, no runlock, no serve contact, as the gate specifies.
+Instruments: research/ob5b1/gate0_top8.py, gate0_window.py, gate0_project.py,
+driven by gate0-run.sh and gate0-derive.sh. Python 3.12.3, numpy 2.5.2, under
+/root/openbob-train/venv/bin/python, nice -n 10.
+
+3.1 FROZEN DEFINITIONS, STATED SO A READER CAN RE-APPLY THEM
+
+  A DECISION is one (layer, token, slot) routing selection. A run of T tokens
+  over L layers with k selections per (token, layer) has L*T*k decisions:
+  36 * 16384 * 4 = 2359296 for each of these route logs.
+
+  MASS(R, l) = sum over e in R_l of c_l(e), divided by T*k. Because every expert
+  tensor in this GGUF layout is the same byte size, mass is simultaneously the
+  decision hit rate and the byte hit rate (RS053 D16 makes the same point).
+
+  MISSES_PER_TOKEN = sum over layers of (k - |ids(t,l) INTERSECT R_l|).
+
+  DROP-ON-USE is C4 projection P-A's residency model: a leased expert is
+  released after the token that needed it, so every non-resident selection is a
+  fresh lease.
+
+  KEEP-PREVIOUS is a DECLARED EXTRA beyond the gate bar (deviation D5), taken
+  from C4 section 2.2's own sentence: "A lease taken for token t helps token t+1
+  only if the runtime KEEPS it." A selection misses only when it is neither
+  resident nor used by the previous token at that layer.
+
+  RANKING RULE, copied from the banked lineage (RESIDENT-SETS-120B-K8.json
+  records lineage "research/ob1/resident_sets.py (same loader, same ranking rule,
+  same tie-break)" and tie_break "lower expert id"): count descending, ties
+  broken by lower expert id, first K.
+
+3.2 THE INSTRUMENT'S OWN CHECKS, BEFORE ANY NUMBER WAS TRUSTED
+
+  ORDER CHECK. RS053 section 2.1 records that route logs are grouped by ubatch,
+  not by layer, so a naive reshape is wrong. This leg's loader masks on the layer
+  column and then VERIFIES token_index equals 0..T-1 in order before trusting it.
+  Passed on all four 120b logs.
+
+  DISTINCTNESS CHECK. Mass equals the mean per-token hit rate only if a token's
+  k selections are distinct. Measured: duplicate_expert_rows = 0 on every log.
+
+  BANKED-SET RE-DERIVATION. The gate asks for "the top-8 popularity-ranked
+  experts per layer". The banked OB-1b K=8 set claims to be exactly that for
+  120b-prose-a. This leg re-derived it from the log's own counts rather than
+  assuming it:
+      120b-prose-a  banked_k8_set_rederives_from_this_log True
+      120b-prose-b  banked_k8_set_rederives_from_this_log True
+      120b-code-a   banked_k8_set_rederives_from_this_log False
+      120b-code-b   banked_k8_set_rederives_from_this_log False
+  The False rows are correct and expected: the set is prose-ranked, so it is not
+  the code corpus's own top 8. That is the whole subject of section 3.4.
+
+  A/A LIMB. gate0_top8.py run twice on runs/120b-prose-a/route.log, two output
+  files, byte compared:
+      DETCHECK_CMP_RC=0 IDENTICAL
+  gate0_window.py run twice, byte compared:
+      WINDOW_DETCHECK_CMP_RC=0 IDENTICAL
+
+  FREE CHECK. The "-b" route log of each config was run through the whole
+  pipeline independently (not merely digest-compared) and its report compared
+  field by field, ignoring only label and path:
+      120b-prose-a vs 120b-prose-b: METRICS_EQUAL=True
+      120b-code-a  vs 120b-code-b:  METRICS_EQUAL=True
+
+3.3 M-G0-1  PER-LAYER TOP-8 MASS, 120b-prose-a (IN DOMAIN)
+
+The resident set under test is the BANKED K=8 prose-ranked set, on the corpus it
+was ranked on. dead1pct is the count of experts under 1 percent of that layer's
+traffic, on RS053's frozen threshold, printed for context only.
+
+layer           hit     decisions        mass   miss_rate  dead1pct   mis/token
+    0         13259         65536  0.20231628  0.79768372        95    3.190735
+    1         15096         65536  0.23034668  0.76965332        93    3.078613
+    2         23068         65536  0.35198975  0.64801025       102    2.592041
+    3         18725         65536  0.28572083  0.71427917        96    2.857117
+    4         20469         65536  0.31233215  0.68766785        94    2.750671
+    5         21672         65536  0.33068848  0.66931152        99    2.677246
+    6         17324         65536  0.26434326  0.73565674        91    2.942627
+    7         15721         65536  0.23988342  0.76011658        88    3.040466
+    8         17525         65536  0.26741028  0.73258972        92    2.930359
+    9         16841         65536  0.25697327  0.74302673        92    2.972107
+   10         22937         65536  0.34999084  0.65000916       100    2.600037
+   11         22797         65536  0.34785461  0.65214539        98    2.608582
+   12         25689         65536  0.39198303  0.60801697       102    2.432068
+   13         19591         65536  0.29893494  0.70106506        99    2.804260
+   14         22887         65536  0.34922791  0.65077209        97    2.603088
+   15         20820         65536  0.31768799  0.68231201        96    2.729248
+   16         35009         65536  0.53419495  0.46580505       106    1.863220
+   17         21821         65536  0.33296204  0.66703796        98    2.668152
+   18         34170         65536  0.52139282  0.47860718       108    1.914429
+   19         31227         65536  0.47648621  0.52351379       104    2.094055
+   20         31205         65536  0.47615051  0.52384949       105    2.095398
+   21         28550         65536  0.43563843  0.56436157        98    2.257446
+   22         38879         65536  0.59324646  0.40675354       109    1.627014
+   23         24363         65536  0.37174988  0.62825012       102    2.513000
+   24         30501         65536  0.46540833  0.53459167       103    2.138367
+   25         34918         65536  0.53280640  0.46719360       107    1.868774
+   26         31909         65536  0.48689270  0.51310730       101    2.052429
+   27         24225         65536  0.36964417  0.63035583       100    2.521423
+   28         27776         65536  0.42382812  0.57617188       100    2.304688
+   29         29903         65536  0.45628357  0.54371643       104    2.174866
+   30         26640         65536  0.40649414  0.59350586       101    2.374023
+   31         23896         65536  0.36462402  0.63537598        96    2.541504
+   32         28405         65536  0.43342590  0.56657410       103    2.266296
+   33         38729         65536  0.59095764  0.40904236       112    1.636169
+   34         49301         65536  0.75227356  0.24772644       113    0.990906
+   35         47316         65536  0.72198486  0.27801514       114    1.112061
+
+  RUN LEVEL, 120b-prose-a
+    top8_decisions_hit          953164 of 2359296
+    run top8_mass               0.4040035672
+    run miss_rate               0.5959964328
+    layer-mean top8_mass        0.4040035672
+    layer-min  top8_mass        0.2023162842  (layer 0)
+    layer-max  top8_mass        0.7522735596  (layer 34)
+    misses/token drop-on-use    mean 85.8234863281  min 40  p50 85.0  p95 115.0  max 141
+    misses/token keep-previous  mean 69.1434326172  max 125   (declared EXTRA)
+
+  The layer structure is the same one RS053 measured from the other side: the
+  early layers are the leakiest (layer 0 keeps only 0.2023 of its mass in its own
+  top 8) and the deep prose layers are the tightest (layer 34 keeps 0.7523).
+  RS053's M2 P_half and M4 phase-stability tables order the layers the same way.
+
+3.4 M-G0-2  THE SAME SET ON 120b-code-a (CROSS DOMAIN)
+
+  run top8_mass               0.0793007745
+  run miss_rate               0.9206992255
+  misses/token drop-on-use    mean 132.5806884766  max 144
+  misses/token keep-previous  mean 97.0696411133   (declared EXTRA)
+
+  Per-layer, the cross-domain mass ranges from 0.01373291 (layer 11) to
+  0.21044922 (layer 16); the full table is banked in the JSON named in section 10.
+  For scale, uniform routing at K/E = 8/128 would give 0.0625. On the code corpus
+  a prose-ranked K=8 set is worth 0.0793007745, which is 1.2688 times uniform.
+
+3.5 M-G0-3  K SWEEP, SELF-RANKED SETS  (DECLARED EXTRA, deviation D4)
+
+Each log ranked on itself: the IN-DOMAIN ceiling of a static popularity set at
+each K. This is beyond the gate bar and is computed because gate 2 needs it.
+
+    K          prose mass          prose miss   prose mis/tok     code mass (own)     code miss (own)
+    8        0.4040035672        0.5959964328       85.823486        0.3554954529        0.6445045471
+   16        0.5674239265        0.4325760735       62.290955        0.5288352966        0.4711647034
+   24        0.6732754178        0.3267245822       47.048340        0.6435796950        0.3564203050
+   32        0.7495316399        0.2504683601       36.067444        0.7274055481        0.2725944519
+   48        0.8533664280        0.1466335720       21.115234        0.8436071608        0.1563928392
+   64        0.9187571208        0.0812428792       11.698975        0.9147169325        0.0852830675
+
+  The K=64 prose row, 0.9187571208, equals RS053's own layer-mean P_half for
+  120b-prose (9.18757120768229130e-01) to every printed digit, which it must:
+  P_half at E/2 = 64 is the same statistic. That agreement is a free cross-check
+  of this leg's instrument against RS053's, computed by different code.
+
+3.6 M-G0-4  C4 SECTION 2.3 RE-RUN WITH THE MEASURED TERM
+
+Same arithmetic, same rates, only the miss term replaced.
+
+point                                                       mis/token      bytes/token     read s   verify s  tok/s ser tok/s read
+P-A  C4 pessimist, uniform K/E=0.0625 (PROJECTED)          135.000000       1789257600   1.412200   0.759447   0.460480   0.708115
+P-B  C4 policy point, 14.3759 pct (PROJECTED, 20b carry)    20.701296        274370009   0.216551   0.116456   3.002942   4.617852
+G0-IN   MEASURED static K=8, in domain (prose)              85.823486       1137483890   0.897952   0.482825   0.724230   1.113645
+G0-IN+K MEASURED static K=8 + keep-previous, in domain      69.143433        916410461   0.723433   0.388987   0.898941   1.382299
+G0-X    MEASURED static K=8, cross domain (code)           132.580688       1757192626   1.387163   0.745872   0.468816   0.720896
+G0-X+K  MEASURED static K=8 + keep-previous, cross domain    97.069641       1286537727   1.015618   0.546094   0.640323   0.984622
+
+  THE READING, STATED PLAINLY AND WITHOUT SOFTENING.
+
+  C4's P-A pessimist assumed the resident 8 hit at the uniform rate and got 135
+  misses per token. The CROSS-DOMAIN MEASUREMENT is 132.5806884766. P-A is not a
+  pessimist at all; it is very nearly the measured cross-domain point.
+
+  C4's P-B assumed a 14.3759 percent miss rate carried across from OB-2's 20b
+  K=16 result, and C4 marked that carry UNVERIFIED itself. Measured static K=8
+  in-domain miss is 59.5996 percent, 4.1458 times P-B's assumption. As a STATIC
+  residency figure, P-B is REFUTED. P-B was written as a DYNAMIC policy point and
+  this measurement does not refute the policy; it removes the static floor P-B
+  was implicitly resting on and shows how far the policy has to travel.
+
+3.7 M-G0-5 AND M-G0-6  TIME TO FIRST TOKEN
+
+C4 section 2.3's P-C took RS053's W=64 run_mean_distinct of 49.185547 and assumed
+all 8 resident experts sit inside every window. This leg made that assumption
+testable by measuring the resident share of each window directly.
+
+  120b-prose-a  W=64, 256 windows
+    mean distinct per layer per window         49.185546875  (reproduces RS053 s5)
+    of which RESIDENT                           7.299262152777778   of 8
+    NON-resident per layer per window          41.88628472222222
+    NON-resident distinct per window, 36 layers  mean 1507.90625  min 990  max 1963
+    -> bytes 19985427540  read 15.777 s  verify 8.483 s  serialized 24.260 s
+
+  120b-code-a   W=64, 256 windows
+    mean distinct per layer per window         54.387912326388886
+    of which RESIDENT                           4.228081597222222   of 8
+    NON-resident per layer per window          50.159830729166664
+    NON-resident distinct per window, 36 layers  mean 1805.75390625  min 922  max 2245
+    -> bytes 23933028892.5  read 18.893 s  verify 10.159 s  serialized 29.052 s
+       (gate0_project.py prints the byte figure at %.0f as 23933028892)
+
+  P-C's optimistic reading was nearly right on prose: 7.299262 of the 8 resident
+  experts are inside a typical 64-token window, so C4's 23.851 s and this leg's
+  24.260 s differ by 0.409 s. On code only 4.228082 of 8 are inside, and the
+  serialized figure rises to 29.052 s. Section 5 reports what the gate 1 runs
+  actually measured, which is a larger number than either.
+
+3.8 M-G0-7  THE PRODUCT KNOB, PRICED WITH THE MEASURED MISS RATE
+
+C4 section 6.1's K table with the measured in-domain miss rate added. Static
+popularity sets only: no policy stack, no prefetch. ACCT_decode uses C4's own
+depth-2 term 106030080; the committed column adds OB5A-ALLOC-1 P2c's measured
+941195736 engine buffers and 286522920 unaccounted.
+
+    K   resident bytes      ACCT_decode       exposure   est cmt GB    miss rate    mis/token    tok/s ser
+    8       3817082880       6237133088      10.162898       7.4649 0.5959964328    85.823486     0.724230
+   16       7634165760      10054215968       6.304554      11.2819 0.4325760735    62.290955     0.997832
+   24      11451248640      13871298848       4.569676      15.0990 0.3267245822    47.048340     1.321107
+   32      15268331520      17688381728       3.583558      18.9161 0.2504683601    36.067444     1.723324
+   48      22902497280      25322547488       2.503198      26.5503 0.1466335720    21.115234     2.943652
+   64      30536663040      32956713248       1.923352      34.1844 0.0812428792    11.698975     5.312936
+
+  THE CONSEQUENCE, AND IT IS THE SHARPEST THING GATE 0 FOUND. The static K that
+  would deliver C4's P-B miss rate is K=48, at 21.115234 misses per token. Its
+  estimated committed state is 26.5503 GB on a box whose whole RAM is 24029 MB
+  (25.196 GB), before the live serve and searxng are counted. IT DOES NOT FIT.
+
+  So the policy stack is not merely a precondition of a usable bob in C4 section
+  2.4's sense. On this box it is the ONLY route to that operating point, because
+  the static residency that would reach it cannot be held. C1's work is load
+  bearing on the serving path in a stronger sense than C4 stated.
+
+  The largest static K that fits with the house 6 GB free-RAM rule and the live
+  serve resident is K=24 at an estimated 15.0990 GB committed, leaving 10.10 GB.
+  K=32 at 18.9161 GB leaves 6.28 GB, which is above the 6 GB bar on paper and
+  marginal in practice. Gate 2 decides that by measurement, not by this table.
+
+3.9 GATE 0 VERDICT
+
+  BAR: "a literal per-layer table plus a run-level mean, A/A reproducible from
+  the same inputs."
+    per-layer table          section 3.3, all 36 layers, literal              PASS
+    run-level mean           0.4040035672 in domain, 0.0793007745 cross        PASS
+    A/A reproducible         DETCHECK_CMP_RC=0 IDENTICAL, twice                PASS
+  GATE 0: PASS.
+
+--------------------------------------------------------------------------
+4. GATE 1: BYTE-EXACT GENERATION
+--------------------------------------------------------------------------
+
+4.1 THE ENGINE, REPRODUCED AND PROVEN
+
+The prompt binds this leg to the OB-5a allocator worktree lineage: a worktree
+/root/ob5b1/llama.cpp on branch ob5b1 taken from ob5a head. The ob5a BRANCH head
+is c087083 and the allocator lives as UNCOMMITTED working-tree state in
+/root/ob5a/llama.cpp, which OB5A-ALLOC-1 section 9.5 records as finding F-B3-4:
+"Pinned is not the same as committed". A worktree from ob5a head therefore does
+not carry the allocator. Deviation D1 records how this leg reproduced it.
+
+  git -C /root/ob5a/llama.cpp branch --show-current    ob5a
+  git -C /root/ob5a/llama.cpp log --oneline -1         c087083 OB-1: fix resident-set JSON key scan ...
+  git -C /root/ob5a/llama.cpp status --porcelain        M ggml/src/ggml-backend.cpp
+                                                        M src/llama-model-loader.cpp
+                                                        M src/llama-model.cpp
+                                                        M src/ob1-lease.cpp
+                                                        M src/ob1-lease.h
+
+  worktree created:  git worktree add /root/ob5b1/llama.cpp -b ob5b1 ob5a
+  ob5b1 head:        c087083
+
+The five modified source files were COPIED out of /root/ob5a/llama.cpp (read
+only; nothing was written into a sibling worktree) and each verified against the
+digest research/ob5a/BUILD-1.txt banked for it:
+
+  src/ob1-lease.cpp                MATCH  ab1ee51d5905bf1a949bda0cca4ef63926493159338af314045b1fb566676018
+  src/ob1-lease.h                  MATCH  087a045dddc35a4618b6580c406b2b35b32b93dd46e71e2a3573fe3ed9b34172
+  ggml/src/ggml-backend.cpp        MATCH  be278cef9427d165ce2632683d99ee006b504f7795948eabe8d2de3779655141
+  src/llama-model.cpp              MATCH  9f9dcdaec300c3c87a07de8cac359cf0b5ff6ca33c53445f612245bb5dc16efb
+  src/llama-model-loader.cpp       MATCH  28ea244454bb29ac66b39074d534034f7fa655878570729f00fdff09e596ad76
+  five of five MATCH
+
+  git -C /root/ob5b1/llama.cpp diff --stat
+    ggml/src/ggml-backend.cpp  | 362 +++++
+    src/llama-model-loader.cpp |  13 +
+    src/llama-model.cpp        |  26 +-
+    src/ob1-lease.cpp          | 264 +++-
+    src/ob1-lease.h            |  56 +
+    5 files changed, 715 insertions, 6 deletions
+
+which is OB5A-ALLOC-1 section 4's diffstat exactly.
+
+THE BUILD REUSED THE OB5A OBJECT TREE, by the same argument research/ob5a/
+build-ob5a.sh makes for reusing the ob1b tree, and the reuse is PROVEN rather
+than assumed. The tree was copied, its absolute source paths rewritten in text
+files only, cmake reconfigured with -ffile-prefix-map=/root/ob5b1/llama.cpp=
+/root/rs053/llama.cpp (the same mapping ob5a used, so __FILE__ strings in assert
+macros land identically), sources aged, and make run. The .text sections were
+then compared against /root/ob5a's own binaries:
+
+  libllama.so.0                  SAME    as required
+  libggml-base.so.0              SAME    as required
+  libggml-cpu.so.0               SAME    as required
+  libggml.so.0                   SAME    as required
+  libllama-perplexity-impl.so    SAME    as required
+  llama-perplexity               SAME    as required
+
+  .text libllama.so.0            e7437728ed7c0ccbfb708bfd16c630c26c1eb7a64ec6e16f371bbba860401ae9
+  .text libggml-base.so.0        f62c1bfe6398e4b9720eef5dadb5fcad8f3dc5b385f1b1acb29a9c4da4a9a446
+  .text libggml-cpu.so.0         d278bdf4bdd3cdfca3574f2a637551984ceacf6e644a9129ad119c7c13091921
+  .text libggml.so.0             692f6f55d116a8a007748a6f085a7173f5e8ba70ec78c028e415b10dac435fd4
+
+WHOLE-FILE DIGESTS, ob5a then ob5b1, with the one expected difference named:
+
+  f9965806c98f5dce6cc7f4f44e52dd57e8d9b51cf27826ad4608db4599e23249  ob5a  llama-perplexity
+  5e2c4a1b34606ffe1d9cc7e563345b74426d3b8de836b4176d712916a5aced00  ob5a  libllama.so.0
+  6f1ba2c7a215c8c33594afdce199530138272697b7d6d29aa677bd4a3c27318d  ob5a  libggml-base.so.0
+  41773bf9edcd89ccaaece7a1b7a2897e61ab07689f81073e8febed09a2f5fc86  ob5a  libggml-cpu.so.0
+
+  63007d58a53a31de9a4e140469eb0bede3e4b2a1f98e801bc906a800381dc9bf  ob5b1 llama-perplexity
+  9a3e448c4331ebbc09c5c4feef7f39f83ac649b6d77e9de07c5a4884583b876e  ob5b1 libllama.so.0
+  6f1ba2c7a215c8c33594afdce199530138272697b7d6d29aa677bd4a3c27318d  ob5b1 libggml-base.so.0
+  41773bf9edcd89ccaaece7a1b7a2897e61ab07689f81073e8febed09a2f5fc86  ob5b1 libggml-cpu.so.0
+
+  RUNPATH ob5a  [/root/ob5a/llama.cpp/build/bin:]
+  RUNPATH ob5b1 [/root/ob5b1/llama.cpp/build/bin:]
+
+libggml-base.so.0 and libggml-cpu.so.0 are byte-identical to ob5a's; llama-
+perplexity and libllama.so.0 were relinked in this tree and differ by RUNPATH,
+which carries the build tree's absolute path and must differ between two trees.
+That is why .text is the comparison the verdict rests on, and it is stated here
+rather than left for a reader to discover.
+
+THE ALLOCATOR IS IN THIS TREE'S LIBRARIES, not merely in its sources:
+
+  nm -D --defined-only libggml-base.so.0
+    000000000003ca50 T ggml_backend_cpu_reserve_buffer_type
+    000000000003c020 T ggml_backend_cpu_reserve_enabled
+    000000000003c070 T ggml_reserve_commit
+    000000000003c510 T ggml_reserve_counters
+    000000000003c2e0 T ggml_reserve_decommit
+    000000000003c750 T ggml_reserve_vma_count
+  nm -D --undefined-only libllama.so.0    the same six symbols, U
+
+4.2 THE GENERATION ENTRY POINT
+
+research/ob5b1/ob5b1-gen.cpp, sha256 01a2dc56de4e6fae9c28b5a3139cbaeef3fa35190b5c329fe59d8d1b8436aad5,
+compiled with g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0 directly against the
+built libraries. Binary sha256 daca8fb74f626c186950c2882dfd1fdfe191056ca5feacccd51201db3e625740.
+
+  nice -n 10 g++ -O2 -std=c++17 -Wall -Wextra \
+    -I /root/ob5b1/llama.cpp/include -I /root/ob5b1/llama.cpp/ggml/include \
+    -o /root/ob5b1/llama.cpp/build/bin/ob5b1-gen /root/ob5b1/llama.cpp/ob5b1-gen.cpp \
+    -L /root/ob5b1/llama.cpp/build/bin -lllama -lggml-base \
+    -Wl,-rpath,/root/ob5b1/llama.cpp/build/bin
+
+NO CMakeLists.txt WAS TOUCHED (deviation D3), so the engine whose .text this leg
+verified is the engine the runs used. ldd confirms which files are actually
+loaded, all from this tree:
+
+  libllama.so.0     => /root/ob5b1/llama.cpp/build/bin/libllama.so.0
+  libggml-base.so.0 => /root/ob5b1/llama.cpp/build/bin/libggml-base.so.0
+  libggml.so.0      => /root/ob5b1/llama.cpp/build/bin/libggml.so.0
+  libggml-cpu.so.0  => /root/ob5b1/llama.cpp/build/bin/libggml-cpu.so.0
+  libggml-cuda.so.0 => /root/ob5b1/llama.cpp/build/bin/libggml-cuda.so.0
+
+WHY A NEW BINARY AND NOT llama-cli. C4 section 4.3 requires the bound state to be
+a closed, printable list every member of which is a pure function of the input.
+llama-cli carries a sampler chain, a chat template, an interactive loop, a
+context shift and a repeat penalty, all of which the gate would then have to
+prove inert. ob5b1-gen carries none of them: it links only the public llama.h C
+API, freezes every remaining knob in code, and prints the whole frozen state
+before it runs.
+
+THE SAMPLER (C4 section 4.4): greedy argmax over the raw logit vector, scanned in
+ascending token id with a strict greater-than, so the lowest token id wins every
+tie. No RNG, no clock, no temperature, no softmax. A NaN logit aborts the run
+rather than being skipped over, because a NaN is a correctness finding.
+
+THE ENGINE HOOKS ARE ENGINE-LEVEL, which is why a program that knows nothing
+about them gets them: llama-context.cpp installs the route/lease eval callback
+whenever ob1_hook_enabled() and cparams.cb_eval is null, and llama-model-loader
+.cpp calls the lease and commit hooks. ob5b1-gen sets the same OB1_*/OB5A_*
+environment the OB-5a run driver sets and reads the counters back at the end
+through the three symbols libggml-base exports.
+
+SMOKE, BEFORE ANY 120b TIME WAS SPENT. gpt-oss-20b, K=2 leased, 8 new tokens,
+under the runlock with the guards checked: exit_rc 0, wallclock_s 26.830692061,
+n_prompt_tokens 56, model_load_seconds 3.570727968, tok/s DECODE 0.853163564,
+VmHWM_kb 3168844, lease_events 1249, peak_concurrent_lease_bytes 384359040,
+alloc_commit_model_peak 2939355136, alloc_commit_peak_single 615333888. Reported
+as a free extra data point; it is not a gate.
+
+4.3 THE FROZEN BOUND STATE, AS THE PROGRAM PRINTED IT
+
+  model_path        /root/openbob-baselines/models/gpt-oss-120b-MXFP4.gguf
+  prompt_path       /mnt/f/f32/stage/research/ob5b1/PROMPT-1.txt
+  prompt_bytes      264
+  n_predict         32
+  n_ctx             512
+  n_batch           64   (frozen equal to n_ubatch)
+  n_ubatch          64
+  n_seq_max         1
+  n_threads         8
+  n_threads_batch   8
+  n_gpu_layers      0
+  load_mode         LLAMA_LOAD_MODE_NONE   (no mmap)
+  use_extra_bufts   false                  (no weight repacking)
+  check_tensors     false
+  flash_attn_type   LLAMA_FLASH_ATTN_TYPE_DISABLED
+  type_k,type_v     GGML_TYPE_F16, GGML_TYPE_F16
+  add_special       true
+  parse_special     false
+  sampler           greedy argmax, ascending scan, strict >, lowest id wins ties
+  prefill schedule  ceil(n_prompt / n_ubatch) pieces of n_ubatch, remainder last
+  decode schedule   exactly one token per llama_decode
+  stop condition    n_predict reached, or llama_vocab_is_eog
+  env OB5A_RESERVE  1
+  env OB1_K         8
+  env OB1_LEASE     research/ob1b/RESIDENT-SETS-120B-K8.json
+  env OB1_MANIFEST  research/ob1b/EXPERT-MANIFEST-120B.sha256
+  env CUDA_VISIBLE_DEVICES ''
+
+  n_vocab 201088   n_prompt_tokens 56   prefill_pieces 1
+  reserve_allocator_enabled 1
+
+The allocator announced itself on every run, verbatim:
+
+  ggml_backend_cpu_reserve_buffer_type_alloc_buffer: OB5A reserved 63374323968
+    bytes PROT_NONE, region 0, 15472248 pages, base 0x747b69bea000
+  OB1: allocation journal -> .../alloc-journal.txt
+  OB1: OB5A reserve allocator ON (page size 4096)
+  OB1: lease engine ON  K=8 L=36 E=128 sha=sha-ni fadvise=0
+
+4.4 THE THREE RUNS
+
+  run                cwd              exit_rc  wallclock_s      lock wait
+  gen-120b-k8-a      /root/ob5b1/cwd-a      0  135.393602483    0 s
+  gen-120b-k8-b      /root/ob5b1/cwd-a      0  125.502685559    0 s
+  gen-120b-k8-c      /root/ob5b1/cwd-c      0  126.373085510    0 s
+
+  overcommit_at_run 0 and overcommit_after_run 0 on all three.
+  free RAM inside the lock: 22 GB on all three (house bar 6 GB).
+  guard_pids 1 openbob, 1 searxng before and after all three.
+
+Run C is the gate's third limb. DECLARED INTERPRETATION (deviation D2): this
+leg's hard walls forbid touching pid 654, and gate 3 has not yet built an
+exposure worker serve, so there is no serve of this gate's own to restart. The
+third limb is therefore taken in its evident sense, a run that shares the BOUND
+STATE and differs in everything that is NOT in it: a fresh process from a
+different working directory, writing to a different output directory, after
+4 GiB of the model file had been read to /dev/null to change the machine's page
+cache under it. If any of that had moved a byte, the bound state would have been
+incompletely specified, which is exactly what the limb exists to catch.
+
+4.5 THE VERDICT, FIVE LIMBS
+
+  IDENTITY LIMB (the bytes the model produced):
+    gen-ids.txt      A vs gen-120b-k8-b          IDENTICAL
+    gen-ids.txt      A vs gen-120b-k8-c          IDENTICAL
+    gen-text.txt     A vs gen-120b-k8-b          IDENTICAL
+    gen-text.txt     A vs gen-120b-k8-c          IDENTICAL
+  INPUT LIMB (the tokenizer's own output on the frozen prompt):
+    prompt-ids.txt   A vs gen-120b-k8-b          IDENTICAL
+    prompt-ids.txt   A vs gen-120b-k8-c          IDENTICAL
+  ROUTE LIMB (every routing decision of every layer of every token):
+    route.log        A vs gen-120b-k8-b          IDENTICAL
+    route.log        A vs gen-120b-k8-c          IDENTICAL
+  ALLOCATOR LIMB (the commit/decommit journal):
+    alloc-journal.txt A vs gen-120b-k8-b         IDENTICAL
+    alloc-journal.txt A vs gen-120b-k8-c         IDENTICAL
+
+  DETERMINISTIC COUNTERS, side by side. Any difference would be a finding:
+    lease_events                   a=6049           b=6049           c=6049
+    lease_bytes_read               a=80171994240    b=80171994240    c=80171994240
+    peak_concurrent_lease_bytes    a=954270720      b=954270720      c=954270720
+    resident_slices_loaded         a=1728           b=1728           c=1728
+    resident_bytes_loaded          a=3817082880     b=3817082880     c=3817082880
+    route_calls                    a=1188           b=1188           c=1188
+    alloc_commit_model_peak        a=7081930752     b=7081930752     c=7081930752
+    alloc_commit_peak_single       a=615333888      b=615333888      c=615333888
+    alloc_va_model_bytes           a=63374323968    b=63374323968    c=63374323968
+    alloc_commit_calls             a=38493          b=38493          c=38493
+    alloc_decommit_calls           a=36276          b=36276          c=36276
+    alloc_commit_live_at_exit      a=0              b=0              c=0
+    lease_active_slices_at_exit    a=18             b=18             c=18
+    alloc_journal_sha256           a=b=c=0beefc532904765a029f2ab8dee6ddf72e2b6ebd87fa3b58cb4caaaaef14b6f0
+
+THE OUTPUT ITSELF, verbatim, 156 bytes, so a reader can see what was hashed. It
+is a base-model continuation with no chat frame and its quality is not this
+gate's subject:
+
+    ```
+
+    Here is a revised version of the paragraph that includes a more detailed
+    explanation of how the model is loaded and used:
+
+    ```
+    The following is a plain
+
+  the 32 generated token ids, in order:
+    168394 279 12253 382 261 52287 3926 328 290 27853 484 6664 261 945 14633
+    30547 328 1495 290 2359 382 13991 326 2061 1402 26178 7450 976 3992 382
+    261 21402
+
+  stop_reason n_predict on all three runs; no EOG was reached.
+
+4.6 TWO DECLARED CONTROLS (deviation D6)
+
+CONTROL 1: THE COMPARATOR CAN SAY DIFFER. A harness that has only ever said
+IDENTICAL on the limb carrying the STOP-SHIP bar has not been shown able to say
+anything else. One byte of a COPY of run A's gen-ids.txt was flipped (first token
+id 168394 -> 168395; nothing under runs/ was modified) and the same comparison
+re-run:
+
+  original digest 5855bcebe6b98f73879a79527b2a9e32fc7b8e43ca8808ac48e6d17634e993e4
+  mutant digest   679d894b556558892aa57a3448f28c0dcabd357568565345378aa7da63c7e5b9
+  byte counts     original 155  mutant 155
+  RESULT: DIFFER     as required
+  cmp: ... differ: byte 6, line 1
+  run A untouched afterwards: 5855bcebe6b98f73879a79527b2a9e32fc7b8e43ca8808ac48e6d17634e993e4
+
+CONTROL 2: IS THE BATCH SCHEDULE REALLY IN THE BOUND STATE? C4 section 4.3
+asserts it in words and nothing in this program had measured it. A fourth run was
+made with one member of the bound state changed, n_ubatch 64 -> 32, so the
+56-token prompt is submitted in two pieces instead of one, everything else
+identical.
+
+  run A (ubatch 64) prefill_pieces: 1
+  control (ubatch 32) prefill_pieces: 2
+
+  gen-ids.txt      ubatch 64 vs ubatch 32   IDENTICAL
+  gen-text.txt     ubatch 64 vs ubatch 32   IDENTICAL
+  prompt-ids.txt   ubatch 64 vs ubatch 32   IDENTICAL
+  route.log        ubatch 64 vs ubatch 32   DIFFER
+      differ: byte 552, line 33
+
+  route.log ubatch 64  50b8554c38627be594c5ab4314f680380e43fb9f60aaf5e42bc30a742cad5b32
+  route.log ubatch 32  e10b5a1c58647324c959df3b56870764afda9d85a2901509d3874cef5d8c9dbd
+
+  Line 33 of the route log is layer 0, token_index 32, which is the first token
+  of the second ubatch piece. So the schedule change moved the numerics at
+  exactly the boundary it should have, and the router selected different experts
+  from that token onward, AND THE SAMPLED BYTES DID NOT MOVE.
+
+  The honest statement of what that shows is in section 6, finding F-A5. It is
+  reported at more length than any limb that simply passed.
+
+  The control's own counters, which differ from run A's because the routing did:
+    lease_events                 6972   (run A 6049)
+    lease_bytes_read      92405214720   (run A 80171994240)
+    peak_concurrent_lease_bytes 742210560 = 56 experts  (run A 954270720 = 72)
+    alloc_commit_model_peak  6906368000  (run A 7081930752)
+    alloc_journal_sha256  3b458e7768d65a171416551b4f36f0022d0070ac0aeb78bcb3168b7b032b9164
+    prefill_seconds        53.005840390  (run A 40.421776415)
+    tok/s DECODE            0.431717948  (run A 0.415512616)
+    wallclock_s           146.5 (Elapsed 2:26.49), VmHWM_bytes 7217737728
+
+4.7 PERF DATA POINTS, PER RUN (her standing order, all literal)
+
+  field                      gen-120b-k8-a     gen-120b-k8-b     gen-120b-k8-c
+  n_prompt_tokens                       56                56                56
+  n_generated_tokens                    32                32                32
+  stop_reason                    n_predict         n_predict         n_predict
+  model_load_seconds          13.142088365      11.258317597      10.380683016
+  prefill_seconds             40.421776415      37.165188133      36.840110666
+  ttft_seconds                40.421992879      37.165344090      36.840228521
+  decode_seconds              77.013305363      72.226891872      72.903030414
+  decode_llama_decode_calls             32                32                32
+  tok/s DECODE                 0.415512616       0.443048277       0.438939230
+  tok/s DECODE excl first      0.402528978       0.429203944       0.425223065
+  tok/s PREFILL                1.385391860       1.506786399       1.520082296
+  wall_seconds               130.665520415     120.703542089     120.213368649
+  driver wallclock_s         135.393602483     125.502685559     126.373085510
+  Elapsed (time -v)                2:15.38           2:05.49           2:06.36
+  Maximum RSS (kbytes)             7232252           7233120           7229940
+  VmHWM_bytes                   7405826048        7406714880        7403458560
+  VmPeak_kb                       63109468          63109468          63109468
+  alloc_vma_count                    37816             37816             37816
+
+  LEASE AND COMMIT COUNTERS (identical across all three, listed once):
+    resident_slices_loaded        1728
+    resident_bytes_loaded         3817082880
+    resident_read_ns              6546344532
+    resident_verify_ns            1600021009
+    lease_events                  6049
+    lease_bytes_read              80171994240
+    lease_read_ns                 60554869168
+    lease_verify_ns               33543769913
+    lease_drop_bytes              79990407168
+    lease_drop_ns                 4563211333
+    peak_concurrent_lease_bytes   954270720
+    route_calls                   1188
+    process_ns_since_ob1_init     130607581700
+    alloc_commit_total_bytes      86440837120
+    alloc_decommit_bytes          79990407168
+    alloc_vma_peak                37813
+    alloc_journal_records         74769
+    alloc_journal_bytes           2131042
+    lease_active_slices_at_exit   18
+    per_layer_lease_events        196,192,174,169,142,168,172,163,185,160,144,
+                                  131,162,149,173,168,153,173,166,179,179,175,
+                                  172,174,180,175,174,172,175,165,178,169,171,
+                                  165,156,150
+
+  P4c-STYLE CHECK, carried over from OB-5a's discipline: the printed
+  alloc_journal_sha256 equals the sha256 of the journal FILE on all three runs,
+  0beefc53...b6f0, journal file 2131042 bytes.
+
+4.8 GATE 1 VERDICT
+
+  BAR (STOP-SHIP): "two A/A generation runs byte-identical; a third run from the
+  same state after a serve restart also byte-identical."
+    two A/A runs byte-identical      A vs B, five limbs                   PASS
+    third run byte-identical         A vs C, five limbs, D2 interpretation PASS
+    comparator can report DIFFER     control 1, positive control          PASS
+  GATE 1: PASS. C4 kill line K1 is NOT tripped.
+
+--------------------------------------------------------------------------
+5. WHAT GATE 1's OWN TRACE SAYS ABOUT GATE 0's PROJECTION
+--------------------------------------------------------------------------
+
+Gate 0 read banked route logs from a perplexity harness at -ub 4096 on an
+enwik8-derived corpus. Gate 1's runs produced their own route log on a different
+prompt at n_ubatch 64 with a genuine decode tail. Applying gate 0's exact
+definitions to that trace (research/ob5b1/gate1_route_check.py) is the check
+that says whether gate 0's numbers transfer.
+
+  route log 50b8554c..., L 36, E 128, k 4, n_prompt 56, n_gen 32, 88 tokens
+
+  PREFILL PHASE (tokens 0..55)
+    decisions                    8064
+    top8 hits                    622
+    top8 mass                    0.0771329365
+    miss rate                    0.9228670635
+    misses/token drop-on-use     mean 132.8928571429  min 113  max 143
+    misses/token keep-previous   mean  99.4464285714
+    DISTINCT non-resident (layer,expert) pairs over the phase   1838
+
+  DECODE PHASE (tokens 56..87)
+    decisions                    4608
+    top8 hits                    397
+    top8 mass                    0.0861545139
+    miss rate                    0.9138454861
+    misses/token drop-on-use     mean 131.5937500000  min 116  max 140
+    misses/token keep-previous   mean  91.6875000000
+    DISTINCT non-resident (layer,expert) pairs over the phase   1293
+
+THE FIRST READING, AND IT IS THE ONE THAT MATTERS TO THE PRODUCT. Gate 0's
+in-domain figure of 0.4040035672 is an IN-CORPUS figure. On a real prompt that is
+not drawn from the ranking corpus, the same K=8 prose-ranked set was worth
+0.0861545139 in decode, against 0.0625 for uniform routing. C4's P-A pessimist,
+which assumed uniform, is very nearly what a real prompt measures.
+
+THE LEASE-EVENT MODEL, SETTLED BY MEASUREMENT AND NOT BY ARGUMENT. Two residency
+models were computed from the trace alone, before the engine's counter was read:
+
+  A) DROP ON USE, every non-resident selection is a fresh lease
+     prefill 7442 + decode 4211 = 11653          error against measured  +5604
+  B) HELD FOR THE UBATCH, one lease per distinct non-resident (layer, expert)
+     per llama_decode call
+     prefill 1838 + decode 4211 = 6049           error against measured     +0
+  MEASURED lease_events                          6049
+
+  and the byte side reconciles exactly:
+     lease_events x per_expert_bytes = 6049 x 13253760 = 80171994240
+     measured lease_bytes_read                          80171994240
+
+Model B is exact. THE ENGINE HOLDS A LEASE FOR THE DURATION OF ONE llama_decode
+CALL, NOT FOR ONE TOKEN. In decode the two models coincide because a decode
+ubatch is one token, which is why the decode column reads 4211 under both.
+
+PEAK CONCURRENT LEASE BYTES, AND WHERE IT COMES FROM.
+
+  measured                          954270720 = 72 x 13253760 exactly
+  batch regime (OB5A-ALLOC-1)      1590451200 = 120 x 13253760
+  ratio                             0.6000000000
+  the ubatch-32 control             742210560 = 56 x 13253760
+
+The peak moved with the UBATCH WIDTH, so it is set by the prefill, not by the
+decode tail. In pure decode the concurrent set is bounded by k x depth per layer,
+which is what C4 section 6.1's depth-2 term 106030080 models. This run cannot
+separate the two because it prefills and decodes in one process, and that is a
+measurement gate 2 must make properly (section 9, item a).
+
+ACCT AND EXPOSURE, MEASURED ON THIS RUN
+
+  resident_always trunk (OB5A-SCOUT-1 s4)      2314020128
+  resident_bytes_loaded (measured)             3817082880
+  peak_concurrent_lease_bytes (measured)        954270720
+  ACCT                            2314020128 + 3817082880 + 954270720 = 7085373728
+  EXPOSURE_acct                   63387346208 / 7085373728 = 8.946225
+
+  C4 s6.1 PROJECTED ACCT_decode at depth 2      6237133088
+  C4 s6.1 PROJECTED exposure                    10.162898
+  OB5A batch-regime MEASURED ACCT               7721554208
+  OB5A batch-regime MEASURED exposure           8.209143
+
+  DECODE BOUGHT EXPOSURE: 8.946225 measured against the batch regime's 8.209143,
+  a rise of 8.9787 percent, so C4 kill line K5 (decode costs exposure instead of
+  buying it) is NOT tripped. But it bought less than C4 projected, because C4
+  assumed a depth-2 prefetch bound of 8 concurrently leased experts and the run
+  actually held 72. Scope-ledger entry OB5-023's projection is CONFIRMED IN
+  DIRECTION AND REFUTED IN VALUE by this run, and the value it is refuted at is
+  itself contaminated by the prefill (section 9, item a).
+
+THE SERIALIZATION TAX, MEASURED IN THE GENERATION REGIME
+
+  lease_read_seconds                60.554869168
+  lease_verify_seconds              33.543769913
+  lease_drop_seconds                 4.563211333
+  process_seconds_since_ob1_init   130.607581700
+  read + verify        94.098639081 / 130.607581700 = 0.720468
+  read + verify + drop 98.661850414 / 130.607581700 = 0.755407
+
+  OB5A-ALLOC-1 F-B3-1 reports read plus verify at 62.36 percent of process time
+  in the batch regime. In generation it is 72.0468 percent on the same measure.
+  THE TAX IS WORSE ON THE SERVING PATH THAN IN THE LABORATORY, which sharpens
+  rather than softens C4 section 2.4's handoff to C2.
+
+  measured read rate    80171994240 / 60.554869168 = 1323956196.116539 bytes/s
+  measured verify rate  80171994240 / 33.543769913 = 2390071075.729895 bytes/s
+  OB5A batch-regime read rate                       1266753082.242027 bytes/s
+  OB5A batch-regime verify rate                     2355890566.216399 bytes/s
+
+  Both rates came in slightly ABOVE the batch-regime figures, 4.5157 percent on
+  read and 1.4509 percent on verify. F-B3-1's cold-read finding is not
+  contradicted; a 63 GB working set is still colder than the 20b's.
+
+MEASURED DECODE AGAINST THE ARITHMETIC THAT PREDICTED IT
+
+  decode-phase misses/token, this run's own trace   131.5937500000
+  bytes/token   131.59375 x 13253760              = 1744111980
+  read     1744111980 / 1266753082.242027         = 1.376837 s
+  verify   1744111980 / 2355890566.216399         = 0.740320 s
+  serialized                                        2.117156 s -> 0.472332 tok/s
+
+  measured tok/s DECODE, mean of the three runs
+    (0.415512616 + 0.443048277 + 0.438939230) / 3  = 0.432500041
+
+  0.432500041 / 0.472332 = 0.915670
+
+  The lease-only arithmetic is an upper bound and the machine reached 91.5670
+  percent of it. The missing 8.4330 percent is compute, drop, mprotect and
+  sampling. That is a tighter agreement than this leg expected and it says the
+  cost model on the serving path is dominated by lease read and verify, exactly
+  as the tax share above states independently.
+
+TIME TO FIRST TOKEN, MEASURED AGAINST GATE 0's OWN PROJECTION
+
+  measured ttft, mean of three   (40.421992879 + 37.165344090 + 36.840228521)/3
+                                 = 38.142521830 s on 56 prompt tokens
+  gate 0's prefill projection for THIS run's own trace:
+    1838 distinct non-resident (layer,expert) pairs
+    1838 x 13253760                              = 24360410880 bytes
+    read   24360410880 / 1266753082.242027       = 19.2306 s
+    verify 24360410880 / 2355890566.216399       = 10.3402 s
+    serialized                                     29.5708 s
+  29.5708 / 38.142522 = 0.775271
+
+  So 77.53 percent of the measured prefill is lease read and verify, consistent
+  with the 72.0468 percent whole-run figure.
+
+  Against C4 section 2.3's P-C, which projected 23.851 s for a 64-token prompt:
+    C4 per prompt token   23.851 / 64  = 0.372672 s
+    measured per token    38.142522/56 = 0.681116 s
+    ratio                                1.827657
+
+  TTFT is 1.827657 times C4's per-token P-C projection. C4 kill line K3 sets its
+  bar at 120 s on a 64-token prompt; scaling the measurement, 38.142522 x 64/56 =
+  43.591 s. K3 IS NOT TRIPPED at K=8. The announcement arithmetic C4 section 7.2
+  designs must be built on the measured figure and not on P-C.
+
+--------------------------------------------------------------------------
+6. FINDINGS
+--------------------------------------------------------------------------
+
+F-A1  THE ENGINE LEASES PER llama_decode CALL, NOT PER TOKEN, AND THE TRACE
+      PREDICTS THE COUNTER EXACTLY. Model B predicted 6049 lease events from the
+      routing alone; the engine measured 6049; error 0, and the byte side
+      reconciles to the event. Model A, the drop-on-use model C4 projection P-A
+      is written on, predicted 11653, an error of +5604. This is a residency
+      MODEL settled by measurement rather than by argument, and every future cost
+      model on the serving path should be written on model B.
+
+F-A2  THE IN-DOMAIN TOP-8 MASS IS AN IN-CORPUS NUMBER AND DOES NOT TRANSFER.
+      0.4040035672 on the ranking corpus; 0.0793007745 on the code corpus;
+      0.0861545139 on gate 1's own prompt in the decode phase. Uniform routing at
+      K/E is 0.0625. A prose-ranked static K=8 set was worth 1.3785 times uniform
+      on a real prompt, and 6.4641 times uniform on the corpus it was ranked on.
+      Any figure quoted from gate 0's in-domain column must name its corpus.
+
+F-A3  THE STATIC K THAT WOULD REACH C4's POLICY POINT DOES NOT FIT THE BOX.
+      P-B's 20.701296 misses per token sits between the measured K=48 row
+      (21.115234) and the K=64 row (11.698975). K=48's estimated committed state
+      is 26.5503 GB on a 25.196 GB box. Therefore on hyde the policy stack is not
+      an alternative route to that operating point, it is the ONLY route.
+
+F-A4  PEAK CONCURRENT LEASE BYTES IN A SERVED TURN IS SET BY THE PREFILL UBATCH,
+      NOT BY THE DECODE TAIL. 954270720 at n_ubatch 64 (72 experts) and
+      742210560 at n_ubatch 32 (56 experts), both exact multiples of
+      per_expert_bytes. Since ACCT's third term is that peak, the ACCT of a served
+      turn is a function of the batch schedule, and C4 section 4.3's decision to
+      put the schedule in the bound state turns out to bind the exposure figure
+      as well as the identity. Neither C4 nor OB-5a had this.
+
+F-A5  THE BATCH SCHEDULE MOVED THE ROUTING AND DID NOT MOVE THE ANSWER. Changing
+      n_ubatch from 64 to 32 changed the route log from byte 552, line 33, which
+      is layer 0 of the first token of the second piece, exactly where the
+      numerics should first differ. The 32 generated token ids were identical.
+      READ IT CAREFULLY IN BOTH DIRECTIONS. It confirms C4 section 4.3's
+      mechanism: the schedule does change the forward pass. It does NOT confirm
+      the consequence at this operating point: the logit perturbation stayed
+      inside the argmax margin at every one of 32 positions. The design
+      constraint stands, because a perturbation that stays inside the margin 32
+      times is not a perturbation that stays inside it always, and one flipped
+      token changes every token after it. But the program should know that a
+      schedule change is a SILENT numeric change that the identity limb will only
+      sometimes catch, which is an argument for keeping the route log in the
+      receipt beside the answer, as gate 1's five-limb form already does.
+
+F-A6  THE SERIALIZATION TAX IS WORSE ON THE SERVING PATH. Read plus verify is
+      72.0468 percent of process time in generation against F-B3-1's 62.36
+      percent in the batch regime. C2's prize on the serving path is
+      correspondingly larger than the laboratory numbers suggest.
+
+F-A7  TIME TO FIRST TOKEN IS 1.827657 TIMES C4's P-C PER PROMPT TOKEN. Measured
+      38.142522 s on 56 tokens against a projection of 0.372672 s per token.
+      P-C's optimistic residency assumption was nearly right in isolation
+      (7.299262 of 8 resident experts sit inside a typical 64-token prose
+      window), so the gap is not in the residency term; it is compute, drop and
+      the fact that gate 1's prompt is not the prose corpus.
+
+F-A8  alloc_commit_peak_single IS UNCHANGED FROM THE BATCH REGIME: 615333888
+      bytes, the same 586.83 MB figure OB5A-ALLOC-1 P2b banks, and the same on
+      the 20b smoke. The allocator's central claim, that no request proportional
+      to N is ever made, holds on the generation path without modification. The
+      largest single request is still 102.9918 times smaller than the one that
+      used to kill the run.
+
+F-A9  THIS GATE's IDENTITY IS A/A ON ONE BINARY, NOT CROSS-MECHANISM. OB5A's
+      120b row is stronger in one specific way: it matched a reference produced
+      by a DIFFERENT memory mechanism. Gate 1 has no second generation
+      implementation to check against, so a bug inside ob5b1-gen that is
+      deterministic would pass every limb here. Section 9 item g names the run
+      that would close it.
+
+--------------------------------------------------------------------------
+7. DEVIATIONS
+--------------------------------------------------------------------------
+
+D1  THE ALLOCATOR IS NOT ON ob5a's BRANCH HEAD, so a worktree taken from that
+    head does not carry it. Reproduced by copying the five modified source files
+    out of /root/ob5a/llama.cpp (read only) and verifying each against the digest
+    research/ob5a/BUILD-1.txt banked, five of five MATCH. The alternative was to
+    copy and rewrite research/ob5a/apply_alloc.py and apply_lease.py, whose TREE
+    constant is hardcoded to /root/ob5a/llama.cpp; a byte-level copy verified
+    against banked digests is the stronger statement and edits nothing in the
+    repo's ob5a paths. No sibling worktree or branch was written to. This leg
+    inherits F-B3-4 rather than resolving it.
+
+D2  GATE 1's THIRD LIMB, "after a serve restart", was reinterpreted. The hard
+    walls forbid touching pid 654 and gate 3 has not built an exposure worker
+    serve, so the limb was taken as a run sharing the bound state and differing
+    in everything outside it: fresh process, different cwd, different output
+    directory, page cache perturbed by a 4 GiB read of the model file. Declared
+    in the driver header before the run, not after.
+
+D3  THE GENERATION ENTRY POINT IS COMPILED OUTSIDE CMAKE, with a direct g++
+    invocation against the built libraries, so no CMakeLists.txt was touched and
+    the engine whose .text this leg verified is the engine the runs used. The
+    cost is that ob5b1-gen is not a cmake target and a reader reproducing this
+    must use the command printed in section 4.2.
+
+D4  GATE 0's BAR NAMES THE TOP-8 SET. This leg verified that the banked OB-1b
+    K=8 set re-derives from 120b-prose-a's own counts rather than assuming it,
+    and reports the K sweep at 16, 24, 32, 48 and 64 as a DECLARED EXTRA because
+    gate 2 needs it. The extra changes no number in the K=8 bar.
+
+D5  "KEEP-PREVIOUS" RESIDENCY is a declared extra beyond the gate bar, computed
+    because C4 section 2.2 names the question and nothing had answered it.
+
+D6  THE TWO CONTROLS IN SECTION 4.6 are declared extras. Neither was required by
+    the gate and both are reported whatever they said.
+
+D7  THE 63 GB MODEL FILE WAS NOT RE-HASHED by this leg. Its byte size was
+    verified literally (63387346208) and its sha256 is banked by OB5A-ALLOC-1 as
+    582bd40f.... Re-hashing costs roughly a minute of disk read inside the
+    runlock and adds nothing this leg's claims rest on. Named rather than left
+    silent, because the model digest IS a member of the bound state.
+
+D8  ROUTE LOGS FROM A BATCHED HARNESS WERE READ AS A DECODE SCHEDULE in gate 0.
+    Routing is per token by construction (each token's router runs on its own
+    hidden state), so the ROUTE DECISIONS transfer; what does not transfer is the
+    lease amortization, which is the whole point of the exercise. But control 2
+    then measured that the batch schedule CAN change routing (F-A5), so gate 0's
+    figures are properly read as "the routing a 4096-wide batch produced", not
+    "the routing decode would produce". Gate 1's own trace is the decode-regime
+    measurement and section 5 reports it separately for exactly this reason.
+
+No other deviations. Nothing in OB5-DESIGN-C4-1.md or OB5A-ALLOC-1.md was
+renegotiated by this leg.
+
+--------------------------------------------------------------------------
+8. C4 KILL LINES, EVALUATED HONESTLY
+--------------------------------------------------------------------------
+
+  K1  BYTE-EXACT GENERATION FAILS            NOT TRIPPED. Section 4.5, five
+                                             limbs, three runs, plus a positive
+                                             control proving the comparator can
+                                             say DIFFER.
+  K2  DECODE UNUSABLE AT EVERY FITTING K     NOT EVALUABLE YET, and this leg
+                                             declines to call it. K2 requires
+                                             decode below 0.5 tok/s at EVERY K
+                                             that fits WITH THE POLICY STACK
+                                             LIVE. Measured here: 0.415512616 to
+                                             0.443048277 tok/s decode at K=8
+                                             with no policy stack and no
+                                             prefetch, on a prompt far from the
+                                             ranking corpus. That is one point,
+                                             not every point. Gate 2 owns it.
+  K3  TTFT ABOVE 120 s ON 64 TOKENS          NOT TRIPPED. 38.142522 s measured on
+                                             56 tokens, 43.591 s scaled to 64.
+                                             But 1.8277 times C4's projection,
+                                             which the announcement arithmetic
+                                             must absorb (F-A7).
+  K5  DECODE COSTS EXPOSURE                  NOT TRIPPED. Measured peak
+                                             concurrent 954270720 against the
+                                             batch regime's 1590451200, a ratio
+                                             of 0.6 exactly; exposure 8.946225
+                                             against 8.209143. The direction of
+                                             C4 section 6.1 holds; its VALUE
+                                             (10.162898) does not, and the
+                                             measured value is itself set by the
+                                             prefill (F-A4).
+  K4, K6, K7, K8, K9                         Out of scope for gates 0 and 1.
+
+--------------------------------------------------------------------------
+9. WHAT GATE 2 NEEDS
+--------------------------------------------------------------------------
+
+a) A DECODE-ONLY PEAK CONCURRENT MEASUREMENT. The 954270720 figure is set by the
+   prefill ubatch (F-A4), so the decode-regime ACCT that C4 section 6.1 and
+   scope-ledger entry OB5-023 are about has not actually been measured. Two ways,
+   either acceptable: add a per-phase peak counter to ob1-lease.cpp beside the
+   existing g_peak_concurrent, or run a turn whose prompt is one token so prefill
+   and decode have the same width. The first is better because it also serves
+   gate 3's receipt.
+
+b) THE K SWEEP AT 120b SCALE. Gate 0 hands gate 2 the miss rate at every K
+   (section 3.8); gate 2 owes the measured tok/s decode and the measured
+   committed state at K=16 and K=24, and at K=32 if free RAM inside the lock
+   allows it. The estimated committed column in section 3.8 is arithmetic; the
+   engine's alloc_commit_model_peak is the measurement.
+
+c) AN IN-CORPUS AND AN OUT-OF-CORPUS PROMPT, BOTH MEASURED. Gate 1's prompt
+   scored 0.0861545139 top-8 mass in decode. A prompt drawn from the same
+   enwik8-derived corpus the K=8 set was ranked on should score near
+   0.4040035672 and decode several times faster. Measuring both is what turns
+   F-A2 from an observation into the operating envelope gate 3's announcement and
+   wait class need. It is also the cheapest available read on H-DOMAIN.
+
+d) A LONGER GENERATION. 32 tokens is enough for identity and thin for throughput.
+   tok/s DECODE excl first (0.402528978 / 0.429203944 / 0.425223065) is the
+   figure to headline per OB5-024, and it needs enough tokens to stop moving.
+
+e) THE COST DECOMPOSITION AT EACH K. Section 5 shows lease read and verify at
+   72.0468 percent of process time and the lease-only arithmetic reaching 91.5670
+   percent of measured decode. Repeating that decomposition at each K tells C1
+   and C2 exactly how much of the remaining 8.4330 percent is compute and
+   therefore how much of the gain a policy stack can actually collect.
+
+f) THE SCHEDULE-SENSITIVITY QUESTION LEFT OPEN BY F-A5. Control 2 found a
+   schedule change that moved the routing and not the answer. Gate 2 should
+   either find a prompt or a length where it DOES move the answer, or record
+   plainly that it looked and did not. Either result belongs in the receipt,
+   because C4 section 4.3's constraint is being carried on the strength of an
+   argument that is currently half-measured.
+
+g) A SECOND GENERATION IMPLEMENTATION, FOR F-A9. Running llama-cli (or any second
+   entry point) on the same model at the matching configuration and comparing the
+   token sequence is the limb that would catch a deterministic bug inside
+   ob5b1-gen itself. It is not an A/A check and it is the only one of these items
+   that tests the instrument rather than the machine.
+
+h) FOR GATE 3, WHICH IS NOT THIS BUILDER'S: the receipt block C4 section 7.3
+   drafts can be filled entirely from counters that already exist. Every field it
+   names was printed by these runs: leased slices (lease_events), bytes
+   (lease_bytes_read), held (ACCT, computed in section 5), tok/s decode, and the
+   worker log digest (alloc_journal_sha256). The announcement in section 7.2
+   needs the measured TTFT arithmetic of section 5, not P-C.
+
+--------------------------------------------------------------------------
+10. ARTIFACTS AND DIGESTS
+--------------------------------------------------------------------------
+
+IN REPO, branch research-2, added by this leg only under its own paths:
+
+  research/OB5B-S1-RUNLOG-1.txt      this file
+  research/ob5b1/gate0_top8.py       ec0d533db241f8950f9b0070bddd385d3c3f5720c8c8bb6d5e29061acde93e36
+  research/ob5b1/gate0_window.py     73dd84c2c26166840b7662f1db026170624bf23ae5f4726824b036526bc471ba
+  research/ob5b1/gate0_project.py    77dff29c5228310c62f734f506c8ba6fadde62b46dcc60fbf334846938fd2c5c
+  research/ob5b1/gate0-run.sh        859405d7b538b401bf3059197ee92970d9de387cf6a976003b238129a005a2dd
+  research/ob5b1/gate0-derive.sh     defb2263c95a85535c65a5d7117f46a0d02a9bb861a829d2ddbb077a5eeb2f03
+  research/ob5b1/build-ob5b1.sh      34cbf093624076011e024fea62f8c413ff74b6b691a278f1b443baf9442cdb38
+  research/ob5b1/ob5b1-gen.cpp       01a2dc56de4e6fae9c28b5a3139cbaeef3fa35190b5c329fe59d8d1b8436aad5
+  research/ob5b1/make-prompt.sh      b105f08cab36431c13a409e644311576b6173cb25e73ee7699eae80b7c43fbc0
+  research/ob5b1/smoke-20b.sh        2d11b088d4e810bc55689d1ce78dfb439de125c1577a5961218ac8e6eed6d95a
+  research/ob5b1/gate1-120b.sh       2baa66ae95ae49ecea92edc14f88aa7c3b58e56b4a688812a86c72abbaffcf0e
+  research/ob5b1/gate1_route_check.py 62aad75690a789ca244efdd74afa8a58edffb8018e456535c0d862484fcbfc9b
+  research/ob5b1/gate1-analyze.sh    82aab8af252f1d8bbf36b05ef5996ca3d6193b3a06eefab4f36e705a3336a6b0
+  research/ob5b1/gate1-ctl-ubatch.sh  f594178f933fece43864a016ddef0a73743852262023b5c6ad52a59c3ff95926
+  research/ob5b1/gate1-ctl-harness.sh 9389a9bf1b4e624f16dcc21a0e4b2dcb514cfd9feff5100eae014f9f1c14cb14
+  research/ob5b1/sha-artifacts.sh    8d5e4d198a6b139cba8c8404b8e2d5f7553ebfa823fb2d83dfc1bf2e60889f85
+  research/ob5b1/verify-runlog-arith.py 029924f446a6dc13fb217beeb967acac93b20a889c4656af3722b377b83ce90e
+  research/ob5b1/check-lf.sh         0215412f273b3137cab2b1ffcb3dd8da6ba55dce095d13b83039d6070a9ff0ee
+
+  The digests above are of the in-repo files. Every driver strips CR before
+  executing (tr -d '\r'), per the house script-to-file law, and the executed
+  copies under /root/ob5b1/ hash the same as the committed files.
+
+  TWO OF THOSE SCRIPTS EXIST TO CHECK THIS DOCUMENT RATHER THAN THE MACHINE.
+
+  verify-runlog-arith.py recomputes every figure this runlog DERIVES rather than
+  reads off a run, so that no number here rests on hand arithmetic. Byte counts
+  and event counts are compared for EXACT equality (a byte count that is close is
+  a byte count that is wrong); figures the runlog prints rounded are compared at a
+  stated relative tolerance. Its literal verdict:
+
+      CHECKS 49, DISAGREEMENTS 0
+      VERDICT: ALL DERIVED FIGURES CONFIRMED
+
+  It found two disagreements on its first run and both were this document's
+  error, not the machine's: the read-plus-verify share of process time read
+  0.720474 and is 0.720468, and the ratio to C4's P-C read 1.827720 and is
+  1.827657. Both were corrected here before this file was committed, and they are
+  recorded rather than quietly fixed.
+
+  check-lf.sh proves every committed file of this leg is LF-only and pure ASCII:
+      CR 0, non-ascii 0 on all 18 files, and 0 em dashes in this runlog. It is
+      re-runnable against the committed tree at any time.
+
+OFF REPO, per the house law that run evidence stays off the repo:
+
+  /mnt/f/f32/stage/research/ob5b1/PROMPT-1.txt   51cb66644b3c513381d6fc641b4d7c89f1c5b9fccfb10f339e8cfde8a1549ffb
+  /mnt/f/f32/stage/research/ob5b1/gate0/
+    120b-prose-a.json       914048cbf48d466ae7328bb0d342bc1cd800750d8ccad89dc380a1a0e7f93533
+    120b-prose-a.det2.json  914048cbf48d466ae7328bb0d342bc1cd800750d8ccad89dc380a1a0e7f93533
+    120b-prose-b.json       fe1caecc5f0a4f4352ae21651316951e0b28e241e345e3f809b77dd4a80ec374
+    120b-code-a.json        9c12ceebc59218852b0c2f59c7cf89ea32edf30aadaedc21ac5996e49ba23407
+    120b-code-b.json        357744f8efdf0ed5e0309b358645a7cea473d8529305e0d0017f1851148dcbeb
+    window64.json           c1a816b779c5c640d7901234b31e2dbd64aea05d356824074c6a52b40f1b935c
+  /mnt/f/f32/stage/research/ob5b1/runs/gen-120b-k8-{a,b,c}/
+  /mnt/f/f32/stage/research/ob5b1/runs/gen-120b-k8-ub32/
+  /mnt/f/f32/stage/research/ob5b1/runs/smoke-20b-k2/
+  /root/ob5b1/runs/  (the primary tree; stage is its mirror)
+  /root/ob5b1/GATE0-1.txt, GATE0-2.txt, BUILD-1.txt, SMOKE-20B-1.txt,
+  /root/ob5b1/GATE1-1.txt, GATE1-2.txt, GATE1-CTL-1.txt, GATE1-CTL-2.txt
+
+  The 120b-prose-a.json and 120b-prose-a.det2.json digests are equal by
+  construction: that equality IS the A/A determinism limb of section 3.2.
+
+THE DECIDING DIGESTS OF THIS LEG:
+
+  gate 1 identity (ids)   5855bcebe6b98f73879a79527b2a9e32fc7b8e43ca8808ac48e6d17634e993e4
+  gate 1 identity (text)  99417b7488e53ca611f5d9a9e1211ea3491ec0e34e38c4353520ed8f7fe805b4
+  gate 1 route            50b8554c38627be594c5ab4314f680380e43fb9f60aaf5e42bc30a742cad5b32
+  gate 1 alloc journal    0beefc532904765a029f2ab8dee6ddf72e2b6ebd87fa3b58cb4caaaaef14b6f0
+  gate 1 prompt ids       a5e714dacc907126af664f8d512a3bed55a54a325692e4e44cd5eef2c21715d5
+  ob5b1-gen binary        daca8fb74f626c186950c2882dfd1fdfe191056ca5feacccd51201db3e625740
+  ob5b1 libllama .text    e7437728ed7c0ccbfb708bfd16c630c26c1eb7a64ec6e16f371bbba860401ae9
+  ob5b1 libggml-base .text f62c1bfe6398e4b9720eef5dadb5fcad8f3dc5b385f1b1acb29a9c4da4a9a446
+
+--------------------------------------------------------------------------
+11. THE STANDARD THIS LEG WAS HELD TO
+--------------------------------------------------------------------------
+
+The bars for both gates were written in OB5-DESIGN-C4-1.md before this leg
+existed and neither was renegotiated. Both passed. What is reported at greater
+length than either pass is the set of things that did not go as the design
+projected: C4's P-B refuted as a static figure (F-A2, F-A3), its decode-regime
+exposure value refuted while its direction held (K5, section 5), its P-C
+projection missed by 1.8277 on TTFT (F-A7), its drop-on-use residency model
+replaced by a measured one (F-A1), and its batch-schedule claim confirmed in
+mechanism but not in consequence (F-A5). Gate 2 inherits all five.
+
+END OB5B-S1-RUNLOG-1.

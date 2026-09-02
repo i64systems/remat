@@ -1,0 +1,188 @@
+BOBMOE0 STAGE 2 - THE FUNDED RUN, LAUNCH RECEIPT (plan s.7, LEG B)
+==================================================================
+Lane: funded ternary (low-int). Venue: hyde, on-machine, no ssh. Worktree
+F:\f32\openbob-wt\low-int, branch low-int. Training runs INSIDE WSL2.
+Law: BOBMOE0-STAGE2-PLAN.txt (s.3 the launcher, s.4 the collector plan, s.5 the
+resume story, s.6 the walls); BOBMOE0-PREREG-1.md, FROZEN; BOBMOE0-STAGE1.txt
+s.6 amendment A1. Pure ASCII, no em dashes. Every number is literal command
+output. Full evidence: lowint/moe0/evidence/leg-launch.txt.
+
+1. G1-CARD VERDICT, THE GATE THIS LAUNCH RIDES ON
+=================================================
+G1-CARD PASS BOTH ARMS, zero failed limbs, under the RULED dtype (bf16
+autocast) with activation rematerialization on, the full CUDA determinism
+envelope, CE_IMPL=native and NO op substitutions. The one permitted fp32
+fallback was neither needed nor exercised. Banked in
+lowint/moe0/evidence/leg-g1card.txt at 37c1140.
+
+The funded run RESUMES each arm from that arm's own G1-CARD runA step-1000
+checkpoint. Those anchors, quoted from the G1-CARD digest logs
+.../stage2/g1card/<arm>/CKPT-DIGESTS.txt:
+
+  moe   3a3a66b9f30a8ce2702461bc73fae14f1fcee39ae426a3b7368f9e63976f5309  step001000.safetensors
+        fda93adac8702ce2281a03b14ba9048667d56ca26771234f108b9802a3453acb  step001000.resume.pt
+  dense 0da9ae1fd49d3fcd03825bc51675a08db62c7fdaf65dfa6a355a134a4709a042  step001000.safetensors
+        49fcde32703c7e43949f4a037076fdb7c251acd12874379d0b9c761edd231716  step001000.resume.pt
+
+Both step-1000 safetensors AND both step-1000 sidecars were byte-identical
+across G1-CARD runA and runB, so the funded chain hangs off a state that two
+independent clean processes agreed on exactly. The launcher recomputed the moe
+anchor digests at run time and they matched the banked pair.
+
+2. THE LAUNCH
+=============
+  LAUNCH_UTC = 2026-08-30T20:02:20Z
+  form: setsid nohup bash .../lowint/moe0/train/run_stage2.sh < /dev/null
+        > .../stage2/launcher.out 2>&1 &
+  launcher commit (pushed BEFORE launch):
+        6b0cab06751b97ace38139072ca815cdb2765773  origin/low-int
+  bobmoe0.py was NOT edited by this leg. No wiring gap existed; W5 PREEMPT,
+  W6 temp rule, W8 digest log and the frozen stage-2 cadence are the trainer's
+  own G1-CARD-proven behavior, driven by flags only.
+
+PIDS
+  launcher (bash run_stage2.sh)        911207
+  moe trainer (python bobmoe0.py)      911266
+  dense trainer                        not yet started; the launcher starts it
+                                       after the moe arm and logs it as
+                                       "PYTHON_PID dense=" in the gate log.
+  The hyde serve pid 654 is a BYSTANDER: read at every gate, never signalled.
+  The wsl.exe keepalive pid 26796 was verified alive before launch, never
+  touched.
+
+ARMS, SEQUENTIAL IN ONE PROCESS: moe first, then dense. Each arm resumes from
+its anchor into .../stage2/<arm>/ and runs to step 15259 on the frozen cadence
+(checkpoints at 1000, 2000, ... 15000, and 15259), sidecars beside them, both
+digests appended to <arm>/CKPT-DIGESTS.txt after every save.
+
+3. LOG AND MARKER PATHS (WSL paths; Windows equivalents replace
+   /mnt/f/ with F:\ )
+==============================================================
+  launcher stdout+stderr  /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/launcher.out
+  gate log                /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/gates-stage2-seg01.log
+  moe progress (temps)    /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/moe/progress-seg01.txt
+  moe metrics (compared)  /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/moe/metrics-seg01.tsv
+  moe trainer console     /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/moe/run-seg01.out
+  moe digests             /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/moe/CKPT-DIGESTS.txt
+  dense equivalents       /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/dense/...
+  checkpoints + sidecars  /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/<arm>/step0NNNNN.*
+                          OFF-REPO by the binary wall. Digests in git, bytes never.
+
+MARKERS
+  per-arm complete   .../stage2/<arm>/ARM-DONE
+  THE DONE MARKER    /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/DONE
+                     Windows: F:\f32\stage\lowint\moe0-ckpt\stage2\DONE
+                     Written ONLY when BOTH arms reached step 15259. It contains
+                     the completion timestamp UTC. This is the collector trigger.
+  early exits        <arm>/PREEMPTED (her demo file seen at a checkpoint
+                     boundary), <arm>/TEMPSTOP (90 C on 3 consecutive 25-step
+                     samples), or PREEMPTED-BETWEEN-ARMS at the stage2 root.
+                     NO DONE marker is written on any early exit, so the
+                     collector cannot mistake a partial run for a finished one.
+
+4. HEALTH AT HAND-OFF
+=====================
+FIRST FUNDED CHECKPOINT, moe step 2000, landed on the frozen cadence at
+2026-08-30T20:33:10Z. Banked by the trainer (W8) and RE-VERIFIED by a fresh hash
+of the file on disk, both lines identical:
+  banked  936462e5dc415cd29dc8eeaa41a7a9a6249f0e10b05b7e06422ceb485784bf73  step002000.safetensors
+  fresh   936462e5dc415cd29dc8eeaa41a7a9a6249f0e10b05b7e06422ceb485784bf73  .../step002000.safetensors
+  banked  04875d93e95ebb9d87c220bcccef5fbbfbfab82fe58cee55d916df691e848818  step002000.resume.pt
+  fresh   04875d93e95ebb9d87c220bcccef5fbbfbfab82fe58cee55d916df691e848818  .../step002000.resume.pt
+  sizes 655128920 and 1310510615 bytes, exactly the G1-CARD moe sizes.
+  trainer line: CKPT step=2000 ... elapsed_s=1816.794
+
+LOSS FINITE AND FALLING. ce 1.16893041133880615e+00 at step 1001 to
+1.04660367965698242e+00 at step 2014; metrics data lines 1001..2014 gapless; no
+NaN, no inf.
+
+GPU TEMPERATURE, quoted literally from the progress log (W6: progress log only,
+never the deterministic metrics log):
+  step=1025 ce=1.137079 elapsed_s=46.431 gpu_temp_c=61
+  step=1975 ce=1.029224 elapsed_s=1755.115 gpu_temp_c=71
+  Steady 61-72 C across the whole first funded 1000 steps, against the frozen
+  90 C / 3-consecutive-sample rule, which never armed. Independent nvidia-smi
+  reads: 56 C at 2026-08-30T20:03:10Z and 68 C at 2026-08-30T20:33:21Z.
+
+MEASURED RATE (arithmetic shown):
+  steady state (1755.115 - 46.431) / 950 = 1.79861 s/step = 18,218 tokens/s
+  end to end 1816.794 / 1000 = 1.816794 s/step = 18,036 tokens/s
+  Slightly faster than the G1-CARD moe measurement of 1.8968 s/step.
+
+MARKER SCAN at hand-off: no <arm>/PREEMPTED, no <arm>/TEMPSTOP, no ARM-DONE, no
+DONE. The card's compute apps are pid 654 (the serve, alive and untouched) and
+pid 911266 (this run).
+
+A LIVE DETERMINISM CONFIRMATION, taken while the run was in flight: the funded
+moe segment's metrics over steps 1001..1100 are byte-identical to G1-CARD runA's
+over the same steps, both sha256
+6ad034e40b1900164d1e5477994d8732f13f1289fe4ed65ce11d6e8e420febd1, CMP IDENTICAL.
+The funded chain is reproducing the proven prefix bit for bit in a fresh process.
+
+5. EXPECTED COMPLETION WINDOW
+=============================
+  moe   14259 steps remaining * 1.816794 s = 25,905.6 s = 7.196 h  (measured)
+  dense 14259 steps remaining * 1.1135 s   = 15,877.4 s = 4.410 h  (the G1-CARD
+        dense rate; the funded dense arm has not run yet, so this is quoted as
+        the measurement it is, not as a funded-run measurement)
+  plus about 2 min of gates and process startup
+  TOTAL 41,903 s = 11.64 h from LAUNCH_UTC 2026-08-30T20:02:20Z
+  PROJECTED DONE about 2026-08-31T07:41Z.
+  STATED AS A WINDOW, honestly: 2026-08-31T07:15Z to 2026-08-31T08:15Z.
+  Inside the prereg s.5 estimate of 8-14 h for both arms.
+
+6. WHAT THE ARCHITECT DOES ON DONE
+==================================
+The collector plan is BOBMOE0-STAGE2-PLAN.txt SECTION 4, and it is executed by
+THE ARCHITECT when F:\f32\stage\lowint\moe0-ckpt\stage2\DONE appears. In its own
+words it is: C1 re-hash every banked checkpoint against CKPT-DIGESTS.txt on both
+arms with counts quoted; C2 --eval-bpb (W7) on each arm's FINAL step-15259
+checkpoint, twice per arm as clean processes, artifacts byte-identical, bpb at
+full precision; C3 the falsifier arithmetic against the FROZEN prereg s.3 bars
+verbatim (MoE KILLED if bpb_moe > bpb_dense + 0.03, MATCH within 0.03, BEAT
+below -0.03, no renegotiation); C4 route_stats.py locality on the final MoE
+checkpoint over the frozen val split, twice byte-identical, layer-mean P_half
+against the frozen 0.60 kill bar at the final checkpoint, dead-expert count, and
+routing collapse named as its own outcome that kills the MoE arm even with a
+passing bpb; C5 the compressibility curve at every banked checkpoint on both
+arms; C6 the receipt BOBMOE0-STAGE2-RESULT.txt with both verdicts banked
+independently plus LESSONS-FOR-BIG-WEIGHTS. C4 and C5 run on CPU; C2 runs on the
+card under the full envelope behind the L1-L3 gates. This leg does none of that
+and claims none of it.
+
+7. THE RESUME STORY (plan s.5, restated)
+========================================
+The funded run is a SEGMENT CHAIN, not a single unbroken process, and that costs
+the determinism claim nothing. Every checkpoint banks a digest and a full sidecar
+carrying the optimizer state, both RNG states and the step index, so any segment
+can be restarted exactly where the last one stopped; G1-CARD limb (ii) proved at
+a real boundary that a resumed segment reproduces the straight run's checkpoint
+bytes exactly, and the sidecar field comparison showed the whole optimizer state
+and both RNG states matching too. Therefore a run that is preempted by her demo
+file, stopped by the temperature rule, or crashed, and then resumed from its last
+banked checkpoint, carries the SAME whole-run determinism claim as an
+uninterrupted one: the final bytes are a pure function of code, data pin and
+seeds, independent of the preemption pattern. This launch has already
+demonstrated it live, not just inherited it: the funded moe segment's metrics
+over steps 1001..1100 are byte-identical
+(6ad034e40b1900164d1e5477994d8732f13f1289fe4ed65ce11d6e8e420febd1) to G1-CARD
+runA's over the same steps, computed in a different process from the same anchor.
+If a sidecar is ever missing or corrupt from a crash mid-write, resume falls back
+to the previous complete checkpoint pair; if full state restoration is ever
+impossible, the claim NARROWS honestly to per-segment determinism and the receipt
+says so in those words. A resume launch reuses the same launcher with SEG=seg02
+and RESUME_MOE / RESUME_DENSE pointed at the last good checkpoint, which keeps
+this segment's logs intact beside the next one's.
+
+8. HER PREEMPTION, PLAINLY
+==========================
+HER DEMOS PREEMPT. To stop this run for a demonstration, create the file
+  F:\f32\openbob-wt\low-int\lowint\moe0\PREEMPT
+(WSL: /mnt/f/f32/openbob-wt/low-int/lowint/moe0/PREEMPT). At the next checkpoint
+boundary the trainer saves, writes <arm>/PREEMPTED, and exits clean and
+resumable; the launcher also checks the file between the two arms. Nothing is
+killed and nothing is lost past the last 1000-step boundary. The temperature rule
+is armed independently: 90 C on three consecutive 25-step samples forces an
+off-cadence checkpoint, a TEMPSTOP marker, and a clean exit. Never a push-through.
+
+END BOBMOE0-STAGE2-LAUNCH

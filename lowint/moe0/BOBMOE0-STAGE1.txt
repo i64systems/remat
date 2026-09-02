@@ -1,0 +1,289 @@
+BOBMOE0-STAGE1 - BOB-MOE-0 STAGE 1 RECEIPT (THE STAGING, CPU ONLY)
+==================================================================
+Lane: funded ternary (low-int). Lead-authored. UTC 2026-08-30T10:43:57Z.
+Prereg: lowint/moe0/BOBMOE0-PREREG-1.md, committed at ea06508 BEFORE any
+build. Builder legs used: 2 of the 3 allowed (leg 3 reserve, unused).
+Evidence, committed: lowint/moe0/evidence/leg1.txt (25701 bytes) and
+leg2.txt (35391 bytes), plus the CSV/TSV artifacts they pin. Every
+number below is literal command output, quoted from those receipts or
+from the lead's own attestation commands run this round.
+
+0. VERDICT LINE
+===============
+G1 BIT-REPRO: PASS, both arms, at 8 threads. 6 of 6 checkpoints
+byte-identical across two clean separate processes (sha256 AND cmp),
+both metrics logs byte-identical across all 500 steps.
+G2 INSTRUMENT BIT-REPRO: PASS. 3 of 3 routing-stat artifacts
+byte-identical across two clean separate processes (sha256 AND cmp).
+NO locality verdict is claimed at this scale, per the prereg's own
+words; the measured stats are banked as facts in section 4.
+G3 REMAT SPOT-PROOF: PASS, byte-exact, all four container forms, fresh
+decode process per form, the checkpoint not on the decode path, the
+load-bearing bit-flip probe failing in both required forms.
+G4 CROSS-BACKEND EXACTNESS: named as a stage-2/3 gate in the prereg;
+not run here, as preregistered.
+REFUSALS: NONE. No leg needed the 3090; the card was not touched;
+nothing is banked for stage 2 on that account.
+STAGE 2: ready to fire (section 7), subject to prereg amendment A1
+(section 6), ruled by the lead now, before any stage-2 training.
+
+1. GATE -1, LEAD RE-ATTESTATION (run this round, before this receipt)
+=====================================================================
+(a) $ git rev-parse HEAD
+    e89cde1e44129cd3153cd29fe0642fa10431d37d
+    $ git rev-parse origin/low-int
+    e89cde1e44129cd3153cd29fe0642fa10431d37d
+    (HEAD = origin/low-int: the leg-2 landing is pushed.)
+    $ git merge-base --is-ancestor b8e3860 HEAD          -> YES
+    $ git merge-base --is-ancestor b8e3860 origin/master -> YES
+(b) $ wc -c lowint/LI-S12-PRIMITIVE.txt
+    13514 lowint/LI-S12-PRIMITIVE.txt
+(c) $ sha256sum -c lowint/MANIFEST.sha256   (run FROM the pinned stage
+    dir F:\f32\stage\lowint\bitnet-b1.58-2B-4T-04c3b9ad9361b824064a1f25
+    ea60a8be9599b127)
+    10 of 10 OK (.gitattributes, LICENSE, README.md, config.json,
+    data_summary_card.md, generation_config.json, model.safetensors,
+    special_tokens_map.json, tokenizer.json, tokenizer_config.json),
+    exit 0.
+(d) $ git status --porcelain
+    ?? .scratch-s11/
+    ?? lowint/moe0/BOBMOE0-STAGE1.txt      (this file, being authored)
+    $ git diff HEAD --stat                 -> EMPTY
+    No tracked file is modified. The only foreign dirt is the
+    pre-existing .scratch-s11/, ruled benign at session start.
+Both builder legs additionally ran gate -1 BEFORE and AFTER their own
+work and quote it literally in leg1.txt (s.2/s.9) and leg2.txt
+(s.0/s.9): PASS at all four ends.
+
+2. WALLS, ATTESTED
+==================
+NO 3090 USE, any leg, any step: CUDA_VISIBLE_DEVICES was set empty in
+every training and measurement process; the card belonged to RS050 all
+night and was never touched. Named note (leg 1, ruled benign by the
+lead): the reused house venv carries torch==2.13.0+cu130, a
+CUDA-enabled build; with the empty device mask it ran CPU-only, and the
+venv was used read-only.
+Nothing touched the mini, the Telegram messenger, the demo frame, or
+the 4B serve path. The stage pin stayed read-only (manifest 10/10
+before and after every leg; model.safetensors mtime unchanged at
+Aug 29 00:02). The sealed corpus lowint/fixtures/LI-S5-ROUTES-1.txt was
+digest-verified only, NEVER opened; its sha256 equals the digest banked
+in lowint/LI-S5-SCHED.txt. F:\f32\li-s7-out untouched. Nothing
+lane-related under C:\f32. No keepalive killed. Binary wall held:
+checkpoints live off-repo at F:\f32\stage\lowint\moe0-ckpt\, G3
+binaries at F:\f32\stage\lowint\moe0-g3\, enwik8 raw bytes at
+F:\f32\stage\lowint\data\enwik8\; only text/CSV/TSV evidence and source
+are committed.
+
+3. G1 - BIT-REPRODUCIBLE TRAINING, BOTH ARMS (leg 1, s.6)
+=========================================================
+Bar (prereg s.2 G1, the train-1 T3c standard): same box, same seed, two
+CLEAN separate OS processes, byte-identical checkpoints at
+preregistered steps {30, 200, 500}, metrics agreeing to every printed
+digit. The two runs of each arm started ~27 minutes apart under
+DIFFERENT concurrent load. PASSED AT 8 THREADS; the prereg's named
+drop-to-1-thread fallback was NOT needed.
+
+ARM=moe (tiny twin, param_total=17118720, d256 L5 E=8 k=2):
+  step000030 bytes=68490880
+    runA 28c9edb5cb53f64ad6b832f857b90cf5d84371c55f3094f1ef086ac986214c96
+    runB 28c9edb5cb53f64ad6b832f857b90cf5d84371c55f3094f1ef086ac986214c96
+  step000200 bytes=68490880
+    runA 0394c6b41d8d9c6d19cb21cc3c2390e3ba897f75d1f8ec5af2df1c7336e87367
+    runB 0394c6b41d8d9c6d19cb21cc3c2390e3ba897f75d1f8ec5af2df1c7336e87367
+  step000500 bytes=68490880
+    runA e3547ef1ede090affd87b6e606aadd0a664f99376911567abead540b663c2374
+    runB e3547ef1ede090affd87b6e606aadd0a664f99376911567abead540b663c2374
+  cmp all three: byte-identical. metrics.tsv diff: NO DIFFERENCES over
+  all 500 steps; sha256 both runs
+  2a75e17f272f4f42ea6f936f9427370e7866e3aea1849379dbc92885ab9575c5.
+
+ARM=dense (tiny twin, param_total=5312000, active-matched):
+  step000030 bytes=21252320
+    runA 91c35296019117eccaa868d63bb0e3ce75ced4e84a4ac6728dc203940e4ba212
+    runB 91c35296019117eccaa868d63bb0e3ce75ced4e84a4ac6728dc203940e4ba212
+  step000200 bytes=21252320
+    runA d2464e9e7f7c0a9ef0eb87e00a21d9126311107bdf908146d19e441ed453c826
+    runB d2464e9e7f7c0a9ef0eb87e00a21d9126311107bdf908146d19e441ed453c826
+  step000500 bytes=21252320
+    runA 36a26b97a23a04f193bdc053028227867969c23f39bc9491dc4d400109625c54
+    runB 36a26b97a23a04f193bdc053028227867969c23f39bc9491dc4d400109625c54
+  cmp all three: byte-identical. metrics.tsv diff: NO DIFFERENCES;
+  sha256 both runs
+  b0fed79da2a89d1a1fbe030200bf23fa467b65871bf99b1bacd3009606b67c77.
+
+Wall clock per 500-step run (literal DONE lines): moe A 1569.512 s,
+moe B 1495.575 s, dense A 1349.685 s, dense B 1324.190 s. Wall clock
+differed between the pairs; the bytes did not.
+
+DATA PIN (prereg s.4 PRIMARY, no fallback invoked): enwik8, downloaded
+twice to independent paths and byte-compared, raw file re-hashed twice:
+exactly 100,000,000 bytes,
+CORPUS_SHA256 2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8,
+md5 a1fa5ffddb56f4953e226637dabbb36a (matches the long-published enwik8
+md5). Banked in lowint/moe0/MANIFEST-DATA.sha256 (committed). Every
+training/measurement process re-hashed the corpus it actually loaded
+and logged the pinned digest - a third, in-process verification.
+
+4. TINY-TWIN CURVES AND ROUTING STATS - MEASURED FACTS ONLY
+===========================================================
+NO QUALITY CLAIM IS MADE AT THIS SCALE (500 steps, ~4.1M tokens, 17M/5M
+twins; the prereg reserves the quality verdict for stage 2, and the
+arms consumed different data orders per the frozen stage-1 seed rule -
+see amendment A1). Quoted as facts:
+
+Final-step metrics (step 500, from the committed metrics TSVs;
+columns step, lr, ce, aux, loss, gradnorm):
+  moe:   ce 1.51549923419952393e+00  aux 1.07501339912414551e+00
+         loss 1.52624940872192383e+00  gradnorm 3.95828783512115479e-01
+  dense: ce 1.64091980457305908e+00  aux 0.00000000000000000e+00
+         loss 1.64091980457305908e+00  gradnorm 5.56483983993530273e-01
+Both curves descend monotonically at the logged checkpoints (moe ce
+2.6278 at step 48, 1.8855 at 198, 1.4955 at 498). Full logs committed:
+evidence/metrics-moe.tsv, metrics-dense.tsv (byte-identical across the
+G1 run pairs).
+
+G2 ROUTING STATS on the MoE step-500 checkpoint (leg 2, s.5-6; the
+instruments PASSED bit-repro; the stats are facts about an
+almost-untrained router, not a locality verdict). Eval: val split
+[90000000,95000000), 19531 windows, 4999936 positions, 5 MoE layers,
+E=8, k=2, selection sets taken from the model's OWN router logits under
+replay. Pins verified in-process: CKPT_SHA256 = the banked MoE step-500
+digest above; CORPUS_SHA256 = the enwik8 pin.
+  LAYER MEANS: P_half 5.97660990060672748e-01,
+  C_3 2.85184650363524639e-01, H 9.82467951090743918e-01,
+  dead 0.00000000000000000e+00 (0 dead experts in every layer).
+  Facts: NO ROUTING COLLAPSE (smallest single-expert share anywhere is
+  7.34 percent, 73x the dead threshold). Every layer sits above uniform
+  on both skew stats (P_half min 0.541875 layer 2, max 0.661118 layer
+  4; uniform is 0.50). The skew is nowhere near the field's trained-MoE
+  range (~0.95): at this budget the router is init-dominated, matching
+  leg 1's weight-statistics finding. Depth shape banked for stage-2
+  comparison: skew highest at the stack's two ends, lowest in the
+  middle. NAMED so no reader trips on it: the 0.5977 layer-mean sits
+  below the 0.60 kill bar, but the prereg s.3 kill line is defined ON
+  THE STAGE-2 FINAL CHECKPOINT only; stage 1 makes no locality verdict.
+Artifacts committed: evidence/route-stats-moe.csv, route-experts-moe.csv,
+route-pairs-moe.csv (digests in leg2.txt s.5).
+
+COMPRESSIBILITY CURVE (the LI-S12 entropy lesson, banked as a measured
+output for BOTH arms per the prereg's coequal requirement): pooled
+order-0 entropy in bits/trit at steps {30, 200, 500}:
+  moe:   1.583113, 1.583905, 1.583958
+  dense: 1.583151, 1.583986, 1.584072
+Both arms sit at ~1.584 against the ternary maximum 1.585 and the
+BitNet-2B pin's 1.560314: at this budget the trit statistics are still
+init-dominated, so "does OUR training leave compressibility" is NOT
+answered here - stage 2 reads that answer off a real run. CSVs
+committed with digests in leg1.txt s.7.
+
+5. G3 - VERIFIED REMAT ON OUR OWN CHECKPOINT (leg 2, s.7)
+=========================================================
+One expert block (blocks.1.ffn.experts.3.gate.weight, median pick by a
+frozen auditable rule over the committed 120-tensor census) from the
+MoE step-500 checkpoint, absmean-quantized by the s.1 law, packed by
+the LI-S12/LI-S2 law: 32768 bytes, 131072 trits,
+BLOCK SHA256 f8b9ea6ea477eefb8656783c3e21decd8d487b9d16a8cef5659de146fc0375e4.
+Encoded to all four frozen container forms; each decoded in a FRESH
+separate process that opens only the container:
+  form A (base-243)  B_gen 26302  ratio 0.802673
+  form B (order-0)   B_gen 26079  ratio 0.795868
+  form C (order-1)   B_gen 26121  ratio 0.797150
+  form D (order-2)   B_gen 26264  ratio 0.801514
+All four decodes: 32768 bytes, sha256 equal to the banked BLOCK SHA256,
+cmp byte-identical; tool digests re-verified by coreutils
+independently. Bit-flip probe: load-bearing in both required forms.
+G3 VERDICT: PASS, BYTE-EXACT. The full LI-S12 chain (quantize -> pack
+-> encode -> fresh-process decode -> byte-exact) now runs against OUR
+OWN trained checkpoints, so stage 2 measures compressibility instead of
+building the instrument first.
+
+6. DEVIATIONS, NAMED NOTES, AND PREREG AMENDMENT A1
+===================================================
+NO DEVIATIONS from the prereg's frozen content in either leg. Named
+notes, both ruled benign: the cu130 venv (section 2); the G1 8-thread
+pass making the drop-to-1 fallback unused; the enwik8 PRIMARY verifying
+so the house-corpus fallback was never invoked.
+
+AMENDMENT A1, LEAD-RULED NOW, BEFORE ANY STAGE-2 TRAINING. Leg 1
+flagged a real tension inside the prereg (leg1.txt s.8): s.1's frozen
+seed rule "data-order permutation seed = arm seed + 100" gives the two
+arms DIFFERENT data orders (stage-1 perm seeds 28371/28372), while the
+s.3 falsifier bar and s.5 recipe demand "identical budget, identical
+data order both arms". Both cannot hold with differing arm seeds. The
+stage-1 results are untouched (the frozen rule was followed literally
+and stage 1 claims no quality verdict). FOR STAGE 2 the lead rules:
+BOTH arms consume ONE SHARED data-order permutation seed, fixed now at
+PERM_SEED = 28471; arm seeds continue to differ and govern
+initialization ONLY. This removes the exact confound the bpb falsifier
+bar cannot afford, declared before any stage-2 token is trained, so it
+remains preregistration relative to stage 2. The G1 stage-2 prefix
+proof (1,000 steps twice, before the funded budget burns) will run
+under this rule and re-prove bit-repro with it.
+
+7. STAGE 2, READY TO FIRE (the moment the card frees)
+=====================================================
+Arms as frozen in prereg s.1: ternary MoE 163,772,416 total /
+50,526,208 active (d512 L12, E=8, k=2, expert-ff 1024, deterministic
+top-2 router, lower-index tie-break, Switch aux 0.01) vs ternary dense
+50,477,056 - active-matched, router overhead 49,152 (0.0974 percent)
+named and ruled. 500M tokens per arm, identical budget, identical data
+order (A1), enwik8 pin unchanged.
+ARITHMETIC: ~6 * 5.05e7 * 5e8 ~ 1.5e17 FLOPs/arm; at an effective
+20-40k tokens/s QAT on the 3090, 3.5-7 h per arm, BOTH ARMS 8-14 h =
+one to two overnight quiet windows. Checkpoints every 1,000 steps
+(~32.8M tokens, ~15-25 min) with optimizer state; preemption loses at
+most one interval. G1 stage-2 prefix proof runs FIRST. Quiet-window
+law: owner-quiet hours only, serve busy flag honored, nvidia-smi must
+show the card free - WAIT with a log, never contend; DEMOS PREEMPT at
+every checkpoint boundary via flag file lowint/moe0/PREEMPT, clean exit
+at the checkpoint, resume from it. Memory law: free -m before any
+multi-GB step, wait until available > 12288 MiB, wait logged; the 120B
+mappings have priority. CUDA determinism envelope: deterministic
+algorithms on, CUBLAS_WORKSPACE_CONFIG pinned, TF32 off, fixed seeds.
+FALSIFIER BAR, unchanged from prereg s.3: MoE arm KILLED if
+bpb_moe > bpb_dense + 0.03; locality thesis KILLED if layer-mean
+P_half < 0.60 at the final checkpoint; routing collapse kills the MoE
+arm even with a passing bpb. Both verdicts bank independently.
+
+LESSONS-FOR-BIG-WEIGHTS (coequal, the lane's standing bar)
+==========================================================
+1. BIT-REPRODUCIBLE QAT IS FREE AT MULTI-THREAD ON CPU. Both ternary
+   arms, including the MoE with its router, hit byte-identical
+   checkpoints at 8 threads across processes under different load. The
+   determinism envelope that train-1 proved for dense float training
+   transfers to ternary QAT and to MoE routing without a single
+   thread-count concession. For the big weights: the stage-2 CUDA
+   envelope is the only remaining unknown, and it starts from a proven
+   CPU reference to diff against.
+2. TABLE COST DOMINATES CONTEXT GAIN AT EXPERT GRANULARITY. On a 32 KB
+   expert block, order-0 coding WINS (0.795868) and order-2 LOSES
+   (0.801514): context modelling bought 7 bytes and its tables cost 192.
+   LI-S12 showed order-2 winning on a 17.4 MB layer by 0.03 percent.
+   Consequence for the N4 called-never-loaded brain: per-region
+   generators must size blocks against table cost or pool context
+   models across blocks; per-expert order-2 is a net loss. The lease
+   unit and the coding unit are different design axes.
+3. COMPRESSIBILITY IS A TRAINING OBSERVABLE, NOT A FORMAT PROPERTY. At
+   500 steps both arms sit at 1.584 bits/trit - init-dominated, less
+   compressible than the trained BitNet-2B pin (1.560314). The
+   instrument chain (quantize -> pack -> encode -> fresh decode ->
+   byte-exact) now runs against our own checkpoints at every banked
+   step, so stage 2 will show WHEN training starts leaving structure,
+   per arm, per tensor class - the first curve of its kind on a native
+   ternary MoE.
+4. THE ROUTER'S SKEW IS EARNED, NOT GIVEN. An init-dominated top-2
+   router under a Switch aux loss sits barely above uniform (P_half
+   0.5977 vs field ~0.95 on trained MoEs) with zero dead experts. The
+   locality the whole thesis needs must EMERGE against the aux loss's
+   uniform pull, which is exactly what makes the stage-2 P_half bar a
+   real falsifier rather than a formality.
+5. PREREGISTRATION CATCHES ITS OWN CONFOUNDS. The frozen seed rule and
+   the identical-data-order recipe contradicted each other; a builder
+   flagged it instead of quietly picking one, and the lead resolved it
+   in the open (A1) before any funded token burns. For the big-weights
+   program: freeze the comparison's data order explicitly whenever two
+   arms share a bar - seed arithmetic that works per-run can still
+   break the pair.
+
+END BOBMOE0-STAGE1

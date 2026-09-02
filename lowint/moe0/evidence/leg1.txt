@@ -1,0 +1,525 @@
+BOB-MOE-0 STAGE 1, BUILDER LEG 1 (HARNESS) - EVIDENCE
+=====================================================
+Law: lowint/moe0/BOBMOE0-PREREG-1.md at commit ea06508519fd54f7f7df312f316062437487c700
+Venue: worktree F:\f32\openbob-wt\low-int, branch low-int, on hyde, on-machine, no ssh.
+Builder: leg 1 of BOB-MOE-0 stage 1. Pure ASCII. Every number below is literal
+command output. Times are UTC.
+
+VERDICT LINE: G1 BIT-REPRO = PASS, both arms, at 8 threads (no thread-count
+deviation needed). Six of six checkpoints byte-identical across two clean
+processes; both metrics logs byte-identical. Compressibility curve banked for
+both arms at all three preregistered checkpoints.
+
+
+0. GATE -1, BEFORE
+==================
+UTC 2026-08-30T09:06:xx (first calls of the leg)
+
+(a) $ git rev-parse HEAD
+ea06508519fd54f7f7df312f316062437487c700
+    $ git rev-parse --abbrev-ref HEAD
+low-int
+    $ git merge-base --is-ancestor b8e3860 HEAD
+YES b8e3860 is ancestor of HEAD
+    $ git merge-base --is-ancestor b8e3860 origin/master
+YES b8e3860 is ancestor of origin/master
+    $ git rev-parse origin/master
+730fc66a2720ce92e66700f095de2f62002c2cbd
+    HEAD is the prereg commit ea06508 exactly, as required.
+
+(b) $ wc -c lowint/LI-S12-PRIMITIVE.txt
+13514 lowint/LI-S12-PRIMITIVE.txt
+    Exists, nonzero, and equal to the byte count the prereg recorded.
+
+(c) run FROM F:\f32\stage\lowint\bitnet-b1.58-2B-4T-04c3b9ad9361b824064a1f25ea60a8be9599b127\
+    $ sha256sum -c /f/f32/openbob-wt/low-int/lowint/MANIFEST.sha256
+.gitattributes: OK
+LICENSE: OK
+README.md: OK
+config.json: OK
+data_summary_card.md: OK
+generation_config.json: OK
+model.safetensors: OK
+special_tokens_map.json: OK
+tokenizer.json: OK
+tokenizer_config.json: OK
+    10/10 OK.
+
+(d) $ git status --porcelain
+?? .scratch-s11/
+    $ git diff HEAD --stat
+    (empty - no modification to any tracked file)
+    The working tree carried NO dirt from a killed predecessor. The single
+    untracked entry is the known-benign prior-session scratch named in the
+    prereg substrate paragraph.
+
+GATE -1 BEFORE: PASS on a, b, c, d.
+
+
+1. WALLS, AUDITED
+=================
+NO 3090/CUDA USE OF ANY KIND. CUDA_VISIBLE_DEVICES is set to the empty string
+at module import time in bobmoe0.py and compress_curve.py, BEFORE torch is
+imported, and is exported by run_stage1.sh. Every training run logged, from
+inside its own process:
+  CUDA_VISIBLE_DEVICES=[] cuda.is_available=False cuda.is_initialized=False
+No CUDA context was opened at any point. No leg needed the card, so there is
+no card-related refusal to bank for stage 2.
+
+NAMED NOTE (not a deviation): the reused house venv carries a CUDA-enabled
+torch build, torch==2.13.0+cu130. The build flavor is a property of the
+pre-existing venv, not a use of the card. The wall is enforced by the empty
+CUDA_VISIBLE_DEVICES and proven by the per-run cuda.is_available=False /
+cuda.is_initialized=False lines above. Nothing was installed or modified in
+that venv; it was used READ-ONLY.
+
+MEMORY LAW. free -m logged at leg start and before each launch; available
+never fell below the 12288 MiB floor, so no wait was required.
+  2026-08-30T09:07 (leg start)  available 16385 MiB
+  2026-08-30T09:13:14Z          available 16321 MiB
+  2026-08-30T09:42:19Z          available 16162 MiB
+The research lane's card processes were observed present via
+nvidia-smi --query-compute-apps (read-only query, no context opened) and were
+never contended: this leg is CPU-only.
+
+SEALED CORPUS. lowint/fixtures/LI-S5-ROUTES-1.txt was DIGEST-VERIFIED ONLY and
+NEVER OPENED.
+  $ sha256sum lowint/fixtures/LI-S5-ROUTES-1.txt
+0868fb7a542dc61cfd33ead3227572e06dce43c71fe28916594363dd1a8da11d *lowint/fixtures/LI-S5-ROUTES-1.txt
+  This equals the digest already banked in lowint/LI-S5-SCHED.txt. Unchanged.
+
+OTHER WALLS. The stage pin at F:\f32\stage\lowint\bitnet-...\ was read only
+(sha256sum -c). F:\f32\li-s7-out untouched. Nothing lane-related was written
+under C:\f32. Nothing touched the mini, the Telegram messenger, the demo frame,
+or the 4B serve path. No wsl.exe or keepalive process was killed at any point.
+No checkpoint binary is committed: the repo-wide binary wall is respected and
+all checkpoints live off-repo under F:\f32\stage\lowint\moe0-ckpt\.
+
+
+2. ENVIRONMENT FREEZE (train-1 T3a form)
+========================================
+Interpreter: /root/openbob-train/venv/bin/python, an EXISTING house venv,
+reused READ-ONLY. No package was installed, upgraded, or removed. No new
+dependency was introduced: torch, numpy and safetensors were already present.
+
+pip freeze was captured BEFORE the first torch import of this leg:
+  $ /root/openbob-train/venv/bin/pip freeze > lowint/moe0/evidence/env-freeze-leg1.txt
+  $ wc -l env-freeze-leg1.txt
+76 env-freeze-leg1.txt
+  $ sha256sum env-freeze-leg1.txt
+eb5bd9b1d5db0133f1022e5cec954eebe1125e561200c0fd0e62e07d4061147e  env-freeze-leg1.txt
+
+  Relevant pins:
+numpy==2.5.2
+safetensors==0.8.0
+torch==2.13.0+cu130
+
+  $ python -c "import torch,sys; print(torch.__version__); print(sys.version)"
+2.13.0+cu130
+3.12.3 (main, Jun 19 2026, 12:46:00) [GCC 13.3.0]
+
+Host: hyde, WSL2 x86-64. nproc = 24. Threads pinned to 8 per prereg s.1
+(torch.set_num_threads(8), torch.set_num_interop_threads(1), OMP_NUM_THREADS=8,
+MKL_NUM_THREADS=8, PYTHONHASHSEED=0). Each run logged its own thread counts:
+  torch=2.13.0+cu130 threads=8 interop=1
+
+
+3. DATA PIN (prereg s.4 PRIMARY - enwik8, no fallback needed)
+=============================================================
+The PRIMARY was acquired and verified, so the named fallback (house *.md
+corpus) was NOT used and no data deviation is claimed.
+
+URL, exact:        https://mattmahoney.net/dc/enwik8.zip
+Retrieval, copy 1: 2026-08-30T09:07:23Z
+Retrieval, copy 2: 2026-08-30T09:07:29Z
+Compressed bytes:  36445475
+Raw bytes:         100000000 (exactly 10^8)
+Off-repo location: F:\f32\stage\lowint\data\enwik8\
+
+VERIFIED TWICE, in both of the two forms the leg was offered:
+  (i) downloaded TWICE to independent paths and byte-compared
+      $ cmp enwik8_dl1.zip enwik8_dl2.zip
+      IDENTICAL: two independent downloads byte-equal
+      $ sha256sum enwik8_dl1.zip
+547994d9980ebed1288380d652999f38a14fe291a6247c157c3d33d4932534bc *enwik8_dl1.zip
+      $ sha256sum enwik8_dl2.zip
+547994d9980ebed1288380d652999f38a14fe291a6247c157c3d33d4932534bc *enwik8_dl2.zip
+  (ii) raw file re-hashed after extraction, two independent passes
+      $ wc -c enwik8
+100000000 enwik8
+      $ sha256sum enwik8        (pass 1)
+2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8 *enwik8
+      $ sha256sum enwik8        (pass 2, re-read)
+2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8 *enwik8
+
+INDEPENDENT PROVENANCE CROSS-CHECK:
+      $ md5sum enwik8
+a1fa5ffddb56f4953e226637dabbb36a *enwik8
+  This equals the long-published enwik8 md5, corroborating that the bytes
+  retrieved are the standard corpus. The sha256 digests above are the pin; the
+  URL is provenance, never the oracle.
+
+Banked to lowint/moe0/MANIFEST-DATA.sha256 (committed, with the provenance
+header). Verified from the data directory after writing:
+      $ sha256sum -c lowint/moe0/MANIFEST-DATA.sha256
+enwik8.zip: OK
+enwik8: OK
+
+THIRD, INDEPENDENT VERIFICATION INSIDE THE TRAINER. Every training process
+re-hashes the corpus it actually loaded and logs it:
+      CORPUS_SHA256=2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8
+  logged identically by all four runs. The bytes trained on are the pinned bytes.
+
+SPLIT, as frozen in s.4 (logged by every run):
+      CORPUS_BYTES=100000000 TRAIN_END=90000000 VAL_END=95000000 TRAIN_WINDOWS=351562
+
+
+4. THE TRAINER
+==============
+One codebase, config-driven for arm and stage:
+  lowint/moe0/train/bobmoe0.py         model, data, quantization, train loop
+  lowint/moe0/train/compress_curve.py  the compressibility instrument
+  lowint/moe0/train/check_arch.py      parameter-arithmetic check
+  lowint/moe0/train/run_stage1.sh      the driver
+  lowint/moe0/train/assemble_g1.sh     the G1 assembly
+
+Implemented exactly to prereg s.1: BitNet b1.58-class ternary QAT, absmean
+weight law W_t = round(clip(W/gamma, -1, +1)) with gamma = mean(|W|) and STE on
+backward; 8-bit absmax per-token activation quantization; RMSNorm; SwiGLU FFN
+(gate, up, down); rotary positions; TIED embedding/output head; byte vocabulary
+of 259 symbols (256 bytes + BOS + EOS + PAD), identity tokenizer, no merge
+tables. Norm weights, embeddings and the router stay float; all four attention
+projections and all FFN matrices are ternary. No biases anywhere (the prereg
+parameter arithmetic carries no bias terms).
+
+ROUTER, as frozen: linear d_model x E, top-k=2, deterministic, no noise, no
+jitter, no stochastic dispatch. Tie-break to the LOWER expert index, implemented
+as a stable sort: torch.argsort(-logits, dim=-1, stable=True), then the first k
+columns. Softmax over the selected k logits weights the expert outputs. Switch
+auxiliary load-balance loss with alpha = 0.01.
+
+Expert dispatch is a fixed-order loop over experts using index_select and an
+out-of-place index_add with unique indices, so the accumulation order is fixed
+by construction rather than by any runtime scheduling decision.
+
+PARAMETER ARITHMETIC, CHECKED AGAINST THE PREREG s.1 LITERAL NUMBERS:
+  $ python check_arch.py
+ARM=moe PARAM_TOTAL=17118720 EXPECT=17118720 MATCH=True
+ARM=moe PARAM_ACTIVE=5322240 EXPECT=5322240 MATCH=True
+ARM=dense PARAM_TOTAL=5312000 EXPECT=5312000 MATCH=True
+ARM=dense PARAM_ACTIVE=5312000 EXPECT=5312000 MATCH=True
+ACTIVE_DIFF=10240
+  The active difference is 10240, exactly the 5 routers, exactly as the prereg
+  ruled. The built model is the preregistered model, not a lookalike.
+
+WEIGHT DECAY GROUPING (no decay on norms, embeddings, router), logged per run:
+  moe:   PARAM_GROUPS decay_tensors=140 nodecay_tensors=17
+  dense: PARAM_GROUPS decay_tensors=35  nodecay_tensors=12
+  (moe no-decay 17 = 1 embed + 1 final norm + 5 routers + 10 block norms;
+   dense no-decay 12 = the same minus the 5 routers.)
+
+SEEDS, as frozen (logged per run):
+  moe:   arm_seed=28271 perm_seed=28371 master_seed=2827
+  dense: arm_seed=28272 perm_seed=28372 master_seed=2827
+  Run A and run B of the same arm logged identical PERM_HEAD, confirming the
+  data order is seed-derived and not clock- or process-derived:
+  moe   PERM_HEAD=[137578, 340145, 104396, 250178, 249565, 70237, 274752, 42983]
+  dense PERM_HEAD=[311869, 259304, 224164, 64027, 6038, 119408, 69065, 91367]
+
+DETERMINISM ENVELOPE: torch.manual_seed(arm_seed),
+torch.use_deterministic_algorithms(True), torch.set_num_threads(8),
+torch.set_num_interop_threads(1), pinned env, pip freeze digested before first
+import. G1 PASSED AT 8 THREADS, so the prereg's drop-to-1 fallback was NOT
+exercised and there is no thread-count deviation to bank.
+
+CHECKPOINT SERIALIZATION: safetensors, keys sorted bytewise into an
+OrderedDict, tensors cast to float32 and made contiguous, no metadata. Same
+state produces the same bytes.
+
+
+5. THE TRAINING COMMANDS, LITERAL
+=================================
+Driver (per arm, per run), all four invocations identical but for --arm/--run:
+  $ export CUDA_VISIBLE_DEVICES="" OMP_NUM_THREADS=8 MKL_NUM_THREADS=8 PYTHONHASHSEED=0
+  $ /root/openbob-train/venv/bin/python bobmoe0.py \
+      --arm <moe|dense> --stage 1 --run <A|B> \
+      --data /mnt/f/f32/stage/lowint/data/enwik8/enwik8 \
+      --ckpt-dir /mnt/f/f32/stage/lowint/moe0-ckpt/<arm>/<run> \
+      --log      /mnt/f/f32/stage/lowint/moe0-ckpt/<arm>/<run>/metrics.tsv \
+      --progress /mnt/f/f32/stage/lowint/moe0-ckpt/<arm>/<run>/progress.txt \
+      --threads 8
+
+Launched as:
+  $ setsid nohup bash run_stage1.sh moe   A < /dev/null > .../moe_A.out   2>&1 &
+  $ setsid nohup bash run_stage1.sh dense A < /dev/null > .../dense_A.out 2>&1 &
+  (A pair launched 2026-08-30T09:15:47Z; B pair launched 2026-08-30T09:42:19Z)
+
+Recipe as frozen for stage 1 and not tuned by this builder: AdamW, betas
+(0.9, 0.95), weight decay 0.1, grad clip 1.0, peak lr 3e-3, warmup 100 steps,
+cosine to 10 percent of peak, 500 steps, batch 32 sequences x 256 ctx =
+8192 tokens/step, checkpoints at steps {30, 200, 500}.
+
+NAMED OPERATIONAL EVENT (no bearing on any result): a first launch at
+2026-08-30T09:13:23Z used a plain background fork, and both processes were
+reaped at about step 11-14 when the launching wsl.exe session exited. Their
+partial outputs were deleted and the runs were relaunched from scratch under
+setsid nohup at 09:15:47Z. Every number in this receipt comes from the
+relaunched runs. No checkpoint from the aborted attempt survives.
+
+
+6. G1 BIT-REPRO - THE VERDICT
+=============================
+Bar (prereg s.2 G1 and the train-1 T3c standard): same box, same seed, two
+CLEAN separate processes, byte-identical checkpoints at steps {30, 200, 500},
+loss and gradnorm logs agreeing to every printed digit.
+
+The two runs of each arm were separate OS processes started from separate
+driver invocations about 27 minutes apart, under DIFFERENT concurrent system
+load. They still agree byte for byte.
+
+$ bash assemble_g1.sh
+
+--- ARM=moe ---
+step000030 bytes=68490880
+  runA 28c9edb5cb53f64ad6b832f857b90cf5d84371c55f3094f1ef086ac986214c96
+  runB 28c9edb5cb53f64ad6b832f857b90cf5d84371c55f3094f1ef086ac986214c96
+  IDENTICAL
+step000200 bytes=68490880
+  runA 0394c6b41d8d9c6d19cb21cc3c2390e3ba897f75d1f8ec5af2df1c7336e87367
+  runB 0394c6b41d8d9c6d19cb21cc3c2390e3ba897f75d1f8ec5af2df1c7336e87367
+  IDENTICAL
+step000500 bytes=68490880
+  runA e3547ef1ede090affd87b6e606aadd0a664f99376911567abead540b663c2374
+  runB e3547ef1ede090affd87b6e606aadd0a664f99376911567abead540b663c2374
+  IDENTICAL
+--- ARM=moe cmp (byte compare, not just digest) ---
+  cmp step000030: byte-identical
+  cmp step000200: byte-identical
+  cmp step000500: byte-identical
+--- ARM=moe metrics log diff (loss/gradnorm, every printed digit) ---
+  diff metrics.tsv: NO DIFFERENCES (all 500 steps agree to every printed digit)
+  sha256 metrics.tsv runA: 2a75e17f272f4f42ea6f936f9427370e7866e3aea1849379dbc92885ab9575c5
+  sha256 metrics.tsv runB: 2a75e17f272f4f42ea6f936f9427370e7866e3aea1849379dbc92885ab9575c5
+
+--- ARM=dense ---
+step000030 bytes=21252320
+  runA 91c35296019117eccaa868d63bb0e3ce75ced4e84a4ac6728dc203940e4ba212
+  runB 91c35296019117eccaa868d63bb0e3ce75ced4e84a4ac6728dc203940e4ba212
+  IDENTICAL
+step000200 bytes=21252320
+  runA d2464e9e7f7c0a9ef0eb87e00a21d9126311107bdf908146d19e441ed453c826
+  runB d2464e9e7f7c0a9ef0eb87e00a21d9126311107bdf908146d19e441ed453c826
+  IDENTICAL
+step000500 bytes=21252320
+  runA 36a26b97a23a04f193bdc053028227867969c23f39bc9491dc4d400109625c54
+  runB 36a26b97a23a04f193bdc053028227867969c23f39bc9491dc4d400109625c54
+  IDENTICAL
+--- ARM=dense cmp (byte compare, not just digest) ---
+  cmp step000030: byte-identical
+  cmp step000200: byte-identical
+  cmp step000500: byte-identical
+--- ARM=dense metrics log diff (loss/gradnorm, every printed digit) ---
+  diff metrics.tsv: NO DIFFERENCES (all 500 steps agree to every printed digit)
+  sha256 metrics.tsv runA: b0fed79da2a89d1a1fbe030200bf23fa467b65871bf99b1bacd3009606b67c77
+  sha256 metrics.tsv runB: b0fed79da2a89d1a1fbe030200bf23fa467b65871bf99b1bacd3009606b67c77
+
+G1 VERDICT: PASS, both arms, at 8 threads. 6 of 6 checkpoints byte-identical
+(verified twice over, by sha256 AND by cmp), 2 of 2 metrics logs byte-identical
+across all 500 steps. No nondeterministic arm, so no refusal on this gate.
+
+WALL CLOCK, per run (literal DONE lines):
+  moe   run A  DONE steps=500 wall_clock_s=1569.512
+  moe   run B  DONE steps=500 wall_clock_s=1495.575
+  dense run A  DONE steps=500 wall_clock_s=1349.685
+  dense run B  DONE steps=500 wall_clock_s=1324.190
+  (A pair and B pair each ran two processes concurrently, 8 threads each, on a
+   24-core host. Wall clock differs between A and B; the bytes do not.)
+
+CHECKPOINT LOCATION (off-repo, per the binary wall):
+  F:\f32\stage\lowint\moe0-ckpt\<arm>\<run>\step0000{30,200,500}.safetensors
+
+
+7. COMPRESSIBILITY CURVE (coequal output, prereg s.2 G3)
+========================================================
+Instrument: lowint/moe0/train/compress_curve.py. At each preregistered
+checkpoint it absmean-quantizes every ternary-class tensor by the s.1 law and
+banks trit counts (c_neg, c_zero, c_pos) and order-0 entropy in bits/trit, per
+tensor class and pooled. MoE expert matrices pool into the same ffn.* classes as
+the dense arm's FFN, so the classes are comparable across arms. Float tensors
+(embeddings, norms, router) are excluded by name, as the prereg's quantization
+law requires.
+
+$ python compress_curve.py --arm <arm> --ckpt-dir .../<arm>/A --steps 30,200,500 \
+    --out lowint/moe0/evidence/compress-curve-<arm>.csv
+
+Artifacts (committed):
+  lowint/moe0/evidence/compress-curve-moe.csv
+    sha256 228c84b7139bd58af70a3ab2894bd52f15d457f2bb852f21f09afed86326dcbc
+  lowint/moe0/evidence/compress-curve-dense.csv
+    sha256 8ad768660da4535838198ecf71dad5794aa935b15bf47882189879691ce582c0
+
+The curve is a deterministic function of the checkpoint. Regenerating both CSVs
+from the run-B checkpoints instead of the run-A checkpoints reproduces them
+byte for byte:
+  CURVE moe: runA CSV == runB CSV byte-identical
+  CURVE dense: runA CSV == runB CSV byte-identical
+
+POOLED ORDER-0 ENTROPY, bits/trit (all trits of all ternary tensors):
+  step   MoE arm     dense arm
+    30   1.583113    1.583151
+   200   1.583905    1.583986
+   500   1.583958    1.584072
+
+POOLED TRIT COUNTS:
+  MoE   step  30: n=17039360 c_neg=5884304 c_zero=5275543 c_pos=5879513
+  MoE   step 200: n=17039360 c_neg=5835628 c_zero=5373698 c_pos=5830034
+  MoE   step 500: n=17039360 c_neg=5830797 c_zero=5381472 c_pos=5827091
+  dense step  30: n=5242880  c_neg=1810263 c_zero=1624554 c_pos=1808063
+  dense step 200: n=5242880  c_neg=1795319 c_zero=1657121 c_pos=1790440
+  dense step 500: n=5242880  c_neg=1793129 c_zero=1661210 c_pos=1788541
+
+COMPARISON TO THE PIN, one plain sentence of measured fact, no quality claim:
+at step 500 the pooled order-0 entropy is 1.583958 bits/trit for the MoE arm and
+1.584072 bits/trit for the dense arm, both higher than the BitNet-2B pin's
+1.560314 bits/trit, and the pooled zero fractions are 0.315826 and 0.316851
+against the pin's 0.422.
+
+MEASURED FACTS ABOUT THE CURVE'S SHAPE (staging facts only, 500 steps is not a
+trained model):
+  - Both arms START near 1.5831 bits/trit with a 0.3096 zero fraction. This is
+    the value the absmean law implies for the Gaussian initialization itself:
+    for W ~ N(0, sigma), gamma = mean|W| = sigma*sqrt(2/pi), so a weight
+    quantizes to zero when |w| < gamma/2 = 0.3989*sigma, which is 0.3099 of the
+    mass. The measured 0.309859 (dense, step 30) matches that prediction, which
+    is an independent check that the quantizer implements the preregistered law.
+  - Entropy RISES slightly over the 500 steps in both arms (MoE +0.000845,
+    dense +0.000921 bits/trit) as the zero fraction grows from about 0.3096 to
+    about 0.3158. At this budget the weights have barely moved off their
+    initialization, so the curve is dominated by the init, not by learning.
+  - The per-class rows show the only visible structure: attn.wq and attn.wk move
+    fastest toward a balanced three-way split (dense attn.wq reaches
+    p_zero=0.333316 and 1.584962 bits/trit at step 500, the highest entropy of
+    any class), while attn.wo and the ffn.* classes stay closer to the init.
+  - No claim is made here about whether training LEAVES compressibility. The
+    LI-S12 lesson (compressibility must be left by TRAINING) is a question about
+    trained artifacts; 500 steps at 4.1M tokens does not answer it. What this leg
+    establishes is that the instrument exists, is deterministic, is banked at
+    every preregistered checkpoint for BOTH arms, and is ready to be read at
+    stage-2 scale where the question can actually be asked.
+
+Loss curves are STAGING FACTS ONLY at this scale; no quality claim is made and
+none should be read from them. Sampled from the committed metrics logs:
+  moe   step=1   ce=5.63490486145019531e+00 aux=1.15994846820831299e+00 gradnorm=1.05865802764892578e+01
+  moe   step=30  ce=2.97530007362365723e+00 aux=1.16455125808715820e+00 gradnorm=1.34958863258361816e+00
+  moe   step=200 ce=1.83918511867523193e+00 aux=1.15792560577392578e+00 gradnorm=5.59217393398284912e-01
+  moe   step=500 ce=1.51549923419952393e+00 aux=1.07501339912414551e+00 gradnorm=3.95828783512115479e-01
+  dense step=1   ce=5.48476219177246094e+00 aux=0 gradnorm=9.49585723876953125e+00
+  dense step=30  ce=3.09340596199035645e+00 aux=0 gradnorm=7.58866906166076660e-01
+  dense step=200 ce=1.91778695583343506e+00 aux=0 gradnorm=6.98321819305419922e-01
+  dense step=500 ce=1.64091980457305908e+00 aux=0 gradnorm=5.56483983993530273e-01
+Full logs: lowint/moe0/evidence/metrics-moe.tsv, metrics-dense.tsv (run A; run B
+is byte-identical, digests quoted in section 6).
+
+
+8. DEVIATIONS AND RESOLVED AMBIGUITIES, NAMED
+=============================================
+NO DEVIATION FROM THE PREREG'S FROZEN CONTENT. Nothing renegotiable was
+renegotiated: the arms, the quantization law, the router form and tie-break, the
+recipe, the seeds, the split rule, the checkpoint steps and the gates are as
+committed. Data used the PRIMARY, so the fallback was not invoked. G1 passed at
+8 threads, so the drop-to-1 fallback was not invoked. No leg needed the card, so
+there is no stage-2 refusal to bank.
+
+The prereg is silent on four implementation points. Each is named here with the
+choice made, so the choice is auditable and can be overruled before stage 2.
+
+  D1. AUX-LOSS AGGREGATION ACROSS LAYERS. s.1 freezes the per-layer Switch form
+      L_aux = alpha * E * sum_e f_e * P_e and alpha = 0.01, but not how the five
+      MoE layers combine. Implemented as the MEAN over MoE layers, so alpha keeps
+      its per-layer meaning. Also, f_e is normalized by N*k so that sum_e f_e = 1
+      (the Switch normalization generalized to top-2), and P_e is the mean of the
+      full softmax router probability over tokens. Gradient flows through P only,
+      as in Switch.
+
+  D2. INITIALIZATION DISTRIBUTION. s.1 says the arms "differ ONLY in architecture
+      and arm seed's init" but does not fix the distribution. Used
+      normal(mean=0, std=0.02) for all BitLinear, router and embedding weights,
+      and ones for RMSNorm weights. Identical rule in both arms; only the arm
+      seed differs. NOTE FOR THE LEAD: this choice is visible in the
+      compressibility curve, because at this budget the trit statistics are still
+      init-dominated (see section 7). It does not affect G1.
+
+  D3. WINDOW-TO-SEQUENCE MAPPING. s.4 says sequences are consecutive
+      non-overlapping ctx-sized windows and s.1 says batch 32 x ctx 256 = 8192
+      tokens/step. To predict all 256 bytes of a window without borrowing a byte
+      from the neighbouring window, the input is [BOS] + w[:-1] and the target is
+      w. Windows stay strictly non-overlapping, each step predicts exactly 8192
+      bytes, and the BOS symbol the 259-vocab defines is what carries position 0.
+
+  D4. RESERVED: none.
+
+FLAGGED FOR THE LEAD, A STAGE-2 TENSION IN THE PREREG ITSELF (not a stage-1
+deviation, and it does not touch anything in this receipt):
+  s.1 SEEDS, FROZEN says "data-order permutation seed = arm seed + 100", which
+  makes the two arms consume DIFFERENT data orders (stage-1 perm seeds 28371 and
+  28372, both logged above). The stage-2 recipe line in the same section says
+  "identical budget, identical data order both arms". Those two cannot both hold
+  while the arm seeds differ. For STAGE 1 there is no ambiguity - the frozen seed
+  rule is explicit and was followed literally - and stage 1 makes no quality
+  claim, so nothing here depends on it. But the stage-2 falsifier bar in s.3
+  compares bpb between arms at identical budget, and a differing data order is
+  exactly the kind of confound that bar cannot afford. THE LEAD SHOULD RESOLVE
+  THIS BEFORE STAGE 2 FIRES, in the prereg, not in a builder's code.
+
+
+9. GATE -1, AFTER
+=================
+UTC 2026-08-30T10:10:00Z (run before the landing commit)
+
+(a) $ git rev-parse HEAD
+ea06508519fd54f7f7df312f316062437487c700
+    b8e3860 ancestor of HEAD: YES
+    b8e3860 ancestor of origin/master: YES
+
+(b) $ wc -c lowint/LI-S12-PRIMITIVE.txt
+13514 lowint/LI-S12-PRIMITIVE.txt
+
+(c) run FROM the pinned stage dir:
+    $ sha256sum -c lowint/MANIFEST.sha256   ->  10 of 10 OK
+.gitattributes: OK
+LICENSE: OK
+README.md: OK
+config.json: OK
+data_summary_card.md: OK
+generation_config.json: OK
+model.safetensors: OK
+special_tokens_map.json: OK
+tokenizer.json: OK
+tokenizer_config.json: OK
+
+(d) $ git status --porcelain
+?? .scratch-s11/
+?? lowint/moe0/MANIFEST-DATA.sha256
+?? lowint/moe0/evidence/
+?? lowint/moe0/train/
+    $ git diff HEAD --stat
+    (empty - this leg MODIFIED no tracked file; it only added new ones)
+
+GATE -1 AFTER: PASS on a, b, c, d. The stage pin is intact, the primitive
+receipt is intact, no tracked file of the lane was touched.
+
+
+10. WHAT LEG 2 INHERITS
+=======================
+  - A bit-reproducible two-arm trainer, proven byte-identical on both arms.
+  - Four trained tiny-twin checkpoint sets at steps {30, 200, 500}, off-repo at
+    F:\f32\stage\lowint\moe0-ckpt\, digests in section 6. The MoE run-A step-500
+    checkpoint (e3547ef1ede090affd87b6e606aadd0a664f99376911567abead540b663c2374)
+    is the natural input to the G3 remat spot-proof on one expert block.
+  - A deterministic compressibility instrument already banked for both arms,
+    reproducible from either run's checkpoints.
+  - The pinned enwik8 corpus and its split constants, verified in three places.
+  - D1-D3 above, which leg 2 must NOT silently re-decide, and the stage-2 data
+    order tension, which only the lead can settle.
+
+END LEG 1 EVIDENCE

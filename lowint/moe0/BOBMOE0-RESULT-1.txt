@@ -1,0 +1,288 @@
+BOBMOE0-RESULT-1 - THE STAGE-2 RESULT RECEIPT (COLLECTOR C6)
+=============================================================
+Lane: funded ternary (low-int). Lead-authored. UTC 2026-08-31.
+Venue: openbob repo, worktree F:\f32\openbob-wt\low-int, branch low-int,
+on hyde, on-machine. Pure ASCII, no em dashes.
+
+NAMING NOTE, DECLARED: BOBMOE0-STAGE2-PLAN.txt s.4 C6 named this file
+BOBMOE0-STAGE2-RESULT.txt; the collector tasking named it
+BOBMOE0-RESULT-1.txt. The tasking name is used; this line is the
+declared deviation. Same document, one instance, no other copy.
+
+BINDING DOCUMENTS: BOBMOE0-PREREG-1.md (the FROZEN bars, s.3; the G2
+stat definitions, s.2), BOBMOE0-STAGE1.txt (instruments proven
+bit-repro), BOBMOE0-STAGE2-PLAN.txt (the card protocol and this
+collector plan), BOBMOE0-STAGE2B-PLAN/LAUNCH.txt (the epoch-wrap fix
+and the seg02 lineage). Nothing below renegotiates any of them.
+
+THE COMPLETED RUN: F:\f32\stage\lowint\moe0-ckpt\stage2\. DONE marker
+2026-08-31T13:10:57Z. Both arms COMPLETE at step 15259:
+  moe   DONE steps=15259 wall_clock_s=23991.486
+  dense DONE steps=15259 wall_clock_s=15784.357
+Training dtype: bf16 autocast under the full CUDA determinism envelope,
+G1-CARD PASS both arms, zero failed limbs, no op substitutions
+(BOBMOE0-STAGE2-LAUNCH.txt s.1). Lineage: segment chain, seg01 steps
+1..2000 (the banked step002000 anchors), epoch-wrap fix at 22a49e8
+(steps 1..2746 byte-identical to the pre-fix slice), G1-WRAP boundary
+proof PASS at cc19ae4, seg02 replayed 2001..15259 under the fixed rule.
+Per plan s.5 the final bytes are a pure function of (code, data pin,
+seeds), witnessed by G1-CARD limb (ii) resume-exactness.
+
+GATE -1 THIS SESSION (lead, at receipt time, literal):
+  git rev-parse HEAD = a233935def156eb6a2c6595338d64be721b8f333
+  branch = low-int
+  merge-base --is-ancestor cc19ae4 HEAD          -> exit 0
+  merge-base --is-ancestor cc19ae4 origin/master -> exit 0
+  git status --porcelain = "?? .scratch-s11/" only
+  DONE marker verbatim: 2026-08-31T13:10:57Z
+Builder legs collect-a (df85ff4) and collect-b (a233935) each ran gate
+-1 before and after; their literals are in their evidence files.
+
+1. C1 - DIGEST VERIFICATION (leg collect-a, df85ff4)
+====================================================
+Every banked checkpoint re-hashed against CKPT-DIGESTS.txt:
+  moe:   sha256sum -c exit 0, 30 OK of 30 lines
+  dense: sha256sum -c exit 0, 30 OK of 30 lines
+15 safetensors + 15 resume.pt per arm (steps 002000..015000 every 1000
+plus 015259). Coverage checked both directions: no banked file absent
+from the digest log, no logged file absent from disk. 36.5G re-hashed
+(moe 28G, dense 8.5G). Evidence: evidence/leg-collect-a.txt.
+
+2. C2 - BPB, TWICE PER ARM (leg collect-a, on the card, gated)
+==============================================================
+--eval-bpb on each arm's FINAL checkpoint step015259.safetensors, TWICE
+per arm as clean separate OS processes, full envelope
+(CUBLAS_WORKSPACE_CONFIG=:4096:8, PYTHONHASHSEED=0, OMP/MKL threads 8),
+fp32 no autocast, frozen test split [95pct,100pct) lo=95000000
+hi=100000000 ctx=512 n_windows=9765 n_bytes=4999680, corpus sha256
+2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8.
+Artifact bytes identical per arm, cmp rc 0:
+  moe   artifact sha256 (run1 = run2):
+        1a33cd86e0335c5c17a7531a9e94c65643290b9b6f71bac9b8682f7f65b55ea7
+  dense artifact sha256 (run1 = run2):
+        5339aa1eab12a69bb813163af3a1e53a099cc0f7b7f68635b4231d674d0241de
+  bpb_moe   = 1.25756923216550298e+00
+  bpb_dense = 1.26009954223008691e+00
+Card gates at the leg (literal): serve pid 654 read and never
+signalled, sole compute process; no busy flag; free -m available
+23187 MiB; GPU memory.free 23504 MiB; temp 41 C at gate, peak 77 C in
+the leg, no thermal stop.
+
+3. THE VERDICTS, PER FROZEN BAR (C3 + C4)
+=========================================
+BAR 1, bpb (prereg s.3: MoE KILLED if bpb_moe > bpb_dense + 0.03;
+MATCH if |delta| <= 0.03; BEAT if delta < -0.03):
+  delta = bpb_moe - bpb_dense = -2.53031006458392937e-03
+  |delta| = 0.0025303100645839294 <= 0.03
+  VERDICT: MATCH. THE MOE ARM SURVIVES THE BPB BAR. The MoE arm is in
+  fact slightly BELOW dense (better), but not by 0.03, so MATCH, not
+  BEAT. Equal quality at equal active size, with 8x FFN capacity
+  addressable by call.
+
+BAR 2, routing collapse (prereg s.2/s.3: P_half near 1.0 with more
+than half the experts dead kills the MoE arm even with a passing bpb):
+  dead-expert count (under 1 pct of a layer's traffic): 0 in every one
+  of the 12 layers, 0 of 96 expert slots
+  smallest single-expert traffic share = 7.98027073732718861e-02
+  layer-max P_half = 6.16665066564260123e-01 (layer 11)
+  VERDICT: NO COLLAPSE. The collapse clause does not fire.
+
+BAR 3, locality thesis (prereg s.3: KILLED independently if layer-mean
+P_half < 0.60 at the final checkpoint; the kill rides on P_half alone):
+  layer-mean P_half at step015259 = 5.51962400593637992e-01
+  5.51962400593637992e-01 < 0.60
+  VERDICT: THE LOCALITY THESIS IS KILLED on its own preregistered bar.
+  All 12 layers are individually below 0.60 too (max
+  6.16665066564260123e-01 layer 11, min 5.22820260496671740e-01
+  layer 5).
+
+THE THREE VERDICTS BANK INDEPENDENTLY, as the prereg requires. Plainly:
+a live loss with dead locality. The natively trained ternary MoE
+matches its equal-active dense twin on quality, uses all 96 experts,
+and routes NEARLY UNIFORMLY: no meaningful popularity skew survived
+Switch-form load balancing (alpha 0.01) at this scale, so a
+region-leased brain gains nothing from popularity-ranked residency AT
+THIS SCALE. That sentence is the honest product of the run.
+
+4. THE LOCALITY STORY (C4, with the evolution measurement)
+==========================================================
+Instrument: route_stats.py, the G2 instrument proven bit-repro in
+stage 1, prereg s.2 definitions frozen. Val split [90pct,95pct),
+ctx 512, 9765 windows, 4,999,680 positions, 9,999,360 selection slots
+per layer. Final pass run TWICE in clean separate OS processes under
+different concurrent load (3951 s vs 4707 s wall): 3 of 3 artifacts
+byte-identical, cmp rc 0, equal sha256
+(route-stats a067fb18a1a6537e..., route-experts 640b8ca573a2a79e...,
+route-pairs 43534373dbadab09...). Bit-repro held at stage-2 scale.
+
+Layer means, step002000 -> step015259 (full precision in the banked
+CSVs, evidence/route-stats-moe-s2-step002000.csv and
+route-stats-moe-s2-step015259.csv):
+  P_half: 5.83890268977214522e-01 -> 5.51962400593637992e-01  (falling)
+  H:      9.87476665521694774e-01 -> 9.94974377152421208e-01  (rising)
+  C_3:    2.24009369933009045e-01 -> 2.24592257237796550e-01  (flat)
+  dead experts: 0 -> 0
+ROUTING MOVED TOWARD UNIFORM OVER THE FUNDED BUDGET. The early
+checkpoint is the MORE skewed one; training under the aux loss eroded
+what skew existed. Reference points: uniform P_half = 0.50; the field's
+measured skew on trained MoEs is ~0.95 through half (SYNTHESIS-1 s.3).
+Our 0.552 is barely above uniform. C_3 context: uniform gives 3/28 =
+0.107; ours is flat at ~0.225, about 2.1x uniform, modest co-activation
+structure, banked as evidence only per the prereg (no bar rides on it).
+The prereg said it plainly in advance: the aux loss pushes TOWARD
+uniform, so any skew G2 measures is skew that SURVIVED load balancing.
+Almost none did.
+
+5. THE COMPRESSIBILITY STORY (C5, the coequal measurement)
+==========================================================
+Instrument: compress_curve.py, the stage-1 method (order-0 entropy in
+bits/trit of the absmean-quantized weights, per tensor class and
+pooled, plus trit counts), run at every banked checkpoint, both arms:
+15 checkpoints x 8 rows = 120 rows per arm, banked in
+evidence/compress-curve-s2-moe.csv and compress-curve-s2-dense.csv.
+
+Pooled bits/trit across training (ternary max = log2(3) = 1.5849625;
+the BitNet-2B pin measured 1.560314):
+  moe:   1.584358 (step 2000) rising monotonically to 1.584961
+         (steps 12000..15259, flat at the top)
+  dense: 1.584623 (step 2000) rising to a MAXIMUM 1.584962 at step
+         8000, then decreasing monotonically to 1.584940 at 15259
+         (the one non-monotone arm)
+Final per-class extremes (step015259): the only visible order-0
+structure is a slight zero-skew in the attention q/k projections:
+  moe   attn.wq 1.583552 (p_zero 0.354278882), attn.wk 1.583725
+  dense attn.wq 1.584141, attn.wk 1.584352
+  everything else >= 1.58490
+THE MEASURED FACT: from-scratch BitNet-class QAT at this scale
+converges to trit distributions at essentially MAXIMUM order-0 entropy
+(within 0.0005 bits/trit of log2(3) pooled), and got CLOSER to max as
+training progressed. The BitNet-2B pin's 1.560314 zero-skew did NOT
+reproduce here. The dense arm's late decline (1.584962 -> 1.584940) is
+real but tiny, structure appearing after step 8000 at the fourth
+decimal. Per the house survey this is the first such curve measured on
+a from-scratch ternary MoE (see s.7, claim discipline).
+
+6. TRAJECTORY-CLAIM EVIDENCE TABLE (which digests witness what)
+===============================================================
+CLAIM                              WITNESS (all in git or CKPT-DIGESTS.txt)
+whole-run determinism claim        G1-CARD PASS digests (STAGE2-LAUNCH s.1)
+  (bytes = f(code, data pin,       + G1-WRAP boundary proof (cc19ae4)
+  seeds), preemption-independent)  + per-checkpoint digest log, 30 lines/arm
+the trained artifacts themselves   moe   step015259.safetensors
+                                   9e7f5cf87d4b934d64d3d4c629bc577ffcf30ca7c1f79595bb9b7618352d9511
+                                   dense step015259.safetensors
+                                   da7ce35df8418e3549485f5261f971800d061acc41460029d7a7409523871f48
+the trajectory (15 banked steps    CKPT-DIGESTS.txt both arms, re-hashed
+  per arm, resumable sidecars)     C1: 30/30 OK moe, 30/30 OK dense
+the early anchor (evolution        moe step002000.safetensors
+  measurement + seg02 resume       936462e5dc415cd29dc8eeaa41a7a9a6249f0e10b05b7e06422ceb485784bf73
+  point, one lineage)
+bpb numbers                        eval artifacts, byte-identical twice/arm
+                                   moe 1a33cd86..., dense 5339aa1e... (s.2)
+routing stats final                route-stats a067fb18..., byte-identical
+                                   twice, + experts/pairs CSVs (s.4)
+data pin                           corpus sha256 2b49720e...c024a8
+                                   (MANIFEST-DATA.sha256, enwik8)
+Checkpoint and eval bytes live OFF-REPO under
+F:\f32\stage\lowint\moe0-ckpt\stage2\; digests in git, bytes never.
+
+7. PRIOR ART AND NOVELTY (per the claim discipline)
+===================================================
+Basis: the house survey (advisory/N4-DIVE/SYNTHESIS-1.md s.3): no
+native ternary MoE has been trained at scale; only ternarized
+PRETRAINED MoEs exist in the literature; and every published locality
+number is a single-run statistic (s.4). Claims, stated narrowly:
+  N1. FIRST NATIVELY TRAINED TERNARY MOE KNOWN TO THE HOUSE SURVEY, at
+      163.8M total / 50.5M active parameters, 500M bytes. This is a
+      SMALL model; no claim is made about "real scale". The result is
+      ground truth nobody held: equal-active ternary MoE MATCHES dense
+      (delta bpb -0.0025) with 3.24x total parameters addressable by
+      call.
+  N2. FIRST COMPRESSIBILITY CURVE ACROSS A FROM-SCRATCH TERNARY MOE
+      TRAINING RUN known to the survey (s.5 above): order-0 entropy vs
+      training step, per class, both arms, at 15 banked checkpoints.
+  N3. BIT-REPRODUCIBLE ROUTING MEASUREMENT: the P_half/C_3/H numbers
+      are byte-identical across independent processes on a
+      byte-exactly-reproducible artifact. Published locality numbers
+      are single-run statistics; ours replay. (The exact-integer
+      routing law for the trained artifact is stage-3 work under the
+      LI-S2 pattern and is NOT claimed here; QAT-time routing is float
+      but deterministic, G1-witnessed.)
+Scope honesty: one scale, one corpus (enwik8), one recipe, one seed
+pair, Switch aux alpha 0.01. The locality kill is a result ABOUT THIS
+CONFIGURATION, not a theorem about MoEs.
+
+8. FINDINGS CARRIED (builder legs, unresolved)
+==============================================
+F1 (collect-b, cosmetic): route_stats.py hardcodes ckpt_step=500 in
+   its artifact header comment; the true checkpoint identity is the
+   ckpt_sha256 header line, which is correct in every artifact and
+   matches CKPT-DIGESTS.txt. No number is affected. Fix is a one-line
+   menu item, not fired under the hold.
+F2 (collect-b, process): venue quoting trap on script-to-shell
+   boundaries; script-to-file used throughout. Advisory for future
+   legs.
+
+9. LESSONS-FOR-BIG-WEIGHTS (the lane's standing coequal bar)
+============================================================
+L1. DO NOT BUDGET COMPRESSION ON ORDER-0 TERNARY SKEW. At convergence
+    our trits sit within 0.0005 bits/trit of log2(3): symbol
+    frequencies carry nothing. The BitNet-2B pin's 1.560314 came from
+    somewhere our recipe/scale does not reach (scale, recipe, or their
+    training data). Compression of big ternary weights must come from
+    HIGHER-ORDER structure: context modeling (the LI-S12 order-2
+    generator container), cross-tensor structure, or remat (store the
+    generator, not the bytes).
+L2. THE CALLED-NEVER-LOADED SHAPE SURVIVES ON QUALITY, DIES ON NATURAL
+    SKEW, at this scale: equal-active MoE matches dense, so 8x
+    capacity-by-call is free on the quality axis. But popularity-
+    ranked residency (N4/A1) gains nothing when routing is near
+    uniform: 4-of-8 residency covers only 55.2 pct of traffic, barely
+    above the 50 pct of uniform. For the 1T horizon: either the
+    prefetcher LEARNS the schedule from exact replay journals (RS050:
+    lookup, not prediction; unaffected by this kill) or skew must be
+    ENGINEERED (weaker/other balancing, specialization pressure),
+    which is a new prereg, not an amendment.
+L3. ROUTING DRIFTS TOWARD UNIFORM OVER TRAINING under Switch
+    balancing (P_half 0.584 -> 0.552, H 0.9875 -> 0.9950). Early-run
+    routing overstates final skew; any residency policy tuned on
+    early checkpoints would be wrong at convergence. Prefetch/lease
+    designs must track drift or train on final-regime traces.
+L4. THE DETERMINISM ENVELOPE SCALES. bf16 autocast on the card, a
+    preempted-and-resumed segment chain across an epoch-wrap bug fix,
+    and every measurement byte-identical twice, at 163.8M params and
+    120M selection slots. The single-run-statistic objection to the
+    field's numbers (SYNTHESIS-1 s.4) does not apply to ours: the
+    moat instrument works at funded scale.
+L5. ZERO DEAD EXPERTS EVERYWHERE, from step 2000 to the end. Switch
+    alpha 0.01 fully prevents collapse at this scale; if skew is ever
+    engineered on purpose, alpha is the first dial, and collapse must
+    be re-watched because this run proves nothing about weaker alpha.
+
+10. NEXT-STEPS MENU (PROPOSALS ONLY; nothing fires; her hold governs)
+=====================================================================
+M1. Stage-3 exact-integer routing law on the surviving MoE artifact
+    (LI-S2 pattern): freeze the trained router into integer
+    arithmetic, cross-backend exactness per the named G4 gate (WSL
+    x86-64 CPU vs 3090 CUDA; horizon the mini aarch64).
+M2. Skew-engineering prereg (NEW prereg, not an amendment): same
+    twins, aux alpha ladder (0.01 / 0.003 / 0.001 / 0), the locality
+    bar re-armed; answers whether the kill was the balancer's doing.
+    Cost: ~11.0 h per arm pair at the measured wall clocks
+    (23991.486 s + 15784.357 s = 39775.843 s per rung).
+M3. Order-2 / context-model compression pass over the final
+    checkpoints (both arms): the LI-S12 generator container on the
+    funded artifacts; L1 says order-0 is exhausted, so measure what
+    order-2 recovers. CPU-only, no card.
+M4. Fold N1/N2/N3 + L1-L5 into the gpt-oss compression lane's
+    planning notes (paper-trail fold, no compute).
+M5. F1 one-line fix to route_stats.py header (re-run nothing; the
+    banked artifacts stand, header defect named in s.8).
+M6. Checkpoint disposition: 36.5G under stage2\ (all digest-banked).
+    Options: keep all / keep final+002000 anchors both arms (~5G) /
+    keep final only. Digests preserve the audit trail either way.
+M7. Owner demo: a CUDA CLI moment showing the MoE and dense twins
+    answering from their final checkpoints, byte-stable across
+    repeats, at a reasonable owner gate.
+
+END BOBMOE0-RESULT-1

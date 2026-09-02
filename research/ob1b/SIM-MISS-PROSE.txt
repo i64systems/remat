@@ -1,0 +1,5 @@
+ROUTE_LOG=/mnt/f/f32/stage/research/ob1/runs/res-prose-a/route.log
+E=32 L=24 budget=32768 total_decisions=3145728
+K=2 miss_decisions=2453533 total_decisions=3145728 miss_rate=0.779957
+K=1 miss_decisions=2762711 total_decisions=3145728 miss_rate=0.878242
+K=0 miss_decisions=3145728 total_decisions=3145728 miss_rate=1.000000 (BY DEFINITION: empty resident set, every decision misses)

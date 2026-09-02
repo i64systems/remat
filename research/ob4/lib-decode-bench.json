@@ -1,0 +1,38 @@
+{
+  "ffn_gate_exps.weight": {
+    "n": 96,
+    "avg_baseline_pread_sha256_sec": 0.0025513603134944183,
+    "avg_lib_zstd_decompress_sec": 0.0036204357717603366,
+    "lib_decode_over_baseline_x": 1.4190217479716463
+  },
+  "ffn_up_exps.weight": {
+    "n": 96,
+    "avg_baseline_pread_sha256_sec": 0.0027079309796439097,
+    "avg_lib_zstd_decompress_sec": 0.0038343114783856436,
+    "lib_decode_over_baseline_x": 1.415956133006703
+  },
+  "ffn_down_exps.weight": {
+    "n": 96,
+    "avg_baseline_pread_sha256_sec": 0.0027487276753769643,
+    "avg_lib_zstd_decompress_sec": 0.003912882384611294,
+    "lib_decode_over_baseline_x": 1.423524934704445
+  },
+  "ffn_gate_exps.bias": {
+    "n": 96,
+    "avg_baseline_pread_sha256_sec": 2.0988034520996734e-05,
+    "avg_lib_zstd_decompress_sec": 2.7337083035187486e-05,
+    "lib_decode_over_baseline_x": 1.3025080079718314
+  },
+  "ffn_up_exps.bias": {
+    "n": 96,
+    "avg_baseline_pread_sha256_sec": 1.273518986029861e-05,
+    "avg_lib_zstd_decompress_sec": 2.8998315732072417e-05,
+    "lib_decode_over_baseline_x": 2.2770226474968687
+  },
+  "ffn_down_exps.bias": {
+    "n": 96,
+    "avg_baseline_pread_sha256_sec": 1.3320416352750422e-05,
+    "avg_lib_zstd_decompress_sec": 2.793961387700013e-05,
+    "lib_decode_over_baseline_x": 2.09750304623407
+  }
+}

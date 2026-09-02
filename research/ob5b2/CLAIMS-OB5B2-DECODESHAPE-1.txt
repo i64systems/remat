@@ -1,0 +1,301 @@
+# CLAIMS-OB5B2-DECODESHAPE-1: row P05's blocks, in the frozen row schema
+#
+# Written to CLAIMS-RULES-1 (research/OB5B-CLAIMS-TABLE-1.md) and checked
+# with research/claims/claims_check.py (CHECK-CLAIMS-1), which landed as
+# P07 at commit 2c6a282 while this row was running. These blocks are NOT
+# appended to research/claims/CLAIMS-OB5B-1.txt because that file belongs
+# to another row and this row commits only its own paths; MERGING THEM IN
+# IS OWED to whoever holds the claims table next. Ids are P05-local
+# (CR-P05-nnn, CC-P05-nnn) so they cannot collide with CR-nnn / CC-nnn.
+#
+# COMMIT names the branch state this row was PRODUCED AGAINST
+# (3a6f4071a279979d787b2efaa2dfc4fd8518ad6b, the head of research-2 when
+# these blocks were checked), because a block cannot carry the hash of
+# the commit that first contains it. Whoever merges these into the table
+# of record should reprice that field to this row's own landing commit.
+#
+# Pure ASCII, LF endings, no trailing whitespace, no em dashes.
+# Receipt: research/OB5B-DECODESHAPE-1.md
+#
+# CHECKER VERDICT, literal, `python3 claims_check.py` from research/claims:
+#   blocks: 9   surfaces: 0   refusals: 0   hazards: 0
+#   verdict: ACCEPTED   exit 0
+
+ID: CR-P05-001
+KIND: ROW
+LEG: LEG-OB5B2-120B-K8-DECODE-REPLAY
+MODEL: gpt-oss-120b-MXFP4.gguf; bytes 63387346208; sha256 582bd40f (truncated in
+  OB1B-KNEE-1 s12; the full 64 hex is owed from the model registry line
+  before this row enters a cut)
+CONFIG: K=8 of 128; mechanism leased; corpus AC-PROSE; tokens 8192; policy
+  P0-STATIC prose-ranked frozen sets; micro-batch ubatch=1, DECODE SHAPE
+DEVICE: box f32-HYDE; cpu AMD Ryzen 9 5900X 12c/24t; ram_mb 24029; threads 1;
+  nice 10; gpu hidden, CUDA_VISIBLE_DEVICES empty
+STORE: path /mnt/f/f32/stage/research/ob5a/runs/p3-120b-k8-prose-a/route.log;
+  mount DrvFs (NO MODEL WAS LOADED IN THIS ROW; the store named is the
+  replay's input, not a weight path)
+STORE_OBS: 11350493556480 bytes moved (predicted, not observed);
+  seconds_in_read_bucket UNMEASURED (no process ran); derived rate
+  1266753082 B/s carried from the live 120b run's own counters
+  (363192785280 B / 286.711586002 s of lease_read_ns, OB5A-ALLOC-1 s6)
+IDENTITY: identity UNMEASURED (no model process ran in this limb); route
+  a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1; matched
+  against the banked paged reference pair, and byte-identical across
+  p3-120b-k8-prose-a, p3-120b-k8-prose-b and ob1b/pag120-prose-a
+EXPOSURE_ACCT_RESIDENCY: 10.250022 = 63387346208 / 6184118048 [2314020128 +
+  3817082880 + 53015040]
+EXPOSURE_ACCT_HELD: 10.250022 = 63387346208 / 6184118048 [2314020128 +
+  3817082880 + 53015040 + 0 + 0]
+EXPOSURE_RSS: UNMEASURED (a replay has no process and therefore no resident
+  set size)
+THROUGHPUT: 0.914255 tok/s decode; regime decode B=1; tokens 8192;
+  wall_s 8960.304742; ms_per_token 1093.7872
+COST: UNMEASURED (a replay has no latency distribution to take a p95 of)
+COST_SPREAD: UNMEASURED (a replay has no latency distribution)
+CAVEAT: A REPLAY, NOT A LIVE MEASUREMENT. No 120b process has ever run at
+  ubatch=1 in this house, so this row's throughput is a read-bound ceiling
+  computed from exactly predicted lease counters divided by a read rate
+  measured on a 63 GB working set; the achieved rate is lower, and the
+  achieved-over-ceiling fraction measured at decode shape on the 20b is
+  0.2603677868524421, which puts the projected achieved rate at 0.238 tok/s.
+CAVEAT_SOURCE: research/OB5B-DECODESHAPE-1.md section 9
+RECEIPT: research/OB5B-DECODESHAPE-1.md
+COMMIT: 3a6f4071a279979d787b2efaa2dfc4fd8518ad6b
+---
+
+ID: CR-P05-002
+KIND: ROW
+LEG: LEG-OB5B2-120B-K8-DECODE-REPLAY
+MODEL: gpt-oss-120b-MXFP4.gguf; bytes 63387346208; sha256 582bd40f (truncated in
+  OB1B-KNEE-1 s12; full hex owed before the cut)
+CONFIG: K=8 of 128; mechanism leased; corpus AC-PROSE; tokens 8192; policy
+  P2-DECAY H=256 add=65536 shift=1, OB-2's frozen policy; micro-batch
+  ubatch=1, DECODE SHAPE
+DEVICE: box f32-HYDE; cpu AMD Ryzen 9 5900X 12c/24t; ram_mb 24029; threads 1;
+  nice 10; gpu hidden, CUDA_VISIBLE_DEVICES empty
+STORE: path /mnt/f/f32/stage/research/ob5a/runs/p3-120b-k8-prose-a/route.log;
+  mount DrvFs (no model was loaded)
+STORE_OBS: 9514264631040 bytes moved (predicted, not observed);
+  seconds_in_read_bucket UNMEASURED (no process ran); derived rate
+  1266753082 B/s, the same live-run rate as CR-P05-001
+IDENTITY: identity UNMEASURED (no model process ran in this limb); route
+  a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1; matched
+  against the banked paged reference pair
+EXPOSURE_ACCT_RESIDENCY: 10.250022 = 63387346208 / 6184118048 [2314020128 +
+  3817082880 + 53015040]
+EXPOSURE_ACCT_HELD: 10.250022 = 63387346208 / 6184118048 [2314020128 +
+  3817082880 + 53015040 + 0 + 0]
+EXPOSURE_RSS: UNMEASURED (a replay has no process and therefore no resident
+  set size)
+THROUGHPUT: 1.090703 tok/s decode; regime decode B=1; tokens 8192;
+  wall_s 7510.749184; ms_per_token 916.8395
+COST: UNMEASURED (a replay has no latency distribution to take a p95 of)
+COST_SPREAD: UNMEASURED (a replay has no latency distribution)
+CAVEAT: A REPLAY, AND THE POLICY THAT PRODUCES THIS FIGURE HAS NEVER RUN ON
+  THE 120b AT ANY SHAPE; the peak concurrent term is identical to the static
+  row's because at decode shape no residency policy can move it, so the
+  entire difference between these two rows is bytes moved and none of it is
+  exposure.
+CAVEAT_SOURCE: research/OB5B-DECODESHAPE-1.md section 3 and finding F-P05-5
+RECEIPT: research/OB5B-DECODESHAPE-1.md
+COMMIT: 3a6f4071a279979d787b2efaa2dfc4fd8518ad6b
+---
+
+ID: CR-P05-003
+KIND: ROW
+LEG: LEG-OB5B2-20B-1CHUNK-U1024
+MODEL: gpt-oss-20b-MXFP4.gguf; bytes 12109566624; sha256 27cd6c43 (truncated
+  in the receipts; full hex owed before the cut)
+CONFIG: K=16 of 32; mechanism leased; corpus AC-PROSE; tokens 1024; policy
+  P0-STATIC prose-ranked frozen sets; micro-batch ubatch=1024, BATCH SHAPE,
+  the control arm
+DEVICE: box f32-HYDE; cpu AMD Ryzen 9 5900X 12c/24t; ram_mb 24029; threads 8;
+  nice 10; gpu hidden, CUDA_VISIBLE_DEVICES empty
+STORE: path /root/openbob-baselines/models/gpt-oss-20b-MXFP4.gguf; mount ext4
+  on the WSL2 VHDX
+STORE_OBS: 4652069760 bytes moved in the lease bucket; 6.178451142 seconds in
+  the read bucket; derived rate 752950804 B/s
+IDENTITY: identity b0582867e00d2db9a5d8bb8802c7c1c31fb9dbd37d51bd0f56a775ae30c314d8;
+  route 8b8dee364ec4249b1bf59b6e1a9d0c17f9c5823f3ad1c01b5e37eca4807db97e;
+  both matched against the banked 1-chunk AC-PROSE reference
+  ob1b/runs/smoke-k0-prose, produced at K=0 by the same engine, and both
+  MATCH
+EXPOSURE_ACCT_RESIDENCY: 1.674400 = 12109566624 / 7232182944 [1930678944 +
+  5089443840 + 212060160]
+EXPOSURE_ACCT_HELD: 1.674400 = 12109566624 / 7232182944 [1930678944 +
+  5089443840 + 212060160 + 0 + 0]
+EXPOSURE_RSS: 1.441612; peak RSS 8400019456 bytes (8203144 kbytes as time -v
+  reported it)
+THROUGHPUT: 33.952255 tok/s eval; regime batch-prefill B=1024; tokens 1024;
+  wall_s 30.160000; ms_per_token 29.453125
+COST: UNMEASURED (a 1-chunk run yields zero measured chunk intervals, so this
+  arm has no p95; chunk_count=0 in its own ob1-stats.txt)
+COST_SPREAD: UNMEASURED (no chunk intervals exist for this arm)
+CAVEAT: wall_s is the engine's own seconds-per-pass and EXCLUDES model load,
+  because a 1-chunk run's load time would otherwise dominate a throughput
+  figure meant to be compared with the decode arm beside it; the two arms
+  differ in exactly one flag and are directly comparable to each other, but
+  neither is comparable to the 32768-token rows of the main table.
+CAVEAT_SOURCE: research/OB5B-DECODESHAPE-1.md section 7.1 and deviation D2
+RECEIPT: research/OB5B-DECODESHAPE-1.md
+COMMIT: 3a6f4071a279979d787b2efaa2dfc4fd8518ad6b
+---
+
+ID: CR-P05-004
+KIND: ROW
+LEG: LEG-OB5B2-20B-1CHUNK-U1
+MODEL: gpt-oss-20b-MXFP4.gguf; bytes 12109566624; sha256 27cd6c43 (truncated
+  in the receipts; full hex owed before the cut)
+CONFIG: K=16 of 32; mechanism leased; corpus AC-PROSE; tokens 1024; policy
+  P0-STATIC prose-ranked frozen sets; micro-batch ubatch=1, DECODE SHAPE,
+  the first live decode-shape run in this house
+DEVICE: box f32-HYDE; cpu AMD Ryzen 9 5900X 12c/24t; ram_mb 24029; threads 8;
+  nice 10; gpu hidden, CUDA_VISIBLE_DEVICES empty
+STORE: path /root/openbob-baselines/models/gpt-oss-20b-MXFP4.gguf; mount ext4
+  on the WSL2 VHDX
+STORE_OBS: 212484280320 bytes moved in the lease bucket; 115.927167664
+  seconds in the read bucket; derived rate 1832911858 B/s
+IDENTITY: identity 4bb4eac84118c93f8b353f736acbb2baa4ca3f5945646126051ab2b384f3f33c;
+  route 65cb7b568cbdcc4d4bebcc39478c1ba6bc88418efcd84da8907cbe1a2e6d8024;
+  both matched against the banked 1-chunk AC-PROSE reference and against
+  CR-P05-003, and BOTH REFUSED: this run reports PPL 132.2931 where the
+  reference and the control arm report 131.2100
+EXPOSURE_ACCT_RESIDENCY: 1.712050 = 12109566624 / 7073137824 [1930678944 +
+  5089443840 + 53015040]
+EXPOSURE_ACCT_HELD: 1.712050 = 12109566624 / 7073137824 [1930678944 +
+  5089443840 + 53015040 + 0 + 0]
+EXPOSURE_RSS: 1.552967; peak RSS 7797698560 bytes (7614940 kbytes as time -v
+  reported it)
+THROUGHPUT: 3.081367 tok/s decode; regime decode B=1; tokens 1024;
+  wall_s 332.320000; ms_per_token 324.531250
+COST: 2.239704x p95 nearest-rank over 1023 per-token intervals, worst
+  observed in this leg; baseline this row's own p50 of 273.578395 ms, named
+  as such because no other run in this house has a per-token distribution to
+  be a ratio of
+COST_SPREAD: 2.239704
+CAVEAT: THIS ROW FAILED ITS IDENTITY BAR AND IS PUBLISHED BECAUSE IT FAILED:
+  changing only the micro-batch shape changed the model's answer and its
+  routing on 3333 of 24576 (layer, token) rows, so this row's exposure and
+  throughput describe a run that is NOT byte-identical to the reference, and
+  every determinism claim in this program is under-specified unless it pins
+  the batching schedule.
+CAVEAT_SOURCE: research/OB5B-DECODESHAPE-1.md sections 7.2 through 7.4 and
+  finding F-P05-6
+RECEIPT: research/OB5B-DECODESHAPE-1.md
+COMMIT: 3a6f4071a279979d787b2efaa2dfc4fd8518ad6b
+---
+
+ID: CC-P05-001
+KIND: CLAIM
+LEG: LEG-OB5B2-120B-K8-DECODE-REPLAY
+WHAT: the decode-shape load factor, the number that reprices every measurement
+  this house owns
+VALUE: 31.2519797102507x more expert loads at the product's shape than at the
+  shape every receipt was measured at
+DERIVATION: 856398 / 27403, the same 8192 tokens, the same route log and the
+  same K=8 resident set at ubatch=1 and at ubatch=1024; bytes per token
+  1385558295.4688 against 44335056.7969
+COST: UNMEASURED (this claim publishes no cost figure)
+COST_SPREAD: UNMEASURED (this claim publishes no cost figure)
+CAVEAT: the batch-shape half is a live engine counter and the decode-shape
+  half is a replay whose harness reproduces that same counter exactly at
+  ubatch=1024 on three independent live runs; no live 120b process has run at
+  ubatch=1, and the live 20b arm measured a 0.3852367341866534 percent
+  transfer error on the equivalent prediction.
+CAVEAT_SOURCE: research/OB5B-DECODESHAPE-1.md sections 2, 4 and 7.4
+RECEIPT: research/OB5B-DECODESHAPE-1.md
+COMMIT: 3a6f4071a279979d787b2efaa2dfc4fd8518ad6b
+---
+
+ID: CC-P05-002
+KIND: CLAIM
+LEG: LEG-OB5B2-120B-K8-DECODE-REPLAY
+WHAT: what policy composition actually buys at decode shape on the 120b
+VALUE: 1.192997461879435x, not the 4.17x the design has been citing
+DERIVATION: 856398 loads under the frozen static set against 717854 under
+  OB-2's frozen decay policy, same route log, same K=8, both at ubatch=1;
+  the 4.17x of OB2-PREDICTIVE-1 s8 is 1905471 / 456515, a prose-ranked static
+  set scored on the CODE corpus, which prices domain shift rather than
+  composition; OB-2's own like-for-like prose row is 591548 / 469793 =
+  1.2591673354009105
+COST: UNMEASURED (this claim publishes no cost figure)
+COST_SPREAD: UNMEASURED (this claim publishes no cost figure)
+CAVEAT: a replay under both policies and not a live run; the decay policy has
+  never run on the 120b at any shape, and the static policy's own counters at
+  ubatch=1024 are the calibration target this harness reproduces exactly.
+CAVEAT_SOURCE: research/OB5B-DECODESHAPE-1.md section 4.1 and finding F-P05-1
+RECEIPT: research/OB5B-DECODESHAPE-1.md
+COMMIT: 3a6f4071a279979d787b2efaa2dfc4fd8518ad6b
+---
+
+ID: CC-P05-003
+KIND: CLAIM
+LEG: LEG-OB5B2-120B-K8-DECODE-REPLAY
+WHAT: where hyde's resident-set knob runs out, and what it buys before it does
+VALUE: K=31 is hyde's ceiling and the decode read-bound ceiling at K=32 is
+  2.549813 tok/s
+DERIVATION: one unit of K costs 36 x 13253760 = 477135360 bytes; box
+  25196232704 minus trunk 2314020128 minus engine buffers 941195736 minus the
+  unaccounted column 286522920 minus the 6442450944 free-RAM rule leaves
+  15212042976 bytes, which is 31.882028143963172 units of K; the K sweep
+  gives 2.549813 tok/s at K=32 and 7.498524 at K=64, which needs 30.537 GB of
+  resident expert bytes
+COST: UNMEASURED (this claim publishes no cost figure)
+COST_SPREAD: UNMEASURED (this claim publishes no cost figure)
+CAVEAT: the K=32 and K=64 ceilings are replay figures under the decay policy
+  and no frozen resident set exists on this model above K=8, so the
+  static-policy figure at those K is UNVERIFIED; the box arithmetic assumes
+  the free-RAM rule stays and that no other tenant is resident.
+CAVEAT_SOURCE: research/OB5B-DECODESHAPE-1.md section 6
+RECEIPT: research/OB5B-DECODESHAPE-1.md
+COMMIT: 3a6f4071a279979d787b2efaa2dfc4fd8518ad6b
+---
+
+ID: CC-P05-004
+KIND: CLAIM
+LEG: LEG-OB5B2-20B-1CHUNK-U1
+WHAT: micro-batch shape is part of the determinism state
+VALUE: two live runs one flag apart produced different answers: PPL 131.2100
+  against 132.2931, and different routing on 3333 of 24576 (layer, token)
+  rows
+DERIVATION: same engine 1772264971eb456bf6a60d5204c48fb96eeb5a9b026c42ea1dd6f
+  3690b192932, same model, same corpus, same resident sets, same seed, same 8
+  threads, same chunk, differing only in -ub 1024 against -ub 1; compared by
+  (layer, token) rather than by file order because emission order differs by
+  construction at the two shapes; pick-level set agreement 96604 of 98304 =
+  98.270671 percent; first divergence at layer 0 token 228 is a router RANK
+  swap between experts 12 and 10 with the SET unchanged; divergent rows climb
+  monotonically from 3 at layer 0 to 294 at layer 23
+COST: UNMEASURED (this claim publishes no cost figure)
+COST_SPREAD: UNMEASURED (this claim publishes no cost figure)
+CAVEAT: measured on the 20b at K=16 on one chunk of AC-PROSE; the size of the
+  same effect on the 120b, which has four times the experts to find near-ties
+  among and eight more layers to compound in, is UNVERIFIED, and determinism
+  at a FIXED shape is untouched by this claim and is proved byte-for-byte by
+  the control arm.
+CAVEAT_SOURCE: research/OB5B-DECODESHAPE-1.md section 7.3 and finding F-P05-6
+RECEIPT: research/OB5B-DECODESHAPE-1.md
+COMMIT: 3a6f4071a279979d787b2efaa2dfc4fd8518ad6b
+---
+
+ID: CC-P05-005
+KIND: CLAIM
+LEG: LEG-OB5B2-20B-1CHUNK-U1
+WHAT: the first per-token latency distribution at decode shape in this house
+VALUE: p50 273.578395 ms, p95 612.734702 ms, p99 721.048699 ms per token, on
+  a box held quiet under the runlock
+DERIVATION: nearest-rank over the 1023 per-token intervals the engine's own
+  chunk timer recorded at ubatch=1 (chunk_count=1023, chunk_ns banked
+  verbatim in the run artifacts); min 113.054644 ms, max 1035.075727 ms,
+  mean 316.933159 ms, p95/p50 2.239704279279802, max/min 9.155534796076134
+COST: UNMEASURED (this claim publishes the distribution itself rather than a
+  ratio against a baseline)
+COST_SPREAD: UNMEASURED (this claim publishes the distribution itself)
+CAVEAT: the 20b at K=16 on one chunk, not the 120b and not a serve; the run
+  it comes from failed its identity bar, so these intervals time a forward
+  pass that is not byte-identical to the banked reference, though nothing
+  about the timing depends on which experts were picked.
+CAVEAT_SOURCE: research/OB5B-DECODESHAPE-1.md sections 7.2 and 7.6
+RECEIPT: research/OB5B-DECODESHAPE-1.md
+COMMIT: 3a6f4071a279979d787b2efaa2dfc4fd8518ad6b
+---

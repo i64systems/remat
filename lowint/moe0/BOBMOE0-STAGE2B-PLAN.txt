@@ -1,0 +1,185 @@
+BOBMOE0-STAGE2B-PLAN - LEAD PREREG ADDENDUM (THE EPOCH-WRAP FIX AND
+RELAUNCH), COMMITTED BEFORE ANY EDIT
+=====================================================================
+Lane: funded ternary (low-int). Lead-authored. UTC 2026-08-30.
+Parents: BOBMOE0-PREREG-1.md (FROZEN; arms, bars, gates untouched),
+BOBMOE0-STAGE2-PLAN.txt (the card protocol, still in force),
+BOBMOE0-STAGE2-LAUNCH.txt at 292f864 (the seg01 launch receipt).
+Pure ASCII, no em dashes. Every pass/fail rule frozen before the fix.
+
+0. GATE -1 AT PLAN TIME (lead, literal)
+=======================================
+(a) git rev-parse HEAD = 292f8647f8807ec456d3b698f702ec004aefe178;
+    merge-base --is-ancestor 292f864 HEAD -> YES;
+    merge-base --is-ancestor 292f864 origin/master -> YES; branch low-int.
+(b) launcher.out ARM FAILED line, verbatim:
+    [2026-08-30T20:55:29Z] ARM FAILED moe rc=1: see /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/moe/run-seg01.out
+(c) git status --porcelain: "?? .scratch-s11/" only (pre-existing,
+    ruled benign in stage 1).
+The launcher behaved LAWFULLY: EXIT moe rc=1, dense NOT started, NO
+DONE marker. The card has been idle since 20:55:29Z.
+
+1. THE CRASH ARITHMETIC (predicted vs observed, literal)
+========================================================
+Frozen constants (bobmoe0.py, run-seg01.out header, both quoted):
+  CORPUS_BYTES = 100000000, TRAIN_END = 90000000, ctx = 512
+  TRAIN_WINDOWS N = 90000000 // 512 = 175781
+  batch B = 64 (stage-2 recipe, frozen)
+  perm = torch.randperm(N, generator seeded 28471) - length 175781
+  main loop (line 776): ids = perm[(step-1)*B : step*B].tolist()
+The arithmetic:
+  floor(N / B) = floor(175781 / 64) = 2746 full batches
+  2746 * 64   = 175744;  N - 175744 = 37 windows remain
+  step 2747: slice perm[175744:175808] CLAMPS to 37 ids - a partial
+             batch, ran without error (np.stack over 37 arrays)
+  step 2748: slice perm[175808:175872] is EMPTY - np.stack over zero
+             arrays raises ValueError (bobmoe0.py line 384)
+PREDICTED first-crash step: 2748.
+OBSERVED: metrics-seg01.tsv last row is step 2747 (the partial batch,
+its metrics line banked); the traceback follows immediately. The
+progress log's last line reads step=2725 because progress prints every
+25 steps; 2725 is the last multiple of 25 before 2748. PREDICTED =
+OBSERVED. The "step ~2726" first estimate was the progress-granularity
+artifact, now resolved exactly.
+Why no run ever hit it: total stage-2 budget is 15259 * 64 = 976576
+window draws = 5.556 epochs of the 175781-window train split; stage 1
+drew 500 * 32 = 16000 of 351562 windows (ctx 256), never wrapping;
+G1-CARD ran to step 1100 (70400 draws); seg01 was the FIRST run in
+the lane's history to reach draw 175781.
+
+2. THE ONE WRAP RULE (frozen) AND ITS DETERMINISM STORY
+=======================================================
+RULE: for global step s in 1..15259, the batch's window ids are
+    ids(s) = [ perm[d mod N] for d = (s-1)*B .. s*B - 1 ]
+the SAME single preregistered permutation, cycled modularly. No new
+seed, no new RNG draw, no mutable state. One edit at the one call
+site (main loop line 776); batch() itself is untouched.
+DETERMINISM STORY:
+  D1. ids(s) is a pure function of (perm_seed 28471, N, B, s). It is
+      invariant under any segmentation, resume, preemption, or crash
+      pattern - the s.5 segment-chain claim carries unchanged.
+  D2. A1 is PRESERVED, not amended: data order remains fully
+      determined by the ONE shared perm seed, identical both arms.
+      A per-epoch reshuffle would introduce a NEW data-order random
+      object the prereg never named; the modular cycle introduces
+      nothing. Most bob: the boring absolute rule, no clever
+      carve-outs.
+  D3. The prereg's own frozen budget ALREADY implies this rule:
+      500M bytes per arm = 976576 draws * 512 bytes = 500006912
+      predicted bytes, only satisfiable with exactly B windows at
+      EVERY step. The old code's implicit partial batch (37 at step
+      2747) violated the frozen equal-token arithmetic; the wrap
+      rule restores it (64 windows, every step, both arms).
+  D4. Backward compatibility, exact: for every step with s*B <= N
+      (steps 1..2746 at stage 2) the rule reproduces the old slice
+      byte-for-byte. Every banked artifact - stage-1 checkpoints
+      (16000 draws, never wraps), G1-CARD digests (step <= 1100),
+      funded step001000/step002000 - is untouched by construction.
+      Unit rows prove D4 by direct comparison.
+UNIT ROWS (leg-wrapfix evidence, all literal output):
+  U1. steps 1..2746: new ids == old slice, all 2746 steps compared.
+  U2. step 2747: 64 ids = old 37 + perm[0:27]; length 64.
+  U3. step 2748 (the crash step): 64 ids = perm[27:91]; length 64.
+  U4. every step 1..15259 yields exactly 64 ids; the empty batch is
+      unreachable from the loop.
+  U5. the empty-window case: ByteCorpus.batch([]) STILL raises - the
+      wall stays absolute and loud; the fix removes the caller's
+      ability to produce it (U4), it does not soften the wall.
+  U6. the budget identity: 15259*64 = 976576 = 5*175781 + 97671;
+      976576*512 = 500006912 bytes, the prereg number.
+
+3. THE BOUNDARY PROOF - G1-WRAP (pass/fail frozen)
+==================================================
+Arm: MoE (the riskier path; the wrap arithmetic is arm-agnostic and
+proven so by U1-U4; the dense arm's own crossing of step 2748 is
+verified in-flight by seg02 monitoring). No test-only code path is
+added to the trainer: the runs stop via the existing W5 PREEMPT
+mechanism at the step-3000 cadence boundary.
+ANCHOR: the banked funded pair step002000.{safetensors,resume.pt} in
+/mnt/f/f32/stage/lowint/moe0-ckpt/stage2/moe/, sha256 re-verified
+against CKPT-DIGESTS.txt before each run (quoted).
+PROTOCOL: create the PREEMPT file; then TWO clean separate OS
+processes under the full proven envelope (the exact env and flags of
+STAGE2-PLAN s.1), run SEQUENTIALLY, each resuming the anchor into its
+own scratch dir .../stage2/g1wrap/moe/{A,B}/ and running steps
+2001..3000 (crossing 2746 -> 2747 -> 2748), exiting 0 with a
+PREEMPTED marker at the 3000 boundary; then remove PREEMPT and verify
+absence before relaunch.
+PASS, all limbs required:
+  (i)   step003000 safetensors byte-identical A vs B (sha256 AND
+        cmp, quoted literally);
+  (ii)  deterministic metrics logs byte-identical A vs B (cmp over
+        the full files, steps 2001..3000), with rows PRESENT for
+        2746, 2747, and 2748 quoted as boundary-crossing evidence;
+  (iii) both processes exit 0 with the PREEMPTED marker.
+FAIL: named refusal; bank the first divergent digest pair or metrics
+line; NO relaunch. L1-L3 gates and the serve-bystander wall apply to
+the proof runs exactly as to funded runs. If her demo takes the card
+mid-proof, PREEMPT is already doing its job; the proof reruns later.
+COST: ~1000 steps per run at the observed 1.81 s/step = ~30 min each.
+
+4. THE RELAUNCH SPEC - seg02 (frozen)
+=====================================
+The launcher already carries the segment hooks (SEG, RESUME_MOE).
+COMMAND (WSL, detached):
+  SEG=seg02 RESUME_MOE=/mnt/f/f32/stage/lowint/moe0-ckpt/stage2/moe/step002000.safetensors \
+    setsid nohup bash run_stage2.sh > .../stage2/launcher-seg02.out 2>&1 &
+seg01's launcher.out is frozen crash evidence, never overwritten.
+MoE resumes from the banked step002000 anchors (digests re-verified);
+dense starts from its default G1-CARD runA step001000 anchor exactly
+as originally planned (it never started in seg01). Gates L1-L3 rerun
+and logged by the launcher (gates-stage2-seg02.log); serve pid 654
+stays a bystander; free -m bar > 12288 logged; PREEMPT honored; W6
+temp rule armed; GPU temp beside every progress loss line; no wsl.exe
+keepalive touched; nothing on the mini/messenger/demo/4B path.
+FAILURE-AWARE MONITORING: watch-seg02.sh, detached, observes only,
+never signals. Poll 60 s:
+  - MONITOR LINE appended to .../stage2/watch-seg02.log each poll:
+    [UTC] arm=<moe|dense> <last progress line> (carrying step, ce,
+    elapsed_s, gpu_temp_c)
+  - on "ARM FAILED" in launcher-seg02.out: write .../stage2/
+    FAILED-seg02 containing the quoted line and UTC, then exit.
+  - on the DONE marker: final line, exit (the collector trigger
+    stands as planned).
+  - on PREEMPTED/TEMPSTOP/PREEMPTED-BETWEEN-ARMS markers: note and
+    exit (resumable states, not failures).
+IN-SESSION HEALTH BAR (before hand-off): moe metrics-seg02 rows past
+2748 quoted (2746..2749), the FIRST FRESH cadence checkpoint
+step003000 saved on time with its digest appended to CKPT-DIGESTS.txt
+and quoted, GPU temp < 90 C throughout, watcher running with pid
+banked. PROJECTION at observed 1.81 s/step: moe 13259 steps ~6.7 h,
+dense 14259 steps ~7.2 h, DONE ~14 h from launch.
+
+5. WHAT THE LOST STEPS MEAN FOR THE FALSIFIER
+=============================================
+NOTHING. Stated explicitly: the prereg bars compare FINAL checkpoints
+at equal steps (15259 both arms, identical budget, identical data
+order). Nothing after step002000 was ever banked (next cadence was
+3000); seg01's computed steps 2001..2747 are discarded wall clock,
+not evidence. seg02 replays 2001 onward under the fixed rule, and the
+dense arm runs entirely under it, so BOTH arms' final artifacts see
+the identical shared data order end to end (steps 1..2746 are
+identical under old and new rule, and no banked artifact postdates
+the divergence point). The crash cost ~53 minutes of card time and
+zero falsifier validity. The one behavioral delta vs the crashed
+run - step 2747 now carries 64 windows, not 37 - is the frozen
+budget arithmetic RESTORED (s.2 D3), not a recipe change.
+
+6. LEGS AND CAPS
+================
+At most 3 builder spawns remain for this stage; sequential.
+  FIX LEG - folded into the LEAD (tiny-fix allowance, saves a spawn):
+      this addendum committed first; then the one edit + unit rows
+      U1-U6 run in the WSL venv with literal output banked in
+      lowint/moe0/evidence/leg-wrapfix.txt; committed.
+  LEG D (builder 1) - G1-WRAP + RELAUNCH: the s.3 proof on the card,
+      then the s.4 relaunch, in-session health bar met, watcher up,
+      launch receipt lowint/moe0/BOBMOE0-STAGE2B-LAUNCH.txt committed
+      and pushed (crash arithmetic reference, fix commit, proof
+      digests, launch UTC, pids, projected completion, watcher and
+      marker paths). Evidence: lowint/moe0/evidence/leg-g1wrap.txt.
+  Reserve: 2 spawns.
+Every number in every receipt is literal command output. Gate -1
+(ancestry, ARM FAILED line, porcelain) reruns in every leg.
+
+END BOBMOE0-STAGE2B-PLAN

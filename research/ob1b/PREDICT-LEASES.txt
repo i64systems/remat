@@ -1,0 +1,29 @@
+=== PROSE: OB-1 validation K=16,8,4 (above) then NEW K=2,1,0 ===
+route_log      /root/ob1/runs/res-prose-a/route.log
+E=32 L=24 budget=32768 chunk_tokens=1024 chunks=32
+sets           ob1b/RESIDENT-SETS-KNEE.json
+
+K      lease_events     peak_experts    peak_concurrent_B rule (E-K)*per_exp
+2             21560               30            397612800          397612800 MATCHES RULE
+1             22328               31            410866560          410866560 MATCHES RULE
+0             23096               32            424120320          424120320 MATCHES RULE
+
+=== CODE: validation K=16,8,4 (OB-1 measured 12092/18100/21115) ===
+route_log      /root/ob1/runs/res-code-a/route.log
+E=32 L=24 budget=32768 chunk_tokens=1024 chunks=32
+sets           ob1/RESIDENT-SETS.json
+
+K      lease_events     peak_experts    peak_concurrent_B rule (E-K)*per_exp
+16            12092               16            212060160          212060160 MATCHES RULE
+8             18100               24            318090240          318090240 MATCHES RULE
+4             21115               28            371105280          371105280 MATCHES RULE
+
+=== CODE: NEW K=2,1,0 ===
+route_log      /root/ob1/runs/res-code-a/route.log
+E=32 L=24 budget=32768 chunk_tokens=1024 chunks=32
+sets           ob1b/RESIDENT-SETS-KNEE.json
+
+K      lease_events     peak_experts    peak_concurrent_B rule (E-K)*per_exp
+2             22611               30            397612800          397612800 MATCHES RULE
+1             23364               31            410866560          410866560 MATCHES RULE
+0             24078               32            424120320          424120320 MATCHES RULE

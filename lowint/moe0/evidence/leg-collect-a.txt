@@ -1,0 +1,457 @@
+BOB-MOE-0 STAGE-2 COLLECTOR, LEG COLLECT-A (C1, C2, C3)
+=======================================================
+Lane: low-int (funded ternary lane). Venue: hyde, on-machine, no ssh.
+Worktree: F:\f32\openbob-wt\low-int (WSL /mnt/f/f32/openbob-wt/low-int).
+Plan executed: BOBMOE0-STAGE2-PLAN.txt s.4 steps C1, C2, C3.
+Frozen bars: BOBMOE0-PREREG-1.md s.3 (quoted verbatim in the C3 section).
+Every number below is literal command output. Pure ASCII.
+
+Leg wall clock: C1 sweep and C2 evals run 2026-08-31, eval window
+13:54:08Z to 14:00:47Z (per-run START/END stamps quoted in C2).
+
+
+0. GATE -1, BEFORE
+==================
+$ cd /f/f32/openbob-wt/low-int
+$ git rev-parse HEAD
+cc19ae4dbc5e7e51d10b735815d0cfa63ace430c
+$ git rev-parse --abbrev-ref HEAD
+low-int
+$ git merge-base --is-ancestor cc19ae4 HEAD; echo
+ANCESTOR_HEAD=yes
+$ git merge-base --is-ancestor cc19ae4 origin/master; echo
+ANCESTOR_ORIGIN_MASTER=yes
+
+$ git status --porcelain
+?? .scratch-s11/
+--- END (rc=0) ---
+
+$ git diff HEAD --stat
+--- END diff ---
+(empty: no tracked modifications)
+
+$ cat "/f/f32/stage/lowint/moe0-ckpt/stage2/DONE"
+2026-08-31T13:10:57Z
+---rc=0---
+
+GATE -1 BEFORE: PASS. Branch low-int, HEAD is the expected cc19ae4,
+cc19ae4 is an ancestor of HEAD and of origin/master, the only foreign
+status line is the allowed '?? .scratch-s11/', no tracked diff, and the
+DONE marker reads 2026-08-31T13:10:57Z verbatim.
+
+
+1. C1, DIGEST SWEEP (re-hash of every banked checkpoint, both arms)
+===================================================================
+Method: sha256sum -c CKPT-DIGESTS.txt inside each arm directory under
+/mnt/f/f32/stage/lowint/moe0-ckpt/stage2/ (Windows
+F:\f32\stage\lowint\moe0-ckpt\stage2\). Volume re-hashed: moe 28G,
+dense 8.5G (du -sh).
+
+--- MOE ARM ---
+$ cd /f/f32/stage/lowint/moe0-ckpt/stage2/moe && sha256sum -c CKPT-DIGESTS.txt
+EXIT_CODE_MOE=0
+OK_COUNT_MOE=30
+TOTAL_LINES_MOE=30
+non-OK lines: NO_NON_OK_LINES
+
+step002000.safetensors: OK
+step002000.resume.pt: OK
+step003000.safetensors: OK
+step003000.resume.pt: OK
+step004000.safetensors: OK
+step004000.resume.pt: OK
+step005000.safetensors: OK
+step005000.resume.pt: OK
+step006000.safetensors: OK
+step006000.resume.pt: OK
+step007000.safetensors: OK
+step007000.resume.pt: OK
+step008000.safetensors: OK
+step008000.resume.pt: OK
+step009000.safetensors: OK
+step009000.resume.pt: OK
+step010000.safetensors: OK
+step010000.resume.pt: OK
+step011000.safetensors: OK
+step011000.resume.pt: OK
+step012000.safetensors: OK
+step012000.resume.pt: OK
+step013000.safetensors: OK
+step013000.resume.pt: OK
+step014000.safetensors: OK
+step014000.resume.pt: OK
+step015000.safetensors: OK
+step015000.resume.pt: OK
+step015259.safetensors: OK
+step015259.resume.pt: OK
+
+--- DENSE ARM ---
+$ cd /f/f32/stage/lowint/moe0-ckpt/stage2/dense && sha256sum -c CKPT-DIGESTS.txt
+EXIT_CODE_DENSE=0
+OK_COUNT_DENSE=30
+TOTAL_LINES_DENSE=30
+non-OK lines: NO_NON_OK_LINES
+
+step002000.safetensors: OK
+step002000.resume.pt: OK
+step003000.safetensors: OK
+step003000.resume.pt: OK
+step004000.safetensors: OK
+step004000.resume.pt: OK
+step005000.safetensors: OK
+step005000.resume.pt: OK
+step006000.safetensors: OK
+step006000.resume.pt: OK
+step007000.safetensors: OK
+step007000.resume.pt: OK
+step008000.safetensors: OK
+step008000.resume.pt: OK
+step009000.safetensors: OK
+step009000.resume.pt: OK
+step010000.safetensors: OK
+step010000.resume.pt: OK
+step011000.safetensors: OK
+step011000.resume.pt: OK
+step012000.safetensors: OK
+step012000.resume.pt: OK
+step013000.safetensors: OK
+step013000.resume.pt: OK
+step014000.safetensors: OK
+step014000.resume.pt: OK
+step015000.safetensors: OK
+step015000.resume.pt: OK
+step015259.safetensors: OK
+step015259.resume.pt: OK
+
+--- FILE COUNTS AND DIGEST-LOG COVERAGE ---
+SAFETENSORS_COUNT_moe=15
+RESUMEPT_COUNT_moe=15
+banked-but-not-in-log (moe): none
+logged-but-not-present (moe): none
+SAFETENSORS_COUNT_dense=15
+RESUMEPT_COUNT_dense=15
+banked-but-not-in-log (dense): none
+logged-but-not-present (dense): none
+
+C1 VERDICT: PASS both arms. 30 OK / 30 total per arm, exit code 0 per
+arm, 15 safetensors + 15 resume.pt per arm, no banked file absent from
+the digest log and no logged file absent from disk. Steps covered:
+002000 through 015000 every 1000, plus the final 015259.
+
+
+2. C2, EVAL BPB ON THE CARD
+===========================
+
+--- L1 GATE: serve bystander and compute exclusivity ---
+$ cat /root/.local/share/openbob/serve.pid
+654
+$ ps -p 654 -o pid,stat,etime,cmd
+    PID STAT     ELAPSED CMD
+    654 Ssl   1-20:47:44 /root/.local/bin/openbob serve --tmax 6
+(read only; the serve was NEVER signalled at any point in this leg)
+
+Busy-flag search, LI-S12 form:
+ABSENT: /root/.local/share/openbob/BUSY
+ABSENT: /root/.local/share/openbob/serve.busy
+ABSENT: /root/.local/share/openbob/busy
+ABSENT: /run/openbob/BUSY
+ABSENT: /tmp/openbob-busy
+ABSENT: /root/.local/share/openbob/CARD-BUSY
+$ find /root/.local/share/openbob -maxdepth 2 -iname '*busy*'
+(no output; no busy flag present, so no wait was required)
+
+$ nvidia-smi --query-compute-apps=pid,process_name,used_memory --format=csv
+pid, process_name, used_gpu_memory [MiB]
+654, [Not Found], [N/A]
+L1 PASS: the only compute process is the serve pid 654 (bystander).
+
+--- L2 GATE: host memory ---
+$ free -m
+               total        used        free      shared  buff/cache   available
+Mem:           24029         842       22954          75         575       23187
+Swap:           6144        4065        2078
+L2 PASS: available = 23187 MiB > 12288 MiB.
+
+--- L3 GATE: card memory and temperature ---
+$ nvidia-smi --query-gpu=name,memory.total,memory.free,memory.used,temperature.gpu,utilization.gpu --format=csv
+name, memory.total [MiB], memory.free [MiB], memory.used [MiB], temperature.gpu, utilization.gpu [%]
+NVIDIA GeForce RTX 3090 Ti, 24564 MiB, 23504 MiB, 810 MiB, 41, 5 %
+L3 PASS: memory.free = 23504 MiB >= 8192 MiB; temperature.gpu = 41 C at gate.
+
+--- TOOLCHAIN ---
+$ /root/openbob-train/venv/bin/python -c "import torch,sys; print(...)"
+3.12.3
+2.13.0+cu130
+True
+$ sha256sum /mnt/f/f32/stage/lowint/data/enwik8/enwik8
+2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8  /mnt/f/f32/stage/lowint/data/enwik8/enwik8
+(matches the lane's pinned corpus digest)
+
+--- WHAT WAS EVALUATED (disclosure) ---
+The eval corpus is the prereg's own held-out split as implemented by
+eval_bpb (bobmoe0.py line 535) and ByteCorpus (line 365): the TEST
+split [95pct, 100pct) of the pinned enwik8, lo=95000000 hi=100000000,
+ctx=512, non-overlapping windows in file order, BOS-shifted exactly as
+in training. n_windows=9765, n_bytes=4999680. The artifact itself
+records this line, so the number and its corpus travel together.
+bpb = total_ce_nats / (n_bytes * ln 2), computed in full fp32 with no
+autocast (compute_dtype=fp32_no_autocast in every artifact), so the
+science number does not inherit the bf16 training compute dtype.
+No training state was mutated; nothing was written into moe/ or dense/;
+all eval artifacts are off-repo under
+/mnt/f/f32/stage/lowint/moe0-ckpt/stage2/collect/<arm>/run{1,2}/.
+
+--- FULL COMMAND LINES, VERBATIM (one clean OS process each) ---
+MOE run1:
+env CUBLAS_WORKSPACE_CONFIG=:4096:8 PYTHONHASHSEED=0 OMP_NUM_THREADS=8 MKL_NUM_THREADS=8 \
+  /root/openbob-train/venv/bin/python /mnt/f/f32/openbob-wt/low-int/lowint/moe0/train/bobmoe0.py \
+  --arm moe --stage 2 --run collectA \
+  --data /mnt/f/f32/stage/lowint/data/enwik8/enwik8 \
+  --device cuda --threads 8 \
+  --eval-bpb /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/moe/step015259.safetensors \
+  --eval-out /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/collect/moe/run1/eval-bpb.txt \
+  --progress /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/collect/moe/run1/progress.txt
+
+MOE run2: identical except
+  --eval-out .../collect/moe/run2/eval-bpb.txt
+  --progress .../collect/moe/run2/progress.txt
+
+DENSE run1:
+env CUBLAS_WORKSPACE_CONFIG=:4096:8 PYTHONHASHSEED=0 OMP_NUM_THREADS=8 MKL_NUM_THREADS=8 \
+  /root/openbob-train/venv/bin/python /mnt/f/f32/openbob-wt/low-int/lowint/moe0/train/bobmoe0.py \
+  --arm dense --stage 2 --run collectA \
+  --data /mnt/f/f32/stage/lowint/data/enwik8/enwik8 \
+  --device cuda --threads 8 \
+  --eval-bpb /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/dense/step015259.safetensors \
+  --eval-out /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/collect/dense/run1/eval-bpb.txt \
+  --progress /mnt/f/f32/stage/lowint/moe0-ckpt/stage2/collect/dense/run1/progress.txt
+
+DENSE run2: identical except
+  --eval-out .../collect/dense/run2/eval-bpb.txt
+  --progress .../collect/dense/run2/progress.txt
+
+(The --run label is metadata only: it appears in the progress log and
+never in the eval artifact, and it feeds no seed. arm_seed is
+MASTER_SEED*10 + ARM_CODE[arm], independent of --run.)
+
+--- MOE ARM, RUN 1 ---
+START 2026-08-31T13:54:08Z  END 2026-08-31T13:55:58Z  EVAL_RC=0
+EVAL_BPB=1.25756923216550298e+00 n_bytes=4999680 wall_clock_s=100.741
+artifact:
+BOBMOE0 EVAL-BPB (stage-2 plan W7)
+arm=moe stage=2
+ckpt=step015259.safetensors
+ckpt_sha256=9e7f5cf87d4b934d64d3d4c629bc577ffcf30ca7c1f79595bb9b7618352d9511
+corpus_sha256=2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8
+split=test[95pct,100pct) lo=95000000 hi=100000000 ctx=512
+n_windows=9765 n_bytes=4999680
+compute_dtype=fp32_no_autocast
+total_ce_nats=4.35812390039062500e+06
+total_ce_nats_repr=4358123.900390625
+bpb=1.25756923216550298e+00
+bpb_repr=1.257569232165503
+artifact sha256:
+1a33cd86e0335c5c17a7531a9e94c65643290b9b6f71bac9b8682f7f65b55ea7  .../collect/moe/run1/eval-bpb.txt
+GPU temp during run: temp_max_c=72 reads=21
+
+--- MOE ARM, RUN 2 ---
+START 2026-08-31T13:56:03Z  END 2026-08-31T13:57:55Z  EVAL_RC=0
+EVAL_BPB=1.25756923216550298e+00 n_bytes=4999680 wall_clock_s=102.639
+artifact: byte-identical to run1 (full text quoted above)
+artifact sha256:
+1a33cd86e0335c5c17a7531a9e94c65643290b9b6f71bac9b8682f7f65b55ea7  .../collect/moe/run2/eval-bpb.txt
+GPU temp during run: temp_max_c=74 reads=21
+
+--- DENSE ARM, RUN 1 ---
+START 2026-08-31T13:58:03Z  END 2026-08-31T13:59:22Z  EVAL_RC=0
+EVAL_BPB=1.26009954223008691e+00 n_bytes=4999680 wall_clock_s=74.247
+artifact:
+BOBMOE0 EVAL-BPB (stage-2 plan W7)
+arm=dense stage=2
+ckpt=step015259.safetensors
+ckpt_sha256=da7ce35df8418e3549485f5261f971800d061acc41460029d7a7409523871f48
+corpus_sha256=2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8
+split=test[95pct,100pct) lo=95000000 hi=100000000 ctx=512
+n_windows=9765 n_bytes=4999680
+compute_dtype=fp32_no_autocast
+total_ce_nats=4.36689272558593750e+06
+total_ce_nats_repr=4366892.7255859375
+bpb=1.26009954223008691e+00
+bpb_repr=1.260099542230087
+artifact sha256:
+5339aa1eab12a69bb813163af3a1e53a099cc0f7b7f68635b4231d674d0241de  .../collect/dense/run1/eval-bpb.txt
+GPU temp during run: temp_max_c=76 reads=15
+
+--- DENSE ARM, RUN 2 ---
+START 2026-08-31T13:59:28Z  END 2026-08-31T14:00:47Z  EVAL_RC=0
+EVAL_BPB=1.26009954223008691e+00 n_bytes=4999680 wall_clock_s=74.560
+artifact: byte-identical to run1 (full text quoted above)
+artifact sha256:
+5339aa1eab12a69bb813163af3a1e53a099cc0f7b7f68635b4231d674d0241de  .../collect/dense/run2/eval-bpb.txt
+GPU temp during run: temp_max_c=77 reads=15
+
+--- C2 PASS RULE: TWICE-IDENTICAL ARTIFACTS ---
+$ cmp collect/moe/run1/eval-bpb.txt collect/moe/run2/eval-bpb.txt
+CMP_RC_moe=0
+$ cmp collect/dense/run1/eval-bpb.txt collect/dense/run2/eval-bpb.txt
+CMP_RC_dense=0
+$ sha256sum (all four)
+1a33cd86e0335c5c17a7531a9e94c65643290b9b6f71bac9b8682f7f65b55ea7  .../collect/moe/run1/eval-bpb.txt
+1a33cd86e0335c5c17a7531a9e94c65643290b9b6f71bac9b8682f7f65b55ea7  .../collect/moe/run2/eval-bpb.txt
+5339aa1eab12a69bb813163af3a1e53a099cc0f7b7f68635b4231d674d0241de  .../collect/dense/run1/eval-bpb.txt
+5339aa1eab12a69bb813163af3a1e53a099cc0f7b7f68635b4231d674d0241de  .../collect/dense/run2/eval-bpb.txt
+$ grep '^bpb=' (all four)
+moe/run1: bpb=1.25756923216550298e+00
+moe/run2: bpb=1.25756923216550298e+00
+dense/run1: bpb=1.26009954223008691e+00
+dense/run2: bpb=1.26009954223008691e+00
+
+C2 VERDICT: PASS both arms. Two clean processes per arm produced
+byte-identical artifacts (cmp rc 0, equal sha256). No disagreement to
+report, so nothing was averaged and no finding was raised here.
+
+--- CROSS-CHECK, C1 AGAINST C2 ---
+The ckpt_sha256 each eval recorded for the file it actually loaded
+matches the C1 digest log line for that same file:
+CKPT-DIGESTS.txt moe:   9e7f5cf87d4b934d64d3d4c629bc577ffcf30ca7c1f79595bb9b7618352d9511  step015259.safetensors
+CKPT-DIGESTS.txt dense: da7ce35df8418e3549485f5261f971800d061acc41460029d7a7409523871f48  step015259.safetensors
+So the bpb numbers are bound to the same bytes C1 verified.
+
+--- THERMAL DISCIPLINE ---
+A W6-form watchdog polled temperature.gpu every 5 s for the life of
+each eval process and would have stopped the eval on 3 consecutive
+reads >= 90 C. Highest reading anywhere in the leg: 77 C (dense run2).
+No stop was triggered; nothing was pushed through.
+
+--- CARD AND HOST AFTER THE EVALS ---
+$ nvidia-smi --query-gpu=memory.free,temperature.gpu --format=csv
+memory.free [MiB], temperature.gpu
+23503 MiB, 52
+$ nvidia-smi --query-compute-apps=pid,process_name --format=csv
+pid, process_name
+654, [Not Found]
+$ free -m
+               total        used        free      shared  buff/cache   available
+Mem:           24029         844       21923          75        1604       23185
+$ cat /root/.local/share/openbob/serve.pid
+654
+The serve is still the only compute process and still pid 654,
+unsignalled. No wsl.exe keepalive was touched. Nothing on the mini, the
+Telegram messenger, the demo frame, or the 4B serve path was touched.
+
+
+3. C3, FALSIFIER ARITHMETIC AGAINST THE FROZEN BARS
+===================================================
+
+--- BOBMOE0-PREREG-1.md s.3, QUOTED VERBATIM ---
+## 3. THE FALSIFIER BAR (what stage-2 kills, stated before any training)
+
+Primary metric: bits per byte (bpb) on the frozen test split at the
+final checkpoint, identical token budget, identical data order.
+  MoE ARM KILLED if bpb_moe > bpb_dense + 0.03. (Equal-active compute
+  bought nothing and 3.24x total params bought nothing callable.)
+  MATCH if |bpb_moe - bpb_dense| <= 0.03: the MoE arm SURVIVES (equal
+  quality at equal active size, with 8x FFN capacity addressable by
+  call - exactly the called-never-loaded shape).
+  BEAT if bpb_moe < bpb_dense - 0.03.
+LOCALITY THESIS KILLED (independently) if layer-mean P_half < 0.60 at
+the final checkpoint (uniform is 0.50; below 0.60 means no meaningful
+skew survived, so a region-leased brain gains nothing from popularity-
+ranked residency at this scale). C_3 and H are banked as evidence but
+the kill rides on P_half alone - one number, hard to lawyer.
+Routing COLLAPSE (the named outcome above) kills the MoE arm even with
+a passing bpb, because a 2-of-8 MoE that uses 2 experts is a dense
+model wearing a router.
+Both verdicts bank independently; a live loss with dead locality says
+so plainly, and the reverse too.
+--- END QUOTE ---
+
+--- THE SUBTRACTION, LITERAL ---
+$ /root/openbob-train/venv/bin/python c3.py
+bpb_moe_repr=1.257569232165503
+bpb_dense_repr=1.260099542230087
+bpb_moe=1.25756923216550298e+00
+bpb_dense=1.26009954223008691e+00
+delta = bpb_moe - bpb_dense
+delta_repr=-0.0025303100645839294
+delta=-2.53031006458392937e-03
+abs_delta_repr=0.0025303100645839294
+bar=0.03
+bpb_dense_plus_bar_repr=1.290099542230087
+bpb_dense_minus_bar_repr=1.2300995422300869
+KILL_TEST bpb_moe > bpb_dense + 0.03 -> False
+MATCH_TEST abs(delta) <= 0.03 -> True
+BEAT_TEST bpb_moe < bpb_dense - 0.03 -> False
+C3_VERDICT=MATCH
+
+C3 VERDICT: MATCH. The MoE arm SURVIVES the frozen bpb bar.
+bpb_moe = 1.25756923216550298e+00
+bpb_dense = 1.26009954223008691e+00
+delta = -2.53031006458392937e-03 (the MoE arm is lower, i.e. better,
+by 0.0025303100645839294 bpb), |delta| = 0.0025303100645839294 <= 0.03.
+The MoE arm is below the dense arm but not by 0.03, so this is MATCH,
+not BEAT: equal quality at equal active size, which is the outcome the
+prereg names as survival. No bar was moved and no threshold was
+reinterpreted.
+
+NOT THE FINAL MoE VERDICT. Per the prereg s.3 text quoted above, the
+routing-collapse check can kill the MoE arm INDEPENDENTLY even with a
+passing bpb, and the locality thesis has its own separate kill bar
+(layer-mean P_half < 0.60 at the final checkpoint). Both live in C4,
+which this leg did not run. The MoE arm's final verdict is not
+established here; only the bpb limb is.
+
+CLAIM DISCIPLINE NOTE: nothing in this leg claims a first. The bpb
+MATCH is a falsifier outcome on a preregistered bar, not a novelty
+claim. The lane's novelty claim remains the bit-exact training
+trajectory, and it is argued elsewhere with its prior-art section.
+
+
+4. GATE -1, AFTER (captured immediately before the landing commit)
+==================================================================
+Ordering note, stated plainly: this section was captured after all
+C1/C2/C3 work finished and while this evidence file was still
+untracked, which is the state the leg brief allows at the AFTER gate.
+The post-commit re-run of the same gate is reported in the leg's return
+message to the lane lead.
+
+$ git rev-parse HEAD
+cc19ae4dbc5e7e51d10b735815d0cfa63ace430c
+$ git rev-parse --abbrev-ref HEAD
+low-int
+$ git merge-base --is-ancestor cc19ae4 HEAD; echo
+ANCESTOR_HEAD=yes
+$ git merge-base --is-ancestor cc19ae4 origin/master; echo
+ANCESTOR_ORIGIN_MASTER=yes
+$ git status --porcelain
+?? .scratch-s11/
+?? lowint/moe0/evidence/leg-collect-a.txt
+--- rc=0 ---
+$ git diff HEAD --stat
+--- END diff ---
+(empty: no tracked modifications; no tracked file was edited by this
+leg. bobmoe0.py and every other tracked file are untouched.)
+$ cat "/f/f32/stage/lowint/moe0-ckpt/stage2/DONE"
+2026-08-31T13:10:57Z
+
+GATE -1 AFTER: PASS. Branch low-int, HEAD still cc19ae4, ancestry
+intact both ways, DONE marker unchanged, no tracked modification. The
+only status lines are the allowed '?? .scratch-s11/' and this evidence
+file, which the landing commit below tracks.
+
+
+5. LEG SUMMARY
+==============
+C1 PASS: moe 30 OK / 30, exit 0; dense 30 OK / 30, exit 0; 15
+  safetensors + 15 resume.pt per arm; digest-log coverage complete
+  both directions.
+C2 PASS: four evals, two clean processes per arm, artifacts
+  byte-identical per arm (cmp rc 0).
+  bpb_moe   = 1.25756923216550298e+00
+  bpb_dense = 1.26009954223008691e+00
+C3 MATCH: delta = -2.53031006458392937e-03, |delta| <= 0.03, the MoE
+  arm SURVIVES the bpb bar. C4 (routing collapse, locality P_half) can
+  still kill it independently and was not run here.
+Findings: none. Refusals: none. Highest GPU temperature: 77 C.
+
+END LEG COLLECT-A

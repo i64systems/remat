@@ -1,0 +1,49 @@
+REF  /root/ob4/llama.cpp/build/bin/libllama.so.0.3.0
+CAND /root/ob4b/llama.cpp/build/bin/libllama.so.0.3.0
+63ce0a6e9d9f2da8b0f9cac6699b524becab162bc7f00d9fe062925c68963efd  /root/ob4/llama.cpp/build/bin/libllama.so.0.3.0
+a81b46bda13ac697a2f1c9c0ded16d0098d0236595b7e09455144921f3204b12  /root/ob4b/llama.cpp/build/bin/libllama.so.0.3.0
+-rwxr-xr-x 1 root root 4752712 Aug 31 20:10 /root/ob4/llama.cpp/build/bin/libllama.so.0.3.0
+-rwxr-xr-x 1 root root 4752712 Aug 31 22:52 /root/ob4b/llama.cpp/build/bin/libllama.so.0.3.0
+
+SECTION                  REF                CAND               VERDICT
+.note.gnu.property       d6cd20a8414b70fa   d6cd20a8414b70fa   SAME
+.note.gnu.build-id       5db4d7a8e4180a58   7789d743151e9a17   DIFFER
+.gnu.hash                4ab660a3c24d8e06   4ab660a3c24d8e06   SAME
+.dynsym                  b17057d4a09df946   b17057d4a09df946   SAME
+.dynstr                  292f6947637a0d7a   1effa118b30983d9   DIFFER
+.gnu.version             b506a7093def6494   b506a7093def6494   SAME
+.gnu.version_r           957ed04d7adcd4f3   957ed04d7adcd4f3   SAME
+.rela.dyn                fe2ec020ee95b79c   fe2ec020ee95b79c   SAME
+.rela.plt                b2e449bc3347c4a0   b2e449bc3347c4a0   SAME
+.init                    167590c31f340cb3   167590c31f340cb3   SAME
+.plt                     fb6bc0ce31e451a7   fb6bc0ce31e451a7   SAME
+.plt.got                 c3138c708797eb94   c3138c708797eb94   SAME
+.plt.sec                 cf564c0c2533f9df   cf564c0c2533f9df   SAME
+.text                    00452ac4ff15060f   00452ac4ff15060f   SAME
+.fini                    6a4f3e5efc7c1f7e   6a4f3e5efc7c1f7e   SAME
+.rodata                  cbac34ea2c5fe796   cbac34ea2c5fe796   SAME
+.eh_frame_hdr            f8c813a405279059   f8c813a405279059   SAME
+.eh_frame                419784db3e2baedd   419784db3e2baedd   SAME
+.gcc_except_table        a0dfd56a20321d64   a0dfd56a20321d64   SAME
+.tbss                    a0dfd56a20321d64   a0dfd56a20321d64   SAME
+.init_array              a816105ca6f38c70   a816105ca6f38c70   SAME
+.fini_array              0092ce160183ddc5   0092ce160183ddc5   SAME
+.data.rel.ro             5a1e05640b01c8e7   5a1e05640b01c8e7   SAME
+.dynamic                 f10ed421e5363205   ef35a40c1a3b7b93   DIFFER
+.got                     a92b8430e9cfedc4   a92b8430e9cfedc4   SAME
+.got.plt                 f56c84bbcceec299   f56c84bbcceec299   SAME
+.data                    2f0d7e693b0476a8   2f0d7e693b0476a8   SAME
+.bss                     2f0d7e693b0476a8   2f0d7e693b0476a8   SAME
+.comment                 509378ae5eca3c51   509378ae5eca3c51   SAME
+.symtab                  509378ae5eca3c51   509378ae5eca3c51   SAME
+.strtab                  509378ae5eca3c51   509378ae5eca3c51   SAME
+.shstrtab                509378ae5eca3c51   509378ae5eca3c51   SAME
+
+sections differing: 3
+--- RUNPATH (a property of the build directory, not of the code) ---
+ 0x000000000000001d (RUNPATH)            Library runpath: [/root/ob4/llama.cpp/build/bin:]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/root/ob4b/llama.cpp/build/bin:]
+--- .text verdict (the bar) ---
+  ref  .text sha256 00452ac4ff15060f84d344b6a00f9171237139ee25e44c04ca14428014bda448
+  cand .text sha256 00452ac4ff15060f84d344b6a00f9171237139ee25e44c04ca14428014bda448
+  .text: MATCH

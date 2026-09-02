@@ -1,0 +1,14 @@
+BOBMOE0-STAGE2B FIX LEG EVIDENCE (lead-folded per plan s.6) - UTC 2026-08-31T00:40:13Z
+venv: /root/openbob-train/venv (WSL Ubuntu-24.04), CPU only, PYTHONHASHSEED=0
+command: /root/openbob-train/venv/bin/python test_wrap_stage2b.py
+--- literal output ---
+perm_seed=28471 N=175781 B=64 last=15259 PERM_HEAD=[162022, 152200, 22668, 121423, 33066, 8061, 162184, 144215]
+U1 steps 1..2746 compared=2746 mismatches=0 -> PASS
+U2 step 2747 len=64 old_partial_len=37 wrap_head=[162022, 152200, 22668] -> PASS
+U3 step 2748 old_len=0 new_len=64 equals_perm[27:91]=True -> PASS
+U4 steps 1..15259 wrong_length_count=0 -> PASS
+U5 batch([]) raises ValueError('need at least one array to stack') -> PASS
+U6 draws=976576 = 5*175781 + 97671; bytes=500006912 (prereg 500006912) -> PASS
+STAGE1 draws=16000 N_stage1=351562 wraps=False (16000 <= N: stage-1 bytes untouched)
+--- end ---
+note: PERM_HEAD matches run-seg01.out line 14 byte-for-byte; U2 wrap_head = PERM_HEAD[0:3] (the cycle re-enters at perm[0]).

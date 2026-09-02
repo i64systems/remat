@@ -1,0 +1,14 @@
+{
+  "ffn_gate_exps.weight": {
+    "n": 96,
+    "avg_lib_c2_decode_sec": 0.006687246510712915
+  },
+  "ffn_up_exps.weight": {
+    "n": 96,
+    "avg_lib_c2_decode_sec": 0.006078533501143586
+  },
+  "ffn_down_exps.weight": {
+    "n": 96,
+    "avg_lib_c2_decode_sec": 0.006564046937758879
+  }
+}

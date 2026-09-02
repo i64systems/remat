@@ -1,0 +1,17 @@
+{
+  "weight_example": "ffn_gate_exps.weight",
+  "weight_nbytes": 4406400,
+  "weight_block_size_bytes": 17,
+  "weight_nblocks": 259200,
+  "weight_n_elements": 8294400,
+  "weight_square_side_if_2d": 2880,
+  "weight_side_check": true,
+  "bias_example": "ffn_gate_exps.bias",
+  "bias_nbytes": 11520,
+  "bias_elems_if_f32": 2880.0,
+  "bias_elems_if_f16": 5760.0,
+  "bias_f32_min": -1.8125,
+  "bias_f32_max": 0.33984375,
+  "bias_f32_mean": -0.4640212953090668,
+  "bias_f32_n": 2880
+}

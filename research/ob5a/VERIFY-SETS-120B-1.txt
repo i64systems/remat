@@ -1,0 +1,80 @@
+== THE FILE AND WHAT IT CLAIMS ==
+  path                     /mnt/f/f32/openbob-wt/research-2/research/ob1b/RESIDENT-SETS-120B-K8.json
+  sha256                   8053f18a70030ad2ac2e59fe220a064ee26f35ad4eb3876bbb7c65f6e994530b
+  committed in             c8d86e5 (OB-1b builder 1 prereg)
+  lineage                  research/ob1/resident_sets.py (same loader, same ranking rule, same tie-break)
+  ranking_corpus           prose (frozen at the source_route_log below; never mixed with an acceptance corpus)
+  tie_break                lower expert id
+  source_route_log         /mnt/f/f32/stage/research/rs053/runs/120b-prose-a/route.log
+  source_route_log_sha256  5aa8464d3c71a73648c2323456d656cd40cfcf9dc88b603e1f10da69f9efa129
+  E=128 L=36 budget=16384 K_values=[8]
+  per_expert_bytes_per_layer 13253760
+
+== 1. THE SOURCE ROUTE LOG IS THE ONE IT NAMES ==
+  measured sha256 5aa8464d3c71a73648c2323456d656cd40cfcf9dc88b603e1f10da69f9efa129  MATCH
+
+== 2. THE SETS RE-DERIVE FROM IT, LAYER BY LAYER ==
+  histogram_c_l_e re-derived and compared elementwise: MATCH (36 x 128)
+  resident_sets['8'] re-derived for all 36 layers: MATCH
+
+== 3. THE SETS, LITERAL (what the night leg will hold resident) ==
+  layer  resident expert ids (K=8 of 128)
+  0      7,15,28,30,36,59,84,88
+  1      1,5,25,43,55,64,118,123
+  2      23,29,51,57,72,88,92,114
+  3      1,5,25,44,52,72,106,110
+  4      5,14,63,72,78,89,108,121
+  5      6,19,29,44,64,66,94,109
+  6      16,21,40,50,55,114,116,117
+  7      1,17,59,61,63,101,106,121
+  8      14,44,50,66,68,80,92,110
+  9      46,60,61,66,67,69,73,101
+  10     16,23,63,66,97,102,110,121
+  11     3,33,62,69,71,91,102,113
+  12     28,42,46,52,57,85,91,105
+  13     22,46,57,67,69,73,99,121
+  14     9,30,53,65,70,78,86,125
+  15     0,28,55,64,68,77,100,111
+  16     13,29,51,59,70,107,124,126
+  17     1,4,16,42,54,56,68,111
+  18     15,41,53,68,79,82,93,115
+  19     2,12,18,38,39,52,96,108
+  20     1,7,30,39,51,54,78,92
+  21     38,54,63,69,91,105,107,118
+  22     19,30,43,70,79,96,108,126
+  23     3,12,20,53,77,92,94,102
+  24     13,24,36,47,48,101,110,121
+  25     41,57,71,82,97,100,108,120
+  26     5,12,34,53,58,121,122,127
+  27     2,20,60,65,79,96,102,124
+  28     1,9,22,54,94,96,100,119
+  29     2,7,30,50,81,114,115,123
+  30     48,50,52,64,82,98,114,127
+  31     35,36,46,65,70,80,81,127
+  32     0,19,21,32,53,95,106,121
+  33     22,40,50,55,66,67,105,119
+  34     1,14,18,22,76,87,124,125
+  35     25,34,36,38,77,81,100,116
+
+== 4. POOL ARITHMETIC ==
+  resident_expert_pool_bytes = 8 x 36 x 13253760 = 3817082880
+  file claims                = 3817082880   MATCH
+
+== 5. DISTINCTNESS FROM THE ACCEPTANCE CORPUS ==
+  The ranking source is /mnt/f/f32/stage/research/rs053/runs/120b-prose-a/route.log
+  The acceptance route trace is
+    /mnt/f/f32/stage/research/ob1b/runs/pag120-prose-a/route.log
+  Their sha256 differ (5aa8464d... vs a32d0051...), which is the
+  ranking-corpus honesty law holding: ranks were never taken from the
+  corpus the run is scored on.
+
+== 6. WHY NO REBUILD WAS NEEDED ==
+  Step 2 of the brief says rebuild by the same lineage IF ABSENT. It is
+  not absent, it is committed, and sections 1 and 2 above re-derive it
+  bit for bit from its own named source. Rebuilding would produce the
+  same file under a new name and split the lineage for nothing, so
+  research/ob5a/RESIDENT-SETS-120B.json IS NOT CREATED. The night leg
+  points OB1_LEASE at research/ob1b/RESIDENT-SETS-120B-K8.json,
+  sha256 8053f18a70030ad2ac2e59fe220a064ee26f35ad4eb3876bbb7c65f6e994530b.
+
+VERIFY_SETS_FAILURES=0

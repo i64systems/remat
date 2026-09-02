@@ -1,0 +1,44 @@
+{
+  "ffn_gate_exps.weight": {
+    "path": "/mnt/f/f32/stage/research/ob4/dicts/ffn_gate_exps_weight.dict",
+    "size_bytes": 112640,
+    "n_train_files": 48,
+    "train_bytes": 211507200,
+    "train_seconds": 5.835
+  },
+  "ffn_up_exps.weight": {
+    "path": "/mnt/f/f32/stage/research/ob4/dicts/ffn_up_exps_weight.dict",
+    "size_bytes": 112640,
+    "n_train_files": 48,
+    "train_bytes": 211507200,
+    "train_seconds": 5.517
+  },
+  "ffn_down_exps.weight": {
+    "path": "/mnt/f/f32/stage/research/ob4/dicts/ffn_down_exps_weight.dict",
+    "size_bytes": 112640,
+    "n_train_files": 48,
+    "train_bytes": 211507200,
+    "train_seconds": 4.525
+  },
+  "ffn_gate_exps.bias": {
+    "path": "/mnt/f/f32/stage/research/ob4/dicts/ffn_gate_exps_bias.dict",
+    "size_bytes": 112640,
+    "n_train_files": 48,
+    "train_bytes": 552960,
+    "train_seconds": 1.488
+  },
+  "ffn_up_exps.bias": {
+    "path": "/mnt/f/f32/stage/research/ob4/dicts/ffn_up_exps_bias.dict",
+    "size_bytes": 112640,
+    "n_train_files": 48,
+    "train_bytes": 552960,
+    "train_seconds": 1.341
+  },
+  "ffn_down_exps.bias": {
+    "path": "/mnt/f/f32/stage/research/ob4/dicts/ffn_down_exps_bias.dict",
+    "size_bytes": 112640,
+    "n_train_files": 48,
+    "train_bytes": 552960,
+    "train_seconds": 1.349
+  }
+}

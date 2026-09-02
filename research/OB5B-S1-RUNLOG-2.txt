@@ -1,0 +1,1223 @@
+OB5B-S1-RUNLOG-2: SLICE 1 GATES 2 AND 3, BUILDER B
+
+Lane: research (CUDA/inventor lane), venue f32-HYDE, Windows 11 + WSL2.
+Branch research-2, worktree F:\f32\openbob-wt\research-2.
+Bound by research/OB5-DESIGN-C4-1.md slice S1 gates 2 and 3, against
+research/OB5A-ALLOC-1.md and builder A's research/OB5B-S1-RUNLOG-1.txt.
+Pure ASCII, no em dashes. Every number below is literal command output from
+this leg's own runs, or is quoted verbatim from a cited file. Where this leg
+derives a figure the arithmetic is shown. Deviations are named in section 9 and
+are not renegotiated anywhere else.
+
+THE ENGINE IS BIT FOR BIT GATE 1's. No source of the ob1 lease engine, the
+OB-5a reserve/commit allocator or the generation entry point was touched by
+this leg, so gate 1's .text lineage proof covers every model run below and gate
+1's identity claim is directly comparable to gate 2's. That decision is argued
+in section 3.1 and is the reason gate 2's decode-regime peak is a DERIVATION
+CHECKED AGAINST THE ENGINE plus a NARROW-PREFILL CONTROL, rather than a new
+counter in a rebuilt library.
+
+--------------------------------------------------------------------------
+0. THE TWO VERDICTS, FIRST
+--------------------------------------------------------------------------
+
+GATE 2  DECODE MEASURED HONESTLY                                     PASS
+        Decode tok/s and time to first token measured at K=8, 16, 24 and 32 on
+        the 120b through the leased path, at the frozen bound state, A/A
+        repeated and byte-identical, with the decode-regime ACCT reported and
+        MEASURED three independent ways.
+
+          THE DECODE-REGIME ACCT AT K=8, MEASURED
+            2314020128 + 3817082880 + 53015040 = 6184118048 bytes
+            EXPOSURE_decode = 63387346208 / 6184118048 = 10.250022
+
+        C4 section 6.1 projected ACCT_decode 6237133088 and exposure 10.162898
+        at K=8. SCOPE-LEDGER ENTRY OB5-023 IS CONFIRMED, and confirmed on the
+        favourable side: C4 assumed a depth-2 prefetch holding 8 experts and the
+        engine holds depth 1, 4 experts, so the measured ACCT is 53015040 bytes
+        SMALLER than projected at every K and the measured exposure is 1.008573
+        times the projection at K=8. Builder A's F-A4 is resolved: the 954270720
+        figure was the prefill's, and the decode's is 53015040.
+
+        K3 (TTFT above 120 s on a 64-token prompt) NOT TRIPPED anywhere: the
+        worst TTFT measured in twelve runs is 52.736329828 s on 63 tokens (the
+        ubatch-32 schedule control), 53.57 s scaled to 64, and the best on a
+        real prompt is 29.700507911 s at K=32, 30.17 s scaled. On a one-token
+        prompt it is 2.607288103 s, which is the floor.
+
+        K2 (decode unusable at every fitting K) NOT TRIPPED, AND NOT ONLY BY
+        DEFAULT. Its condition is "measured decode below 0.5 tok/s at every K
+        whose committed state fits 24029 MB with the policy stack live". The
+        largest K that fits with the house 6 GB free-RAM rule is K=32, measured
+        by running it, and AT K=32 ON AN IN-CORPUS PROMPT THE MEASURED DECODE
+        RATE IS 0.531246395 tok/s, ABOVE 0.5, WITH NO POLICY STACK AT ALL.
+        K2's condition is therefore already false at a fitting K before the
+        thing that was supposed to rescue it exists. Section 7 states what is
+        and is not licensed by that.
+
+GATE 3  THE SEAM                                                     PASS
+        One typed action under the tier, journaled, pointing at the worker's own
+        log, with the announcement and the receipt computed from counters, and
+        brain.busy and brain.not_resident both fired live, by name, against real
+        conditions. brain.identity.violation was fired as well, on a real digest
+        mismatch, which gate 3 did not ask for.
+
+          A REAL SERVED TURN, on a 24029 MB box:
+            answered from   gpt-oss-120b-mxfp4, 63387346208 bytes of weights
+            ACCT            2314020128 + 3817082880 + 609672960 = 6740775968
+            EXPOSURE        63387346208 / 6740775968 = 9.403568
+            leased          5461 slices, 72378783360 bytes, every one sha256
+                            verified against the 27648 row expert manifest
+            tok/s decode    0.425661161      ttft 25.340207310 s
+            turn identity   55df750df27733224d3df21726cafc50b1e6ca6051909f66d8c813dd5a2e2f86
+            worker log      021b0dddc3e867ad4002a1f6b56562074c0a95135be069f428abb293326b7719
+            journal head    d9f7d20f1dae99ae097bf336fc7666ba3b282864149c76088efaf3c1e78f8f11
+                            verified from the registered genesis, 1 transition
+
+        THE LIVE SERVE WAS NEVER TOUCHED. pid 654 was read with kill(0) and with
+        ps before and after every limb, was never signalled, restarted or
+        reconfigured, and was never even connected to. It has been up since
+        2026-08-29 (ps etime 3-01:59:30 at the end of the demonstration) and it
+        still owns 127.0.0.1:8899; the worker took 127.0.0.1:8907. The install
+        is PREPARED AND NOT APPLIED and waits for the owner's word.
+
+--------------------------------------------------------------------------
+1. INPUTS, ALL DIGEST-PINNED
+--------------------------------------------------------------------------
+
+  gpt-oss-120b-MXFP4.gguf      63387346208 bytes
+                               /root/openbob-baselines/models/
+                               sha256 582bd40f6886200101f4c4ed9f25f3fe80cc14c86e9e2b37746cd8904a0c622d
+                               banked by OB5A-ALLOC-1; NOT re-hashed by this
+                               leg (deviation D6), byte size verified literally
+  qwen3-4b-openbob-q1.bin      4027740408 bytes, /root/openbob-l2s2/in/
+                               sha256 6a617f7af6e75b342d3040e3d3175001108806622fe10dd8597ef2a6a29915c3
+                               RE-HASHED WHOLE BY THIS LEG. A free cross-check
+                               fell out of it: C4 section 3.3 quotes the mini's
+                               health endpoint as model_hash 6a617f7a..., so the
+                               gatekeeper artifact on hyde is byte-identical to
+                               the one the retail bob runs on the mini.
+  RESIDENT-SETS-120B-K8.json   8053f18a70030ad2ac2e59fe220a064ee26f35ad4eb3876bbb7c65f6e994530b
+                               research/ob1b/, K=8 of 128, prose-ranked
+  RESIDENT-SETS-120B-K8-16-24-32.json
+                               3d60d254687482b630aee4ed3c1113d31310fab8f08684bf51b4d3bcff10006b
+                               DERIVED BY THIS LEG, section 3.2
+  EXPERT-MANIFEST-120B.sha256  c71ce2ceec07db8932c8bbb3155029ca5f6b49b940dc46066240b2a47dbf1c80
+  ob5b1-gen binary             daca8fb74f626c186950c2882dfd1fdfe191056ca5feacccd51201db3e625740
+                               GATE 1's binary, unchanged, unrebuilt
+  corpus-prose.txt             3da39fce307af7a85b91c2f4372942f4a77f83e9c44fe70294c67cbb392d3c55
+                               262144 bytes, the corpus 120b-prose-a evaluated
+                               and the K=8 set was ranked on
+  PROMPT-1.txt  264 bytes      51cb66644b3c513381d6fc641b4d7c89f1c5b9fccfb10f339e8cfde8a1549ffb
+  PROMPT-2.txt  264 bytes      f0a0d166b595120d57a88ef118f4abdbbedc0e2457e65d8a3c14b1abdadf4be2
+  PROMPT-3.txt  264 bytes      a5cc358f36ac7e4636115c08a3f7c7eb28345ab50f94d5a3cdb95e5ced62ded3
+  PROMPT-4.txt    3 bytes      b9776d7ddf459c9ad5b0e1d6ac61e27befb5e99fd62446677600d7cacef544d0
+  openbob source               7fc600b9f354dffcb606b112793523937f6b3cf2c3dbfa34b97f0681a3f1d80d
+                               /root/k4b/src/openbob_s11_cpu.rs, 32607 lines,
+                               the file C4 section 1 names as the fabric
+
+FROZEN FACTS CARRIED, each cited, none re-derived loosely:
+  L = 36, E = 128, expert_used_count k = 4        RS053 prereg fact table
+  per_expert_bytes_per_layer = 13253760           OB5A-ALLOC-1 s6.1, RS053 s8
+  resident_always trunk = 2314020128              OB5A-SCOUT-1 s4
+  batch-regime peak concurrent = 1590451200       OB5A-ALLOC-1 s6 (120 experts)
+  batch-regime ACCT 7721554208, exposure 8.209143 OB5A-ALLOC-1 s6
+  read rate   1266753082.242027 bytes/s           OB5A-ALLOC-1 F-B3-1, re-derived
+  verify rate 2355890566.216399 bytes/s           OB5A-ALLOC-1 F-B3-1, re-derived
+
+--------------------------------------------------------------------------
+2. THE BOX, THE GUARDS, THE LOCK
+--------------------------------------------------------------------------
+
+  BOX          f32-HYDE, 24029 MB WSL RAM (25196232704 bytes), 6144 MB swap,
+               24 cores
+  vm.overcommit_memory  0 read INSIDE the locked window on every model run, with
+               a non-zero value made fatal by the driver. It never read anything
+               but 0, before and after, on every run.
+  GUARDS       pid 654 (openbob serve --tmax 6) and pid 489 (searxng) confirmed
+               alive before and after every model run and every gate 3 limb; all
+               reads are "1 openbob, 1 searxng". Neither was touched, signalled,
+               restarted or reconfigured. At the end of the gate 3 demonstration
+               ps reported pid 654 with etime 3-01:59:30, i.e. still the process
+               that started on 2026-08-29.
+  RUNLOCK      /mnt/f/f32/stage/research/runlock, taken per run by mkdir with a
+               5 s poll, released immediately after the model process exited,
+               75 s courtesy yield after each. Free RAM checked against the 6 GB
+               house bar inside the lock on every run: 22 GB available on every
+               model run of gate 2.
+  CONTENTION,  AND IT IS REPORTED RATHER THAN SMOOTHED. At 2026-09-01T19:35:11Z
+  DECLARED     a SIBLING RESEARCH WORKFLOW took the house runlock for a gpt-oss
+               -20b perplexity run (llama-perplexity, -ub 1, 8 threads) and held
+               it while this leg's fourth run waited. This leg's driver polled
+               and waited, which is the runlock law working exactly as designed.
+               The consequence for the numbers is named in finding F-B6: the
+               page cache is a shared resource and a neighbour's 12 GB working
+               set is part of the venue. The run order of the sweep was
+               re-planned around the contention (phases B2 and C2) and that is
+               deviation D2.
+  THREADS      8, nice -n 10, on every model run. CUDA_VISIBLE_DEVICES="" and
+               n_gpu_layers 0: CPU only.
+  READ-NEVER   ~/.config/openbob/, the journals and lowint/fixtures/
+               LI-S5-ROUTES-1.txt were never opened. The gate 3 dev fabric runs
+               under HOME=/root/ob5b2/devhome and therefore reads and writes its
+               OWN conf dir, journals and counter; the live conf dir is not named
+               in any script this leg wrote. No weights were downloaded. No
+               Telegram was sent. The mini, the messenger, the demo frame and the
+               4B serve path were never touched.
+  SIBLINGS     No sibling worktree or branch was written to. /root/ob5b1 (builder
+               A's tree) was read for its binaries and its runs and never written.
+
+--------------------------------------------------------------------------
+3. GATE 2: HOW IT WAS MEASURED
+--------------------------------------------------------------------------
+
+3.1 THE ENGINE WAS NOT REBUILT, AND THAT IS A CHOICE WITH A REASON
+
+Builder A's item (a) asks gate 2 for a decode-only peak concurrent measurement
+and offers two ways, "either acceptable": add a per-phase counter beside
+g_peak_concurrent in ob1-lease.cpp, or run a turn whose prompt is one token so
+prefill and decode have the same width. Builder A preferred the first.
+
+THIS LEG TOOK THE SECOND, and adds a third that neither named. The counter would
+have changed src/ob1-lease.cpp, which is compiled into libllama.so.0, whose
+.text builder A proved SAME as /root/ob5a's. That proof is the whole reason gate
+1's identity result inherits OB-5a's engine lineage. Spending it to get a number
+that is a pure function of data already banked is a bad trade, so:
+
+  (i)   THE DERIVATION. ob1_on_route computes `concurrent` as the bytes leased
+        AT ONE ROUTE CALL for one layer: it releases the previous layer's leases
+        at the top, then sums the slice bytes of the needed non-resident experts
+        of this layer. That is a pure function of the route log, the resident
+        set and the batch schedule, so research/ob5b1/gate2_decode_acct.py
+        recomputes it from the run's own route.log.
+  (ii)  THE PROOF OF THE DERIVATION. On every run the derived WHOLE-RUN maximum
+        is compared to the engine's own peak_concurrent_lease_bytes, and the
+        derived lease_events (builder A's model B) to the engine's own counter.
+        Eight runs, sixteen comparisons, ALL EXACT (section 4.3). A derivation
+        that reproduces the engine to the byte on the whole run licenses the
+        same derivation restricted to the decode phase.
+  (iii) THE NARROW-PREFILL CONTROL. Run g2-k8-p4-narrow uses a three byte
+        prompt, which tokenizes to n_prompt_tokens 1, so EVERY route call in the
+        process is one token wide and the engine's own counter is a decode-width
+        figure. It printed peak_concurrent_lease_bytes=53015040, which is
+        exactly the derived decode-phase peak and exactly 4 x 13253760.
+
+Three independent readings, one number.
+
+3.2 THE K=16, 24 AND 32 RESIDENT SETS, DERIVED AND PROVEN BEFORE USE
+
+The gate needs "the largest K whose committed state fits with 6 GB free" and the
+house had only a K=8 set for the 120b. research/ob5b1/gate2_sets.py derives K=16,
+24 and 32 from the BANKED file's own histogram_c_l_e under the ranking rule the
+banked file declares (count descending, ties to the lower expert id, first K),
+and proves the derivation three ways before any of it is used:
+
+  K8_REPRODUCES_BANKED_SET  True    the K=8 derivation reproduces the banked
+                                    K=8 set exactly, layer by layer
+  NESTING_HOLDS             True    K=8 subset of 16 subset of 24 subset of 32,
+                                    which a popularity ranking must satisfy
+  and the mass each set captures on its ranking corpus reproduces builder A's
+  section 3.5 table to every printed digit, computed by different code:
+
+    K   hit       mass            builder A s3.5   miss           mis/token
+     8  953164    0.4040035672    0.4040035672     0.5959964328   85.823486
+    16  1338721   0.5674239265    0.5674239265     0.4325760735   62.290955
+    24  1588456   0.6732754178    0.6732754178     0.3267245822   47.048340
+    32  1768367   0.7495316399    0.7495316399     0.2504683601   36.067444
+
+    All four mass rows, all four miss rows and all four misses-per-token rows
+    agree with builder A's table to every printed digit, computed from the same
+    banked histogram by different code.
+
+The K=8 run of the sweep uses the BANKED file so its bound state is gate 1's
+exactly; the K=16, 24 and 32 runs use the derived file. Since the derived file's
+K=8 block is element-for-element the banked one, the two files are
+interchangeable at K=8 by construction and no run was spent proving it.
+
+3.3 THE THREE PROMPTS: AN OPERATING ENVELOPE, NOT A PROMPT
+
+Builder A's item (c) asks for an in-corpus and an out-of-corpus prompt. This leg
+makes it three, because "in corpus" hides a distinction that turned out to be
+the sharpest thing gate 2 found. The K=8 set was ranked on the first 16384
+tokens of corpus-prose.txt, so:
+
+  PROMPT-1  OUT OF CORPUS            builder A's gate 1 prompt, carried
+                                     unchanged so gate 2's K=8 row is directly
+                                     comparable to gate 1's
+  PROMPT-2  IN CORPUS, OUT OF SAMPLE  264 bytes from byte 196684 of
+                                     corpus-prose.txt, far past the ranked span
+  PROMPT-3  IN CORPUS, IN SAMPLE      264 bytes from byte 17128, inside it
+  PROMPT-4  ONE TOKEN                 the narrow-prefill control of 3.1(iii)
+
+THE DRAW RULE, so a reader can re-cut them: from the given byte offset, advance
+to the first byte after the next newline, then take exactly 264 bytes, which is
+PROMPT-1's own size. No editing and no selection.
+
+3.4 WHAT ELSE CHANGED FROM GATE 1's SHAPE
+
+  n_predict 64 rather than 32, per builder A's item (d): 32 tokens is enough for
+  identity and thin for throughput. Section 5.4 reports whether 64 was enough.
+  Everything else in C4 section 4.3's bound state is gate 1's, unchanged:
+  n_ctx 512, n_ubatch 64 (except the declared schedule control), 8 threads,
+  no mmap, no repack, flash attention disabled, F16 K and V, greedy argmax with
+  the lowest-id tie-break, one token per llama_decode.
+
+--------------------------------------------------------------------------
+4. GATE 2: THE MEASUREMENTS
+--------------------------------------------------------------------------
+
+4.1 THE PERF ROWS, LITERAL (her standing order, every field)
+
+run              K  n_pr  ttft_seconds   decode_seconds  tok/s DECODE   tok/s excl 1   model_load_s   VmHWM_bytes   MaxRSS_kb
+g2-k8-p1-a       8    56  40.313243448   248.163195190   0.257894810    0.253865315    10.054877188   7405543424     7231976
+g2-k8-p1-b       8    56  44.930562558   190.394067643   0.336144927    0.330893066    13.269085817   7405600768     7232032
+g2-k8-p2         8    63  41.640432405   172.591897372   0.370816944    0.365023141    11.702880980   7509954560     7333940
+g2-k8-p3         8    59  36.062630445   142.881315796   0.447924206    0.440925771    15.245112829   7510695936     7334664
+g2-k16-p1       16    56  37.672590362   151.940919703   0.421216353    0.414635447    16.832892787  11153657856    10892244
+g2-k24-p1       24    56  34.021878742   144.788436777   0.442024249    0.435117913    23.287492490  14907207680    14557820
+g2-k32-p1       32    56  33.555524593   135.928857303   0.470834533    0.463478071    30.412738436  18660970496    18223604
+g2-k8-p4-narrow  8     1   2.607288103    75.706478525   0.422685094    0.409476694    10.708624379   6537732096     6383212
+g2-k16-p2       16    63  34.730626425   136.788235061   0.467876495    0.460566572    17.567741979  11240476672    10977028
+g2-k24-p2       24    63  31.635591862   130.455698619   0.490587998    0.482923031    22.225042760  14931312640    14581360
+g2-k32-p2       32    63  29.700507911   120.471405756   0.531246395    0.522946083    27.780184807  18145042432    17719768
+g2-k8-p2-ub32    8    63  52.736329828   146.365130604   0.437262617    0.430431091    11.227225209   7252459520     7082480
+
+  n_generated_tokens is 64 on every row above except g2-k8-p4-narrow, which is
+  32. stop_reason is n_predict on every row: no EOG was reached anywhere.
+  g2-k8-p2-ub32 is the declared schedule control of section 4.8, at n_ubatch 32.
+
+  THE HEADLINE ROW OF THE GATE'S OWN BAR, "the largest K whose committed state
+  fits with 6 GB free": g2-k32-p2, K=32, tok/s DECODE 0.531246395, ttft
+  29.700507911 s on a 63 token prompt, VmHWM 18145042432 bytes.
+
+LEASE AND COMMIT COUNTERS, one row per run:
+
+run              K  lease_events   peak_concurrent  resident_bytes  commit_model_peak  commit_peak_single  lease_bytes_read
+g2-k8-p1-a       8        10262        954270720      3817082880         7081930752           615333888      136010085120
+g2-k8-p1-b       8        10262        954270720      3817082880         7081930752           615333888      136010085120
+g2-k8-p2         8         9810       1060300800      3817082880         7185453056           615333888      130019385600
+g2-k8-p3         8         9317       1060300800      3817082880         7185563648           615333888      123485281920
+g2-k16-p1       16         9548        888001920      7634165760        10835841024           615333888      126546900480
+g2-k24-p1       24         8835        821733120     11451248640        14590590976           615333888      117096969600
+g2-k32-p1       32         7921        768718080     15268331520        18358575104           615333888      104983032960
+g2-k8-p4-narrow  8         4474         53015040      3817082880         6230409216           615333888       59297322240
+g2-k16-p2       16         8778        967524480      7634165760        10915135488           615333888      116341505280
+g2-k24-p2       24         7807        888001920     11451248640        14656614400           615333888      103472104320
+g2-k32-p2       32         6845        808479360     15268331520        18398105600           615333888       90721987200
+g2-k8-p2-ub32    8        10566        808479360      3817082880         6933770240           615333888      140039228160
+
+  alloc_commit_peak_single is 615333888 on EVERY row, at every K, on the narrow
+  control, and it is the same 615333888 OB5A-ALLOC-1 P2b banks and builder A's
+  F-A8 found unchanged in generation. The allocator's central claim, that no
+  request proportional to N is ever made, now holds across a 4x sweep of the
+  residency schedule as well.
+
+4.2 IDENTITY: THE STOP-SHIP LIMB, AND TWO MORE IT DID NOT OWE
+
+  A/A at the headline configuration, g2-k8-p1-a against g2-k8-p1-b, five limbs:
+    gen-ids.txt         IDENTICAL   5b751861465660a73ec9e895f03f01d81f0522e5ef27c713efb44746c38b7686
+    gen-text.txt        IDENTICAL   539e71d138c3c7b15e379b0b6f0729a691d7569884182a9617fabf462ea5da55
+    prompt-ids.txt      IDENTICAL
+    route.log           IDENTICAL
+    alloc journal       IDENTICAL by the engine's own printed digest,
+                        60a1c06df522e1c48ad10852cd251ef40e36154213658b02185dbad4d79a3225
+                        on both runs; the journal FILE is gzipped to the stage
+                        mirror and removed after each run, so the comparison is
+                        on the digest the engine computed over the bytes it
+                        wrote, which is the P4c relation OB-5a already banks.
+  and every deterministic counter agreed: lease_events 10262, lease_bytes_read
+  136010085120, peak_concurrent_lease_bytes 954270720, route_calls 2340,
+  alloc_commit_model_peak 7081930752.
+
+  THE TWO RUNS DIFFERED IN DECODE WALL CLOCK BY 30.3 PERCENT (248.163195190 s
+  against 190.394067643 s, a ratio of 1.303419) AND BY NOT ONE BYTE. That
+  sentence is the program's thesis stated as a measurement rather than as a
+  claim, and it is the reason a receipt must carry the identity digest and not
+  the seconds.
+
+  A CROSS-RUN LIMB THE GATE DID NOT ASK FOR. n_predict is not a member of the
+  forward pass, so a 64-token run from the same bound state must extend a
+  32-token run exactly. The first 32 lines of g2-k8-p1-a/gen-ids.txt were
+  compared to the whole of gate 1's gen-120b-k8-a/gen-ids.txt:
+    GATE1_PREFIX_MATCHES_GATE2  True
+  Gate 1's identity therefore holds across a change of n_predict, across a
+  different output directory, and across four days of this box's page cache.
+
+4.3 THE DECODE-REGIME ACCT, MEASURED THREE WAYS
+
+For every run, research/ob5b1/gate2_decode_acct.py recomputed the engine's
+whole-run peak concurrent and its lease_events from the route log alone and
+compared both to the engine's own counters:
+
+run              derived peak   engine peak   match   derived leases  engine leases  match
+g2-k8-p1-a         954270720     954270720    True         10262          10262      True
+g2-k8-p1-b         954270720     954270720    True         10262          10262      True
+g2-k8-p2          1060300800    1060300800    True          9810           9810      True
+g2-k8-p3          1060300800    1060300800    True          9317           9317      True
+g2-k16-p1          888001920     888001920    True          9548           9548      True
+g2-k24-p1          821733120     821733120    True          8835           8835      True
+g2-k32-p1          768718080     768718080    True          7921           7921      True
+g2-k8-p4-narrow     53015040      53015040    True          4474           4474      True
+g2-k16-p2          967524480     967524480    True          8778           8778      True
+g2-k24-p2          888001920     888001920    True          7807           7807      True
+g2-k32-p2          808479360     808479360    True          6845           6845      True
+g2-k8-p2-ub32      808479360     808479360    True         10566          10566      True
+
+  TWELVE RUNS, TWENTY-FOUR COMPARISONS, ALL EXACT.
+
+  Builder A's F-A1 (the engine leases per llama_decode call, not per token) is
+  re-confirmed at four values of K, on two ubatch widths and on a one-token
+  prefill. Its prefill split reproduces too: on g2-k8-p1-a the derivation gives
+  1838 prefill lease events, which is builder A's own 1838 for the same prompt,
+  computed by different code.
+
+THE DECODE-PHASE PEAK IS 53015040 BYTES, EXACTLY 4 EXPERTS, ON EVERY RUN AND AT
+EVERY K. It is 4 and not fewer because a decode route call needs the union of
+that token's 4 selections at that layer, and at least one (layer, token) in
+every run had all four non-resident. It is 4 and not 8 because THE ENGINE HAS NO
+PREFETCH: C4's depth-2 term was a design allowance for a prefetcher that does
+not exist yet.
+
+THE TABLE C4 SECTION 6.1 IS ABOUT, NOW MEASURED:
+
+  K   resident bytes   ACCT_decode measured   exposure measured   C4 projected   ratio
+   8      3817082880             6184118048           10.250022      10.162898   1.008573
+  16      7634165760            10001200928            6.337973       6.304554   1.005301
+  24     11451248640            13818283808            4.587208       4.569676   1.003837
+  32     15268331520            17635366688            3.594331       3.583558   1.003006
+
+  arithmetic, K=8 row, in full:
+    2314020128 + 3817082880 + 53015040 = 6184118048
+    63387346208 / 6184118048 = 10.250022
+  the projected column is C4 section 6.1's own, whose third term is 106030080
+  (depth 2); the measured third term is 53015040 (depth 1), and the ACCT
+  difference is exactly 53015040 bytes at every K, which is why the ratio column
+  shrinks as K grows.
+
+  SCOPE-LEDGER ENTRY OB5-023 IS CONFIRMED. Its direction was already confirmed
+  by builder A; its VALUE, which builder A recorded as refuted because the
+  prefill contaminated the measurement, is now confirmed and slightly exceeded.
+  K5 (decode costs exposure instead of buying it) IS NOT TRIPPED, and the margin
+  is much larger than the contaminated figure suggested: 10.250022 in decode
+  against 8.209143 in the batch regime, a rise of 24.8610 percent.
+
+  A CORROBORATION FROM A DIFFERENT COUNTER. The narrow control's
+  alloc_commit_model_peak is 6230409216, which is the engine's own view of the
+  committed model state on a decode-width run. The derived ACCT_decode is
+  6184118048. They differ by 46291168 bytes, which is 0.75 percent and is the
+  engine's non-expert buffers; two different instruments landed within a
+  percent of each other on the same quantity.
+
+4.4 THE LARGEST K THAT FITS, DECIDED BY RUNNING IT
+
+Builder A's section 3.8 estimated the committed state per K and said "gate 2
+decides that by measurement, not by this table". It did.
+
+  K   est cmt (A s3.8)   MEASURED commit_model_peak   MEASURED VmHWM   headroom on 25196232704
+   8       7.4649 GB              7081930752            7405543424         17790689280  (17.79 GB)
+  16      11.2819 GB             10835841024           11153657856         14042574848  (14.04 GB)
+  24      15.0990 GB             14590590976           14907207680         10289025024  (10.29 GB)
+  32      18.9161 GB             18358575104           18660970496          6535262208  ( 6.54 GB)
+
+  K=32 RAN CLEAN: exit_rc 0, Maximum resident set size 18223604 kbytes, free RAM
+  after the run 15358 MB free of 24029 MB, guards alive before and after. Its
+  headroom of 6535262208 bytes is 6232 MiB, above the 6144 MiB house bar.
+
+  K=40 DOES NOT FIT, and the projection is made from this leg's own measured
+  points rather than from an estimate. The measured commit peak is linear in K:
+    16-8   (10835841024 - 7081930752) / 8 = 469238784 bytes per K
+    24-16  (14590590976 - 10835841024) / 8 = 469343744
+    32-24  (18358575104 - 14590590976) / 8 = 470998016
+  taking the largest of the three slopes, K=40 commits 18358575104 + 8 x
+  470998016 = 22126559232, and VmHWM ran 302395392 bytes above commit at K=32,
+  so VmHWM at K=40 is about 22428954624, leaving 2767278080 bytes (2639 MiB) on
+  the box. That is below the 6144 MiB bar before the live serve is counted.
+
+  THEREFORE K=32 IS THE LARGEST K WHOSE COMMITTED STATE FITS WITH 6 GB FREE, and
+  it is the operating point gate 2's bar names. Builder A's table put K=32 at
+  18.9161 GB and called it "above the 6 GB bar on paper and marginal in
+  practice"; in practice it ran, with 6.54 GB of headroom, and the estimate was
+  0.56 GB pessimistic.
+
+4.5 THE OPERATING ENVELOPE: THE SAME BOB, THREE PROMPTS
+
+  prompt                        K   decode mis/token   decode topK mass   tok/s DECODE   ttft_s
+  PROMPT-1  out of corpus       8       131.6250000       0.0859375000     0.257894810   40.313
+  PROMPT-1  out of corpus (b)   8       131.6250000       0.0859375000     0.336144927   44.931
+  PROMPT-2  in corpus, out of
+            sample              8       124.5468750       0.1350911458     0.370816944   41.640
+  PROMPT-3  in corpus, in
+            sample              8       121.1718750       0.1585286458     0.447924206   36.063
+  PROMPT-1  out of corpus      16       122.4531250       0.1496310764     0.421216353   37.673
+  PROMPT-1  out of corpus      24       113.2187500       0.2137586806     0.442024249   34.022
+  PROMPT-1  out of corpus      32       101.0468750       0.2982855903     0.470834533   33.556
+  PROMPT-2  in corpus          16       111.7968750       0.2236328125     0.467876495   34.731
+  PROMPT-2  in corpus          24        99.7812500       0.3070746528     0.490587998   31.636
+  PROMPT-2  in corpus          32        87.5312500       0.3921440972     0.531246395   29.701
+  PROMPT-4  one token           8       135.9062500       0.0562065972     0.422685094    2.607
+
+  (the mass column is the DECODE phase's; PROMPT-3's PREFILL mass is
+  0.1922080979 and is the figure section 6 F-B2 turns on.)
+
+  THE ORDERING IS THE EXPECTED ONE AND THE MAGNITUDE IS NOT. At K=8, moving from
+  an out-of-corpus prompt to one cut from the very corpus the resident set was
+  ranked on buys 131.625 -> 121.172 misses per token, 7.9 percent. Gate 0's
+  in-domain figure for that same set on that same corpus is 85.823486 misses per
+  token. The set does not deliver its advertised value on a served prompt even
+  when the prompt is drawn from its own ranking corpus. Section 6 F-B2 measures
+  why, and it is not small-sample noise.
+
+  THE SPREAD IS THE PRODUCT'S ENVELOPE, AND IT IS 2.06x WIDE. At a fixed
+  operating point (K=8) the same bob decodes at 0.257894810 tok/s on the worst
+  prompt of the day and 0.447924206 on the best, and across the whole matrix the
+  band is 0.257894810 to 0.531246395. NEITHER END IS A CHERRY: both are the same
+  binary at the same bound state on real text, and the wait class C4 section 6.2
+  wants her to declare has to be declared over a band this wide, not over a
+  point.
+
+4.6 THE COST DECOMPOSITION, AND A CONSTANT THAT DID NOT MOVE
+
+For each run the lease-only cost model was evaluated twice: once at the banked
+OB-5a rates and once at THAT RUN's own measured read and verify rates.
+
+run             mis/token   bytes/token    ser s/tok  tok/s    measured   measured/model  own read rate   read+verify
+                                        (banked)   (banked)                *at own rates  (bytes/s)       share of process
+g2-k8-p1-a      131.625000  1744526160    2.117659   0.472220 0.257894810   0.767997       793821816       0.777344
+g2-k8-p1-b      131.625000  1744526160    2.117659   0.472220 0.336144927   0.780540       1130935308      0.728878
+g2-k8-p2        124.546875  1650714390    2.003782   0.499056 0.370816944   0.754797       1278884515      0.703714
+g2-k8-p3        121.171875  1605982950    1.949483   0.512956 0.447924206   0.793854       1473957386      0.701563
+g2-k16-p1       122.453125  1622964330    1.970097   0.507589 0.421216353   0.785576       1379643818      0.698946
+g2-k24-p1       113.218750  1500574140    1.821529   0.548989 0.442024249   0.768069       1365634106      0.660326
+g2-k32-p1       101.046875  1339251030    1.625700   0.615119 0.470834533   0.769711       1256413065      0.634068
+g2-k16-p2       111.796875  1481728950    1.798653   0.555972 0.467876495   0.768523       1451311859      0.676012
+g2-k24-p2        99.781250  1322476740    1.605338   0.622922 0.490587998   0.751652       1371453379      0.638369
+g2-k32-p2        87.531250  1160118180    1.408253   0.710100 0.531246395   0.743809       1288254047      0.605444
+g2-k8-p2-ub32   124.546875  1650714390    2.003782   0.499056 0.437262617   0.787376       1482689966      0.721506
+g2-k8-p4-narrow 135.906250  1801268820    2.186538   0.457344 0.422685094   0.805983       1567086343      0.704170
+  (* the measured/model column is at THAT RUN's own rates, not the banked ones.)
+
+  THE STRUCTURE HOLDS AND THE CONSTANT MOVES. At each run's own measured rates
+  the lease-only model over-predicts measured decode by a remarkably stable
+  factor across TWELVE runs, four values of K, four prompts and two ubatch
+  widths: the measured/model column runs 0.743809 to 0.805983, mean 0.7732,
+  spread 8.0 percent of the mean. So the cost model's SHAPE (misses x
+  per-expert bytes, read then verify, serialized) is right, its residual of
+  about 22.7 percent is compute, drop, mprotect, sampling and the prefill's
+  share of the run's average rate, and THE THING THAT ACTUALLY MOVES DECODE
+  THROUGHPUT ON THIS BOX IS THE READ RATE, which ranged from 793821816 to
+  1567086343 bytes/s, a factor of 1.974, between runs of the same binary.
+
+  Builder A measured read plus verify at 72.0468 percent of process time in
+  generation against 62.36 percent in the batch regime. This leg's twelve runs
+  read 0.605444 to 0.777344, so F-A6 stands and the share falls as K rises,
+  which is what it should do: a larger resident set moves fewer bytes. At the
+  gate's own operating point, K=32 on an in-corpus prompt, read plus verify is
+  down to 0.605444, and that is the number C2's Amdahl bar should be written
+  against rather than the K=8 figure.
+
+4.7 HAS THE DECODE RATE STOPPED MOVING?
+
+Builder A's item (d): "32 tokens is enough for identity and thin for throughput
+... it needs enough tokens to stop moving." The ob1 stats carry chunk_ns, the
+wall time between layer-0 route calls, which is one entry per llama_decode call,
+so the per-token decode time is a measured series and not an average.
+
+run             decode calls  first quarter mean  last quarter mean  min       max        last/first
+g2-k8-p1-a           64       4.761383 s          6.748289 s         2.143400  40.302140  1.417296
+g2-k8-p1-b           64       6.066317 s          2.641532 s         2.192653  44.919939  0.435443
+g2-k8-p2             64       5.069841 s          2.744875 s         2.189204  41.622151  0.541412
+g2-k8-p3             64       4.453211 s          2.202518 s         1.874372  36.048212  0.494591
+g2-k16-p1            64       4.629770 s          2.431627 s         1.889135  37.654195  0.525216
+g2-k24-p1            64       4.245819 s          2.352158 s         1.745247  33.988706  0.553994
+g2-k32-p1            64       4.091415 s          2.229538 s         1.492057  33.535756  0.544931
+g2-k16-p2            64       4.121908 s          2.151043 s         (in GATE2-ANALYZE-1.txt)
+g2-k24-p2            64       3.831452 s          2.073712 s
+g2-k32-p2            64       3.549910 s          1.962266 s
+g2-k8-p2-ub32        64       3.651026 s          2.249066 s
+g2-k8-p4-narrow      32       2.391478 s          2.553607 s
+
+  NO, AND THE ANSWER IS NOT "USE MORE TOKENS". Within one run the per-token time
+  varies by a factor of 15 to 22 (min against max), and the drift between the
+  first and last quarter goes BOTH WAYS: 1.42 on the first run of a cold box and
+  0.44 to 0.55 on every run after it. That is not a length effect that longer
+  generations would settle; it is the page cache filling and emptying under a
+  63 GB working set on a 24029 MB box. THE HONEST STATEMENT IS THAT tok/s DECODE
+  ON THIS BOX IS A BAND, NOT A POINT, and the band at K=8 on one prompt is
+  0.257894810 to 0.336144927 for byte-identical runs. Every decode figure in
+  this document should be read with that band around it. The BYTES have no band.
+
+4.8 THE SCHEDULE CONTROL, AND A SHARPER ANSWER THAN BUILDER A's ITEM (f) ASKED
+
+Builder A's item (f): "Gate 2 should either find a prompt or a length where it
+DOES move the answer, or record plainly that it looked and did not."
+
+IT LOOKED AND IT DID NOT, on a different prompt and at twice the generation
+length, and what it found instead is sharper than either outcome item (f)
+anticipated. g2-k8-p2-ub32 is g2-k8-p2 with one member of the bound state
+changed, n_ubatch 64 -> 32, so the 63 token prompt goes in two pieces instead of
+one. Everything else is identical.
+
+  prefill_pieces        1 (ubatch 64)   against   2 (ubatch 32)
+  gen-ids.txt           IDENTICAL
+  gen-text.txt          IDENTICAL
+  route.log             DIFFER, first at byte 546, line 33, which is layer 0
+                        token_index 32, the first token of the second piece,
+                        exactly where the numerics should first differ
+  peak_concurrent       1060300800 (80 experts) against 808479360 (61 experts)
+  lease_events          9810 against 10566
+  ttft_seconds          41.640432405 against 52.736329828
+
+AND THEN THE PART NOBODY HAD MEASURED. The route log was split at the phase
+boundary and each half compared on its own:
+
+  PREFILL rows (token_index < 63):  1085 of 2268 rows DIFFER, 47.8 percent
+    ubatch 64  cd35c527383c9edda705fe9b4293dc63755e3f3c342c4d6e67a6285cba20adaa
+    ubatch 32  a2eb8217f59291245d7cd3ea0f3dea4dcaa1cda459291a84488742c1510a12ff
+  DECODE rows (token_index >= 63):  BYTE-IDENTICAL
+    both       0a7f2b114f87665390dbeef0fe148f27bbb342c252797a9064b95b0ed2b15c8d
+
+A batch-schedule change rewrote nearly HALF the prefill's routing decisions and
+then EVERY ONE of the 9216 decode-phase routing decisions and all 64 sampled
+tokens came out the same. The honest statement of what that shows, in both
+directions, is F-B9.
+
+--------------------------------------------------------------------------
+5. GATE 3: THE SEAM
+--------------------------------------------------------------------------
+
+5.1 THE ARCHITECTURE CHOICE: THE BRAIN IS A HOST, NOT A NEW ACTION NAME
+
+C4 section 12 gives the action a working name, bob.brain. This leg did not add
+one, and the reason is C4's own section 4.1: the brain lease is to be built
+"under the existing lease law, as one typed and tiered action". OPENBOB-L-1
+already has that action. bob.lease carries a HOST, a ROLE and a TEXT; its tier
+row is ("bob.lease","ASK") and it is the fourth name in the house whose verdict
+is ASK in every mode; its host and its text are already counted as OUTBOUND
+BYTES by the C15 door (the S11-F6 row); its ask question already names the host,
+the role, the budget and the whole text; its replay, its taint column and its
+R4 spawn guard already cover it. A new grammar name would have had to earn all
+of that again, in a closed 32607-line alphabet with self-checks that assert
+exact counts.
+
+SO THE BRAIN IS A HOST. One registered host name, `brain`, one branch in the
+executor, and every wall the lease law already built stands over the brain lease
+unchanged. This is also the merge posture C4 section 10 asks for: a retail bob
+that one day gains a called brain gains it by adding a manifest row and a
+worker, and a bob with no worker is a brain manifest with one row.
+
+The region is OPENBOB-BR-1, inserted before fn main in the file's own
+convention. It is 716 lines and it wires at FOUR SITES, each of which the
+patcher requires to appear exactly once or refuses:
+
+  x1_lease.host   the host resolution learns that a brain does not come out of
+                  the ssh host table
+  x1_lease.arm    the brain arm, taken AFTER the host-to-roles wall, so a brain
+                  lease passes through exactly the doors an ordinary lease does
+                  and not one fewer
+  main.lease      three new modes: lease brain-probe, lease hold, lease brain
+  usage           the three modes named in S8_USAGE
+
+  base source     7fc600b9f354dffcb606b112793523937f6b3cf2c3dbfa34b97f0681a3f1d80d  32607 lines
+  br1 region      4f4a5a008f667b419b8c5bce120a890fb3178648ae75581de337aaca2c7d3645    716 lines
+  patcher         e1046bfc84d8222497f795c11cb0b2bf5e5bf99e487169f61118e84014035671
+  patched source  02aebeb2feaa8c55b2592043221b01fb764b515faf63f5b883b973efc53c371a  33353 lines
+  base binary     bde7928f034148cc23721cb82f874fc48a2db660a6396933def71fb46ade9927  6691776 bytes
+  NEW binary      0ef39cbe990a15ba6d628b7e193515f1382e023e57d301ef391e8e835baab0d1  6749272 bytes
+  live binary     75dd58b963d0119e9a74f19e7eb47cece9f442ec93983afbd7f7b58fa246c0ca  2431640 bytes
+                  (/root/.local/bin/openbob, read only, never replaced)
+  rustc 1.96.1 (31fca3adb 2026-06-26), rustc -O --edition 2021, 22.976869161 s
+
+5.2 THE FIVE REFUSALS THE REGION CAN SPEAK
+
+  brain.busy                  a turn is already running. NOT A QUEUE.
+  brain.not_resident          no leased row in the manifest, or the worker is
+                              not answering. Bob says so and does NOT fall back
+                              to the 4B, which would be C4 section 5.3's
+                              golden.brain.not_reached failure committed in the
+                              product itself.
+  brain.identity.violation    a slice failed its manifest digest, or the
+                              residency schedule or engine binary on disk is not
+                              the one the brain manifest pins, or the worker
+                              answered under weights or an engine the manifest
+                              row does not name.
+  br1.endpoint.not_loopback   the manifest names an endpoint that is not
+                              127.0.0.1. Absolute, checked before a socket is
+                              made, for the reason the GD1 header gives about a
+                              base-url flag.
+  br1.role.unsupported        a brain has no tools, so it cannot be an executor.
+                              Never a silent downgrade to reasoner.
+
+5.3 THE EXPOSURE WORKER
+
+research/ob5b1/ob5b2-worker.py. A loopback server that owns the residency
+schedule and runs one turn at a time by executing THE BINARY GATE 1 AND GATE 2
+PROVED, ob5b1-gen, at the frozen bound state. It adds no engine, no kernel and
+no numerics: it adds a protocol, a wall, a counter block and a run log.
+
+WHY A FRESH PROCESS PER TURN, which costs 10 to 15 seconds of model load that
+the receipt reports rather than hides. Two reasons and both are the design.
+First, the engine's lease counters are written at process exit, so a turn that
+is a process is a turn whose counters are exactly its own and not a difference
+of two readings. Second and load-bearing: GATE 1 PROVED BYTE-EXACT GENERATION
+FOR A FRESH PROCESS FROM THE FROZEN BOUND STATE. A worker holding state between
+turns would be making a claim gate 1 did not measure.
+
+  IT KEEPS THE HOUSE RUN DISCIPLINE PER TURN: the runlock by mkdir with a 5 s
+  poll (this turn waited 0.002 s), free RAM >= 6 GB inside the lock,
+  vm.overcommit_memory == 0 inside the lock, the guard pids read with kill(0)
+  before and after (guards_before and guards_after both {"489":true,"654":true}
+  in the banked run log), nice 10, 8 threads, and the 75 s courtesy yield held
+  INSIDE the single-stream wall so a turn arriving during it is refused by name.
+  IT BINDS 127.0.0.1 AND REFUSES TO START OTHERWISE.
+  THE WIRE IS PURE ASCII: the answer crosses as lowercase hex, so no escaping
+  rule stands between the bytes the model produced and the bytes bob banks.
+
+5.4 THE DEMONSTRATION, VERBATIM AND SHORT
+
+Four limbs, banked whole in SEAM-1.txt. The venue line first:
+
+    guard_pids     1 openbob (654), 1 searxng (489)
+    live serve     pid 654, port 8899, NOT TOUCHED. the worker takes 8907.
+    LISTEN 0  128  127.0.0.1:8899  0.0.0.0:*  users:(("openbob",pid=654,fd=4))
+
+LIMB 1, brain.not_resident, with the worker genuinely down:
+
+    this one needs the big brain. i hold part of gpt-oss-120b-mxfp4 and lease
+    the rest as i go.
+    estimate from the pinned manifest, not a measurement: about 14 seconds
+    before the first word, then about 124 seconds of slow words.
+    budget: 1800 seconds, 32 new tokens. one turn at a time.
+    refused: brain.not_resident. the exposure worker on 127.0.0.1:8907 is not
+    answering, so the big brain is not on this box right now. i did not answer
+    from the 4b instead.
+    journal   head 5fab4fe82e09999c1e0e5932f66fab0038095a9d79cf5ede3c14029ab2157028  transitions 1  verified from genesis
+
+LIMB 2, the answer. The tier said ask, the question was put, the answer was
+given at the terminal and journaled as data, and then:
+
+    permission. lease bob on brain as reasoner?
+    budget: max_new 32, transitions 4, seconds 1800
+    ----
+    in one short paragraph, what does it mean to hold a large model in a small amount of memory
+    ----
+    allow it? answer yes or no.
+    ----
+    answer    yes
+    admission 49af622f6a5746a291384d07820321424bfe8e92a540e165a63313bec08d06bc
+    this one needs the big brain. i hold part of gpt-oss-120b-mxfp4 and lease the rest as i go.
+    estimate from the pinned manifest, not a measurement: about 14 seconds before the first word, then about 124 seconds of slow words.
+    budget: 1800 seconds, 32 new tokens. one turn at a time.
+    answered from gpt-oss-120b-mxfp4.
+    leased 5461 slices, 72.37 gb, all verified against the manifest.
+    held 6.74 gb while doing it. 0.425661161 tokens per second, 25.340207310 seconds to the first word.
+    32 new tokens. worker turn 55df750df2773322... worker log 021b0dddc3e867ad...
+    nothing on this box changed.
+    run       49af622f6a5746a2-000009
+    journal   head d9f7d20f1dae99ae097bf336fc7666ba3b282864149c76088efaf3c1e78f8f11  transitions 1  verified from genesis
+    brain     manifest 711fcff626e0a6d4c5d5069e28ad27b222609a4199ac51b34517074adcf8eb4e   (the model digest of this chain)
+
+  and the answer bytes, verbatim, 160 bytes, sha256
+  613dd289c02ca2cf5eecfc432781b4931c602a1d6099d224e3f1966133299850:
+
+    ?
+
+    Holding a large model in a small amount of memory means that the model is
+    designed to be efficient and compact, allowing it to be stored and processed
+    within
+
+  IT IS A BASE MODEL CONTINUATION AND IT READS LIKE ONE. gpt-oss-120b is called
+  with no chat frame; the seam is what gate 3 proves, and dressing the answer up
+  would be exactly what her show-dont-tell law forbids. A frame for the called
+  brain is later work and is named as such in section 8.
+
+LIMB 3, brain.busy, fired 90 seconds into limb 2's turn from another shell:
+
+    refused: brain.busy. the big brain is answering something else and it
+    answers one thing at a time. i can answer this from the 4b now, or you can
+    send it again when the current turn lands.
+    journal   head 19b8580d3ce5497655e5bdad09b0e4ea82045fb3b5a0384ac4bf27e32c45ff1f  transitions 1  verified from genesis
+
+  It was refused, not queued, and the refusal is journaled like any other
+  transition, so the wall is in the chain and not only in the words.
+
+LIMB 4, brain.identity.violation, on a real digest mismatch. A SANDBOX COPY of
+the residency schedule was made one newline longer, which leaves it a perfectly
+valid resident-set file the engine would have run, and the worker was pointed at
+the copy. Nothing under research/ob1b was touched.
+
+    original sets  8053f18a70030ad2ac2e59fe220a064ee26f35ad4eb3876bbb7c65f6e994530b
+    sandbox copy   b2fcb6a6dd47b3cd5bb01216aec9e9536bd3a7fbe9e0b6902ea783eb7f4697f0
+    refused: brain.identity.violation. the residency schedule
+    /root/ob5b2/g3/sandbox/sets-moved.json hashed b2fcb6a6... and the brain
+    manifest row says 8053f18a.... i did not load the model.
+    i threw the answer away and wrote the pain record. i did not retry.
+
+  THE PAIN WAS LOCALIZED TO THE FILE AND BOTH DIGESTS, AND THE MODEL WAS NEVER
+  LOADED. The sandbox turn directory holds a prompt.txt and nothing else: no
+  gen-ids.txt, no ob1-stats.txt, no route.log, and the sandbox worker log was
+  never created, because a refused turn is not a turn.
+
+5.5 THE BRAIN MANIFEST, OPENBOB-BM-1
+
+C4 section 5.2's format, built and read by the region, digest
+711fcff626e0a6d4c5d5069e28ad27b222609a4199ac51b34517074adcf8eb4e, TWO ROWS:
+
+    brain          resident
+    id             qwen3-4b-openbob-q1
+    weights        sha256:6a617f7af6e75b342d3040e3d3175001108806622fe10dd8597ef2a6a29915c3
+    weights_bytes  4027740408
+    role           gatekeeper
+    ---
+    brain          leased
+    id             gpt-oss-120b-mxfp4
+    weights        sha256:582bd40f6886200101f4c4ed9f25f3fe80cc14c86e9e2b37746cd8904a0c622d
+    weights_bytes  63387346208
+    engine         sha256:daca8fb74f626c186950c2882dfd1fdfe191056ca5feacccd51201db3e625740
+    residency      K=8-of-128
+    residency_sets sha256:8053f18a70030ad2ac2e59fe220a064ee26f35ad4eb3876bbb7c65f6e994530b
+    endpoint       127.0.0.1:8907
+    role           called
+
+  THE DIGEST OF THAT FILE IS THE MODEL DIGEST OF EVERY CHAIN THE DEMONSTRATION
+  WROTE. C4 section 5.2 property 2 asked that the re-bank ceremony fire on the
+  right events; it now does so mechanically, because a brain joining, leaving,
+  changing weights, changing engine or changing residency moves the file and
+  therefore moves every head written after it. Scope-ledger entry OB5-018 is
+  BUILT, not proposed. `openbob lease hold` prints it, which is the first piece
+  of OB5-020's telemetry surface.
+
+5.6 THE REGRESSION EVIDENCE: THE PATCH CHANGED NOTHING ELSE
+
+Every model-free battery the binary carries was run on the BASE build and on the
+BR1 build under the same dev HOME and compared byte for byte:
+
+    lease probe   IDENTICAL    29 lines
+    guards        IDENTICAL    51 lines
+    corpus        IDENTICAL    25 lines
+    taint         IDENTICAL    47 lines
+    outside       IDENTICAL    80 lines
+    sidecar       IDENTICAL     3 lines
+    unit          IDENTICAL    "S8 UNIT: all checks pass" on both
+    ceiling       DIFFER, one line, quoted in full rather than hidden:
+                    base  "the card: 1574 of 24564 MiB in use, 7 percent busy."
+                    br1   "the card: 1575 of 24564 MiB in use, 13 percent busy."
+                  which is the GPU's live utilization, a clock-like reading, and
+                  is the only difference in 286 lines of battery output.
+
+5.7 THE PREPARED, VERSIONED INSTALL
+
+  path  /mnt/f/f32/stage/research/ob5b2/install/OB5B-S1-BRAIN-LEASE-v1/
+  It carries the patched source, the region, the patcher, the worker, the built
+  binary, the build and patch logs, the seam transcript, an example brain
+  manifest and register, a unified diff, VERSION-REPORT-1.txt, H1-RIDER-1.txt
+  and SHA256SUMS.txt.
+
+  THE H1 RIDER IS THE BRAIN LEASE ITSELF, prompt and response verbatim with the
+  counters that say which brain answered and what it cost. The install law asks
+  for the litmus of the thing being installed and the thing being installed is
+  the capability to call a leased brain.
+
+  ONE GAP IS NAMED IN THE VERSION REPORT RATHER THAN PAPERED OVER. The base
+  binary this leg built from /root/k4b/src/openbob_s11_cpu.rs is 6691776 bytes
+  and the binary the live serve is running is 2431640 bytes, so they were built
+  from different flags and possibly from different source. THE INSTALL DECISION
+  NEEDS THE SOURCE AND BUILD COMMAND THE LIVE BINARY CAME FROM, so that the
+  brain lease is added to THAT lineage and not to a parallel one. That is the
+  main reason this package is prepared rather than applied, beyond the hard wall
+  that forbids touching pid 654 at all.
+
+--------------------------------------------------------------------------
+6. FINDINGS
+--------------------------------------------------------------------------
+
+F-B1  THE DECODE-REGIME PEAK CONCURRENT LEASE BYTES IS 4 EXPERTS, 53015040
+      BYTES, AT EVERY K, AND OB5-023 IS CONFIRMED. Measured three independent
+      ways (section 3.1). ACCT_decode at K=8 is 6184118048 and EXPOSURE_decode
+      is 10.250022 against C4's projection of 10.162898. The projection was
+      conservative because it allowed a depth-2 prefetch and the engine has
+      none. Builder A's F-A4 is fully resolved: 954270720 was the prefill's
+      figure and this is the decode's.
+
+F-B2  THE STATIC RESIDENT SET DOES NOT DELIVER ITS RANKED VALUE ON A SERVED
+      PROMPT, AND IT IS NOT SMALL-SAMPLE NOISE. Gate 0 measured the banked K=8
+      set at 0.4040035672 top-8 mass on 120b-prose-a. This leg cut PROMPT-3 from
+      inside that very corpus and its SERVED PREFILL scored 0.1922080979. Two
+      explanations were available, so the first was measured out: slicing the
+      banked 120b-prose-a route log into 59-token windows gives
+        window mass  min 0.1298258004  p05 0.2434086629  p50 0.4032485876
+                     p95 0.5171845574  max 0.5645009416
+        windows at or below 0.20: 2 of 278
+      A 59-token window of that corpus scores 0.19 or worse twice in 278 tries.
+      PROMPT-3 scored 0.1922 on the first try. SMALL SAMPLE IS REFUTED as the
+      explanation. What remains is the REGIME: gate 0's route logs came from a
+      perplexity harness at -ub 4096 inside a 4096-token context, and a served
+      prefill runs at -ub 64 from position 0 of a fresh context. Builder A's
+      control 2 already proved the batch schedule moves the routing (F-A5); this
+      leg measures the size of the consequence for the residency prior itself.
+      CONSEQUENCE FOR C1 AND C5: a residency policy trained on batched
+      evaluation traces is being trained on a distribution the serving path does
+      not draw from, and the exam-bank corpus C4 section 9.8 promises is
+      therefore worth more than the priors, not merely additional to them.
+
+F-B3  THE STATIC K SWEEP IS A BAD BUY ON A REAL PROMPT, AND HOW BAD DEPENDS ON
+      THE PROMPT. On PROMPT-1 (out of corpus), going from K=8 to K=32 spends
+      11451248640 more bytes of resident expert memory, 4x the residency, and
+      buys 131.625 -> 101.047 misses per token (23.2 percent) and 0.257894810 ->
+      0.470834533 tok/s. On PROMPT-2 (in corpus) the same spend buys 124.547 ->
+      87.531 (29.7 percent) and 0.370816944 -> 0.531246395 tok/s. Gate 0's
+      in-sample table predicted 85.823486 -> 36.067444 (58 percent) over that
+      range. Builder A's F-A3 said the static K that reaches C4's policy point
+      does not fit the box; this leg adds that the K that DOES fit does not buy
+      what the table said it would, and that the shortfall is smaller on text
+      the set was ranked near. PRICED PER GIGABYTE: 11451248640 bytes of extra
+      residency bought 0.160429451 tok/s on PROMPT-2 and between 0.134689606 and
+      0.212939723 tok/s on PROMPT-1 depending on which of the two byte-identical
+      K=8 runs is used as the baseline, so the marginal gigabyte is worth
+      0.0118 to 0.0186 tok/s. The MISS-RATE column is the one to trust, because
+      it has no band: 4x the residency removed 23.2 to 29.7 percent of the
+      misses.
+
+F-B4  BYTE-IDENTICAL RUNS DIFFERED IN DECODE WALL CLOCK BY 30.3 PERCENT. Section
+      4.2. Within a run the per-token time varies by a factor of 15 to 22 and
+      drifts in both directions depending on the page cache. tok/s DECODE on
+      this box is a BAND and the bytes are a POINT. Any product surface that
+      prints a decode rate must print the turn's own measured rate, which is
+      what C4 section 7.3's receipt does and what section 5.4 demonstrates.
+
+F-B5  THE COST MODEL'S RESIDUAL IS A CONSTANT AND THE READ RATE IS THE VARIABLE.
+      Evaluated at each run's own measured rates, the lease-only serialized model
+      over-predicts measured decode by 0.743809 to 0.805983 across twelve runs,
+      four values of K, four prompts and two ubatch widths: mean 0.7732, spread
+      8.0 percent of the mean. The read rate itself ranged 1.974x between runs
+      of the same binary. So C2's prize is not hidden in an
+      unmodelled term; it is in the read path and in the serialization of read
+      against verify against compute, exactly where C4 section 2.4 put it.
+
+F-B6  THE PAGE CACHE IS A SHARED RESOURCE AND THE HOUSE RUNLOCK DOES NOT PROTECT
+      IT. A sibling workflow's 20b run held the lock legitimately and left its
+      own 12 GB working set in the cache. This leg's first run of the evening,
+      on a cold box, read at 793821816 bytes/s; the same binary on the same
+      prompt twenty minutes later read at 1130935308, and the fastest read of
+      the evening was 1567086343. The runlock serializes CPU and
+      RAM and does nothing about the cache, which is the largest single term in
+      the decode cost. NAMED HERE because a future leg comparing two numbers
+      taken on different evenings will otherwise compare page caches.
+
+F-B7  THE BRAIN LEASE NEEDED NO NEW ACTION NAME, AND THE PROOF IS THAT SEVEN OF
+      EIGHT MODEL-FREE BATTERIES CAME BACK BYTE-IDENTICAL. Section 5.6. A new
+      grammar name would have moved the G6 alphabet, the tier table's own count
+      checks, the taint column, the C15 door's field table and the R4 guard. A
+      new HOST moved none of them.
+
+F-B8  THE ANSWER FROM A BASE MODEL IS NOT ALWAYS ASCII, AND THE FABRIC REFUSES
+      RATHER THAN MANGLES. The narrow control's own generated text contains U+220F
+      and U+2208. The wire carries answers as hex so the transport is safe, but
+      x1_spell is the fabric's canonical-form gate and an answer it cannot spell
+      is refused x1.noncanonical rather than truncated or escaped. That is the
+      right direction and it is a REAL PRODUCT LIMIT: a called brain that
+      answers in mathematics currently cannot be banked. Named for slice 2.
+
+F-B9  A SCHEDULE CHANGE MOVED HALF THE PREFILL's ROUTING AND NOTHING ELSE. See
+      4.8. Read it carefully in both directions, as builder A's F-A5 asked.
+      IT CONFIRMS THE MECHANISM more strongly than F-A5 did: 47.8 percent of the
+      prefill's routing rows moved, so the numerics genuinely differ and C4
+      section 4.3's decision to put the batch schedule in the bound state is
+      correct. IT ALSO SHOWS THE PERTURBATION IS SMALL RELATIVE TO TWO MARGINS
+      AT ONCE: the router's top-4 margin at every one of 9216 decode decisions,
+      and the sampler's argmax margin at every one of 64 positions. So on this
+      model, at this operating point, the numeric difference a schedule change
+      makes lives inside both margins and dies at the end of the prefill. That
+      is not a licence to drop the schedule from the bound state: a perturbation
+      that stays inside a margin twice is not a perturbation that stays inside it
+      always, and one flipped token changes every token after it. It IS a reason
+      to keep the route log in the receipt beside the answer, because the route
+      log is the limb that CAN see a silent numeric change, and here it saw one
+      the identity limb could not.
+
+--------------------------------------------------------------------------
+7. GATE 2 AND GATE 3 VERDICTS AGAINST THEIR OWN BARS
+--------------------------------------------------------------------------
+
+GATE 2 BAR (C4 section 12): "tok/s decode and time-to-first-token at K=8 and at
+the largest K whose committed state fits with 6 GB free, with the decode-regime
+ACCT reported. BAR: the numbers are literal command output; section 6.1's
+10.1629 prediction is confirmed or refuted by measurement; K2 and K3 are
+evaluated."
+
+  tok/s decode and TTFT at K=8          section 4.1, four runs                PASS
+  the largest fitting K                 K=32, decided by running it (4.4)     PASS
+  the decode-regime ACCT reported       6184118048 at K=8, measured three
+                                        independent ways (4.3)                PASS
+  literal command output                every number in section 4             PASS
+  10.1629 confirmed or refuted          CONFIRMED, measured 10.250022         PASS
+  K2 and K3 evaluated                   K3 not tripped; K2 evaluated as far
+                                        as it can be (below)                  PASS
+  identity, A/A, stop-ship              five limbs identical (4.2)            PASS
+  GATE 2: PASS.
+
+  K2 IN FULL, BECAUSE HALF AN ANSWER IS WORSE THAN NONE. K2 reads: "Measured
+  decode below 0.5 tok/s at every K whose committed state fits 24029 MB with the
+  policy stack live." The fitting K values are 8, 16, 24 and 32; all four were
+  measured, on two prompts each at K=8 through 32.
+
+    K    PROMPT-1 (out of corpus)   PROMPT-2 (in corpus)
+     8              0.257894810             0.370816944
+    16              0.421216353             0.467876495
+    24              0.442024249             0.490587998
+    32              0.470834533             0.531246395
+
+  AT K=32 ON AN IN-CORPUS PROMPT THE MEASURED RATE IS 0.531246395 tok/s, WHICH
+  IS ABOVE 0.5, WITH NO POLICY STACK AND NO PREFETCH. K2's condition is "below
+  0.5 at EVERY fitting K"; it is already false at one of them, so K2 IS NOT
+  TRIPPED, and it is not tripped on a measurement rather than on the absence of
+  one. The out-of-corpus column has not crossed: 0.5 / 0.470834533 = 1.0619 is
+  the gap a policy stack has to close on the harder prompt at the same K, which
+  is a far smaller ask than C4 section 2.4's 6.5x framing, because C4 was
+  comparing against its own P-A pessimist and the measured static K=32 point is
+  already well above P-A.
+
+  WHAT IS STILL NOT KNOWN, STATED SO NOBODY READS MORE INTO THE ABOVE THAN IT
+  SAYS: this is a 64-token generation on two prompts, the decode rate on this
+  box is a band 30 percent wide (F-B4), and 0.53 tok/s is a token every 1.9
+  seconds, which clears a kill line and does not by itself make a daily driver.
+  The product question C4 section 6.2 asks, which wait class is worth retaining,
+  is hers and is untouched by this measurement.
+
+  K3: NOT TRIPPED. Worst TTFT in twelve runs 52.736329828 s on 63 prompt tokens
+  (the ubatch-32 control), 53.57 s scaled to 64; worst on the frozen schedule
+  44.930562558 s on 56 tokens, 51.35 s scaled; best on a real prompt
+  29.700507911 s at K=32 on 63 tokens, 30.17 s scaled. The bar is 120 s. On a
+  one token prompt TTFT is 2.607288103 s at K=8, which is the floor. THE
+  ANNOUNCEMENT ARITHMETIC C4 SECTION 7.2 DESIGNS SHOULD BE ANCHORED ON THESE
+  AND NOT ON P-C: TTFT per prompt token is 29.700507911 / 63 = 0.471437 s at
+  K=32 and 40.313243448 / 56 = 0.719879 s at K=8 on the harder prompt, which is
+  the range gate 3's manifest constant was set from.
+
+GATE 3 BAR (C4 section 12): "THE SEAM. One typed action (working name bob.brain)
+under the tier, journaled, pointing at the worker's own log; the minimal
+announcement (7.2) and the receipt block (7.3), both computed from counters;
+brain.busy and brain.not_resident refusals live."
+
+  one typed action under the tier       bob.lease to host brain, tier ASK,
+                                        the question put and answered (5.4)   PASS
+  journaled                             four J-1 chains, each verified from
+                                        the registered genesis (5.4)          PASS
+  pointing at the worker's own log      worker log 021b0ddd..., in the tool
+                                        result and in the receipt (5.4)       PASS
+  the announcement from 7.2             printed before the wait, and it says
+                                        which of its numbers is an estimate    PASS
+  the receipt block from 7.3            every number a counter of that turn    PASS
+  brain.busy live                       fired against a live turn (limb 3)     PASS
+  brain.not_resident live               fired with the worker down (limb 1)    PASS
+  the live serve untouched              pid 654 up 3-01:59:30, never
+                                        signalled, never connected to          PASS
+  GATE 3: PASS. C4's B1 behavioural limb is also discharged: the stopped-worker
+  control is limb 1, it produced the named refusal brain.not_resident rather
+  than a weaker 4B answer, and the receipts differ.
+
+--------------------------------------------------------------------------
+8. WHAT SLICE 2 AND THE POLICY CHAPTERS NEED
+--------------------------------------------------------------------------
+
+a) A FRAME FOR THE CALLED BRAIN. The 120b answers as a base model because
+   nothing puts a frame around the ask. The seam carries text, so a frame is a
+   string and not an architecture change, but it is a DESIGN decision about
+   whose register the called brain speaks in and it belongs to a chapter, not to
+   a builder.
+
+b) THE POLICY STACK AT K=32, MEASURED ON THIS HARNESS, against the baselines
+   this leg just banked: 0.470834533 tok/s out of corpus and 0.531246395 in
+   corpus, at 101.046875 and 87.531250 decode misses per token. C1's job is now
+   a number and not an argument. research/ob5b1/gate2-sweep.sh and
+   gate2_decode_acct.py take a resident-set file and a K and produce the whole
+   row, so the stack can be measured against exactly these points with no new
+   instrument.
+
+c) THE REGIME QUESTION F-B2 OPENS. Two candidate causes were separated from
+   small-sample noise but not from each other: the ubatch width and the context
+   position. This leg's schedule control (4.8) says the ubatch width alone moved
+   47.8 percent of the prefill's routing ROWS on one prompt, so it is a real
+   term; what it does not say is how much of the mass gap it accounts for. The
+   run that would close it is the banked corpus re-evaluated at -ub 64 from
+   position 0, which is a perplexity run and not a generation run and therefore
+   belongs to whoever next holds the RS053 harness.
+
+d) A SECOND GENERATION IMPLEMENTATION, still owed from builder A's F-A9. Nothing
+   in gate 2 or gate 3 tests ob5b1-gen against another entry point, so a
+   deterministic bug inside it would still pass every limb in both runlogs.
+
+e) x1_spell AND NON-ASCII ANSWERS (F-B8), before a called brain is asked
+   anything mathematical.
+
+f) THE LINEAGE OF THE LIVE BINARY (section 5.7), before any install of the brain
+   lease is applied.
+
+--------------------------------------------------------------------------
+9. DEVIATIONS
+--------------------------------------------------------------------------
+
+D1  THE ENGINE WAS NOT INSTRUMENTED. Builder A's item (a) preferred a per-phase
+    counter in ob1-lease.cpp. This leg took the other option builder A called
+    equally acceptable, and added a derivation proven against the engine on
+    every run, because a rebuild would have changed libllama's .text and voided
+    the lineage proof gate 1 rests on. Section 3.1.
+
+D2  THE SWEEP'S RUN ORDER WAS RE-PLANNED MID-LEG after a sibling research
+    workflow took the house runlock at 2026-09-01T19:35:11Z. The re-planned
+    phases are B2 and C2 in research/ob5b1/gate2-sweep.sh and they contain the
+    same runs in priority order. No run was dropped for convenience; any run not
+    present is named as absent in section 10.
+
+D3  GATE 3 ADDS NO ACTION NAME. C4 section 12 gives the working name bob.brain;
+    this leg implements the brain as a registered HOST of the existing bob.lease
+    action instead, and argues it in section 5.1 against C4's own section 4.1.
+    The user-visible names of the refusals are C4's.
+
+D4  THE GATE 3 DEMONSTRATION ANSWERS THE ASK FROM A SCRIPT. The tier says ASK
+    and a human at the terminal is the design; the driver passes --answer yes so
+    the demonstration is reproducible, and the transcript shows the flag and the
+    answer rather than pretending someone typed it. The ASK path itself, the
+    question text and the journaling of the answer are the real ones.
+
+D5  THE DEV FABRIC RUNS UNDER ITS OWN HOME. openbob resolves its conf dir, data
+    dir, journals and counter from $HOME, so HOME=/root/ob5b2/devhome is a
+    complete and absolute wall between this leg and the live serve's state. The
+    live conf dir is READ-NEVER and is not named in any script this leg wrote.
+
+D6  THE 63 GB MODEL FILE WAS NOT RE-HASHED, inheriting builder A's D7 for the
+    same reason. The 4 GB gatekeeper artifact WAS re-hashed whole, once, outside
+    the runlock at nice 19 while a sibling held the lock, and that read is
+    declared here rather than left silent.
+
+D7  n_predict IS 64 AND NOT 32. Builder A's item (d). Section 4.7 reports that
+    64 did not make the rate stop moving and says why more tokens would not.
+
+No other deviations. Nothing in OB5-DESIGN-C4-1.md, OB5A-ALLOC-1.md or
+OB5B-S1-RUNLOG-1.txt was renegotiated by this leg.
+
+--------------------------------------------------------------------------
+10. C4 KILL LINES, EVALUATED
+--------------------------------------------------------------------------
+
+  K1  BYTE-EXACT GENERATION FAILS   NOT TRIPPED, and re-confirmed at n_predict
+                                    64: A/A identical on five limbs with a 30.4
+                                    percent wall-clock difference, and the first
+                                    32 ids identical to gate 1's own.
+  K2  DECODE UNUSABLE AT EVERY
+      FITTING K                     NOT TRIPPED, on a measurement: 0.531246395
+                                    tok/s at K=32 on an in-corpus prompt, above
+                                    the 0.5 line, with no policy stack.
+                                    Section 7.
+  K3  TTFT ABOVE 120 s              NOT TRIPPED at any K. Worst 44.930562558 s
+                                    on 56 tokens.
+  K5  DECODE COSTS EXPOSURE         NOT TRIPPED, and the margin is larger than
+                                    the contaminated figure showed: decode-regime
+                                    exposure 10.250022 against the batch
+                                    regime's 8.209143.
+  K6  PAIN CANNOT BE LOCALIZED      NOT TRIPPED on the limb gate 3 reached:
+                                    brain.identity.violation named the file, the
+                                    digest it got and the digest the manifest
+                                    row pins, and did not retry. The SLICE-level
+                                    limb (a corrupted expert slice, localized to
+                                    layer and expert) is slice 2's, S2.
+  K4, K7, K8, K9                    Out of scope for gates 2 and 3.
+
+--------------------------------------------------------------------------
+11. ARTIFACTS AND DIGESTS
+--------------------------------------------------------------------------
+
+IN REPO, branch research-2, added by this leg only under its own paths:
+
+  research/OB5B-S1-RUNLOG-2.txt        this file
+  research/ob5b1/gate2_sets.py         05ff0efa330029d8e20fb444ab78cb12b92480cd1c837d16bd17921e5886afc6
+  research/ob5b1/gate2-prompts.sh      7cd56914fa3e2e1536932836f4b0237bea2aa843553ce202178846993752190f
+  research/ob5b1/gate2-sweep.sh        38557059f1c0291da4636c5f5a42be88ab6a45bfa6f99b182e1341f3a6cfcd97
+  research/ob5b1/gate2_decode_acct.py  cea830d4c7f86e0ac4a74f8261ef6b351537a33739fff9604826eabd516663b6
+  research/ob5b1/gate2_window_mass.py  1d33f429f9acc18232e6f2f862c047179faf6ace14bcdafd7f51a58a694654f1
+  research/ob5b1/gate2-analyze.sh      446cb0b85e3f62128a61b5cdb31eb119602b7f93b4a54fda28a631e69e867ff4
+  research/ob5b1/br1-region.rs         4f4a5a008f667b419b8c5bce120a890fb3178648ae75581de337aaca2c7d3645
+  research/ob5b1/gate3-patch.py        e1046bfc84d8222497f795c11cb0b2bf5e5bf99e487169f61118e84014035671
+  research/ob5b1/gate3-fabric-build.sh 4e6e597aefb888e297335623e16d948ccbd0d7a48f61e92aa5fbef62efd8adb2
+  research/ob5b1/gate3-devhome.sh      b4d30a9207994347f31895f7098433f3d8fb597d581d4b231054eeb4c8218391
+  research/ob5b1/ob5b2-worker.py       9d78d8f4aab7d6dbd6edbd08f8ec11d7852ce6623b022b3de77c00611b322643
+  research/ob5b1/gate3-seam.sh         a83b6bea07c285822998ab024c9fffd098b8f7caa4bff9fcea3cd4e22182cc59
+  research/ob5b1/gate3-install.sh      966715c56bb1718a50c94bcdb2b978311742e86439f4ab2d8e76b00e41674b1b
+  research/ob5b1/gate3-h1-rider.sh     6572c8e8c22f71251c169e3a6c2fab814b516e0f6fb5f2703fe98e3c1e7ee732
+  research/ob5b1/verify-runlog2-arith.py 3bd5ce3bd13f550a54d8420c44f2799039578b3a8db6fe4ceac6066cb5b33b4c
+
+  ONE OF THOSE SCRIPTS EXISTS TO CHECK THIS DOCUMENT RATHER THAN THE MACHINE.
+  verify-runlog2-arith.py recomputes every figure this runlog DERIVES rather
+  than reads off a run, so that no number here rests on hand arithmetic. Its
+  literal verdict:
+
+      CHECKS 70, DISAGREEMENTS 0
+      VERDICT: ALL DERIVED FIGURES CONFIRMED
+
+  IT FOUND TWO CLASSES OF ERROR IN THIS DOCUMENT BEFORE IT WAS COMMITTED, AND
+  BOTH WERE THIS DOCUMENT'S AND NOT THE MACHINE'S. First, the box was written as
+  25196625920 bytes when 24029 MiB is 25196232704, which moved every headroom
+  figure in section 4.4 by 393216 bytes and the K=32 headroom from 6232 MiB to
+  6233. Second, six of the twelve read rates in section 4.6 had been transcribed
+  from an intermediate reading rather than from the instrument's own final
+  output; the whole table was regenerated from GATE2-ANALYZE-1.txt literally.
+  Both are recorded rather than quietly fixed, on the same principle builder A
+  applied to the two errors ITS verifier caught.
+
+  Every driver strips CR before executing (tr -d '\r'), per the house
+  script-to-file law, and every committed file of this leg is LF-only and pure
+  ASCII: CR 0, non-ascii 0, em dashes 0 on all fifteen files and on this
+  runlog. The executed copy of each script hashes the same as the committed
+  file, with ONE declared exception: PHASE A of the sweep ran an earlier
+  revision of gate2-sweep.sh, digest 79f685a875d826960461e7ce23189dc9b65af8f612c8926c308f4e96742ad79d,
+  which differs from the committed file by the PURE INSERTION of the B2 and C2
+  phase blocks and by nothing else (diff: 22 lines added at line 183, 0 lines
+  removed). Phase A's own code path is byte-identical in both.
+
+OFF REPO, per the house law that run evidence stays off the repo:
+
+  /root/ob5b2/g2/GATE2-A.txt, GATE2-B2.txt, GATE2-C2.txt, GATE2-ANALYZE-1.txt
+  /root/ob5b2/g2/RESIDENT-SETS-120B-K8-16-24-32.json
+    3d60d254687482b630aee4ed3c1113d31310fab8f08684bf51b4d3bcff10006b
+  /root/ob5b2/runs/g2-*/            the runs, with route logs and stats
+  /mnt/f/f32/stage/research/ob5b2/runs/g2-*/   their mirror
+  /root/ob5b2/g3/SEAM-1.txt         the gate 3 demonstration, whole
+  /root/ob5b2/g3/BR1-BUILD-1.txt, PATCH-1.txt, DEVHOME-1.txt
+  /root/ob5b2/g3/reg-openbob-{base,br1}-*.txt   the regression batteries
+  /root/ob5b2/worker/WORKER-LOG-1.jsonl
+    021b0dddc3e867ad4002a1f6b56562074c0a95135be069f428abb293326b7719
+  /root/ob5b2/worker/w-000001/      the served turn's own artifacts
+  /mnt/f/f32/stage/research/ob5b2/install/OB5B-S1-BRAIN-LEASE-v1/
+    the prepared, versioned install, with VERSION-REPORT-1.txt and H1-RIDER-1.txt
+
+THE DECIDING DIGESTS OF THIS LEG:
+
+  gate 2 identity (ids)      5b751861465660a73ec9e895f03f01d81f0522e5ef27c713efb44746c38b7686
+  gate 2 identity (text)     539e71d138c3c7b15e379b0b6f0729a691d7569884182a9617fabf462ea5da55
+  gate 2 alloc journal       60a1c06df522e1c48ad10852cd251ef40e36154213658b02185dbad4d79a3225
+  brain manifest (BM-1)      711fcff626e0a6d4c5d5069e28ad27b222609a4199ac51b34517074adcf8eb4e
+  gate 3 turn identity       55df750df27733224d3df21726cafc50b1e6ca6051909f66d8c813dd5a2e2f86
+  gate 3 answer bytes        613dd289c02ca2cf5eecfc432781b4931c602a1d6099d224e3f1966133299850
+  gate 3 worker log          021b0dddc3e867ad4002a1f6b56562074c0a95135be069f428abb293326b7719
+  gate 3 journal head        d9f7d20f1dae99ae097bf336fc7666ba3b282864149c76088efaf3c1e78f8f11
+  fabric binary (BR1)        0ef39cbe990a15ba6d628b7e193515f1382e023e57d301ef391e8e835baab0d1
+  patched fabric source      02aebeb2feaa8c55b2592043221b01fb764b515faf63f5b883b973efc53c371a
+  engine (gate 1's, unmoved) daca8fb74f626c186950c2882dfd1fdfe191056ca5feacccd51201db3e625740
+  this runlog                (its own digest is recomputed at landing)
+
+--------------------------------------------------------------------------
+12. THE STANDARD THIS LEG WAS HELD TO
+--------------------------------------------------------------------------
+
+Both bars were written in OB5-DESIGN-C4-1.md before this leg existed and neither
+was renegotiated. Both passed. What is reported at greater length than either
+pass is the set of things that did not go as the design expected: the static
+resident set's ranked value not transferring to a served prompt even in its own
+corpus (F-B2), the K sweep buying far less than the static table said (F-B3),
+byte-identical runs differing by 30 percent in wall clock (F-B4), the page cache
+being the largest uncontrolled term on the serving path (F-B6), and K2 being
+unanswerable in its own terms until C1 exists (section 7). The one number the
+design most wanted, the decode-regime exposure, came in at 10.250022 against a
+projection of 10.162898, and that is the only projection in C4 section 6.1 this
+leg was able to confirm rather than correct.
+
+END OB5B-S1-RUNLOG-2.

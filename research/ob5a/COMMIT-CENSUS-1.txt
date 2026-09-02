@@ -1,0 +1,138 @@
+PAGE=4096  TENSOR_ALIGNMENT=64
+measured on this box: /proc/sys/vm/max_map_count=1048576,
+                      /proc/sys/vm/overcommit_memory=0,
+                      /proc/sys/vm/overcommit_ratio=50
+
+== gpt-oss-20b ==
+  L=24  E=32  per_expert_bytes_per_layer=13253760  (sum of the six slices)
+
+  suffix                        slice_B slice%4096    whole_pages page_multiple?
+  ffn_gate_exps.weight          4406400       3200           1075             no
+  ffn_up_exps.weight            4406400       3200           1075             no
+  ffn_down_exps.weight          4406400       3200           1075             no
+  ffn_gate_exps.bias              11520       3328              2             no
+  ffn_up_exps.bias                11520       3328              2             no
+  ffn_down_exps.bias              11520       3328              2             no
+
+  STRADDLING PAGES. A page is shared between two adjacent experts when
+  an expert boundary falls strictly inside it. The tensor base is only
+  known to be 64-byte aligned (ggml TENSOR_ALIGNMENT), so the count is
+  reported over every possible base residue, min and max:
+  suffix                     min_straddle   max_straddle  per L (max) bytes
+  ffn_gate_exps.weight                 30             31             126976
+  ffn_up_exps.weight                   30             31             126976
+  ffn_down_exps.weight                 30             31             126976
+  ffn_gate_exps.bias                   29             31             126976
+  ffn_up_exps.bias                     29             31             126976
+  ffn_down_exps.bias                   29             31             126976
+  TOTAL over all L and t             4248           4464           18284544
+  worst-case permanently-committed edge bytes = 4464 x 4096 = 18284544
+  as a fraction of the model: 0.1510 pct
+
+  COMMIT ISLANDS AT K=8. Each maximal run of consecutive resident
+  expert ids in one (layer, tensor) is one committed range, hence at
+  most one extra VMA under an mprotect-based commit.
+    resident islands per layer, summed over layers : 158
+    x 6 suffix tensors                             : 948
+  LEASE SCRATCH AT K=8. peak_experts non-resident experts are live at
+  once in the worst micro-batch, each contributing at most one island
+  per suffix tensor:
+    peak concurrent leased experts                 : 24
+    x 6 suffix tensors                             : 144
+  WORST-CASE SIMULTANEOUS COMMITTED ISLANDS        : 1092
+  worst-case VMA count (2 boundary VMAs per island): 2185
+  measured vm.max_map_count on this box            : 1048576
+  headroom factor                                  : 479.9x
+
+  COMMIT / DECOMMIT ROUNDING, the rule this prereg freezes:
+    COMMIT   rounds OUTWARD  [floor(a/P)*P, ceil(b/P)*P)  so the bytes
+             the engine owns are always backed and never fault.
+    DECOMMIT rounds INWARD   [ceil(a/P)*P, floor(b/P)*P)  so a page a
+             neighbour still owns is never taken away. This is the
+             EXISTING rule in src/ob1-lease.cpp ob1_drop(), unchanged.
+    Per-slice worst-case over-commit: 2 pages = 8192 bytes.
+    Largest slice is 4406400 bytes = 1075.8 pages, so the over-commit is at
+    most 0.186 pct of a slice.
+
+== gpt-oss-120b ==
+  L=36  E=128  per_expert_bytes_per_layer=13253760  (sum of the six slices)
+
+  suffix                        slice_B slice%4096    whole_pages page_multiple?
+  ffn_gate_exps.weight          4406400       3200           1075             no
+  ffn_up_exps.weight            4406400       3200           1075             no
+  ffn_down_exps.weight          4406400       3200           1075             no
+  ffn_gate_exps.bias              11520       3328              2             no
+  ffn_up_exps.bias                11520       3328              2             no
+  ffn_down_exps.bias              11520       3328              2             no
+
+  STRADDLING PAGES. A page is shared between two adjacent experts when
+  an expert boundary falls strictly inside it. The tensor base is only
+  known to be 64-byte aligned (ggml TENSOR_ALIGNMENT), so the count is
+  reported over every possible base residue, min and max:
+  suffix                     min_straddle   max_straddle  per L (max) bytes
+  ffn_gate_exps.weight                123            127             520192
+  ffn_up_exps.weight                  123            127             520192
+  ffn_down_exps.weight                123            127             520192
+  ffn_gate_exps.bias                  119            127             520192
+  ffn_up_exps.bias                    119            127             520192
+  ffn_down_exps.bias                  119            127             520192
+  TOTAL over all L and t            26136          27432          112361472
+  worst-case permanently-committed edge bytes = 27432 x 4096 = 112361472
+  as a fraction of the model: 0.1773 pct
+
+  COMMIT ISLANDS AT K=8. Each maximal run of consecutive resident
+  expert ids in one (layer, tensor) is one committed range, hence at
+  most one extra VMA under an mprotect-based commit.
+    resident islands per layer, summed over layers : 277
+    x 6 suffix tensors                             : 1662
+  LEASE SCRATCH AT K=8. peak_experts non-resident experts are live at
+  once in the worst micro-batch, each contributing at most one island
+  per suffix tensor:
+    peak concurrent leased experts                 : 120
+    x 6 suffix tensors                             : 720
+  WORST-CASE SIMULTANEOUS COMMITTED ISLANDS        : 2382
+  worst-case VMA count (2 boundary VMAs per island): 4765
+  measured vm.max_map_count on this box            : 1048576
+  headroom factor                                  : 220.1x
+
+  COMMIT / DECOMMIT ROUNDING, the rule this prereg freezes:
+    COMMIT   rounds OUTWARD  [floor(a/P)*P, ceil(b/P)*P)  so the bytes
+             the engine owns are always backed and never fault.
+    DECOMMIT rounds INWARD   [ceil(a/P)*P, floor(b/P)*P)  so a page a
+             neighbour still owns is never taken away. This is the
+             EXISTING rule in src/ob1-lease.cpp ob1_drop(), unchanged.
+    Per-slice worst-case over-commit: 2 pages = 8192 bytes.
+    Largest slice is 4406400 bytes = 1075.8 pages, so the over-commit is at
+    most 0.186 pct of a slice.
+
+== 5. THE CENSUS CHECKED AGAINST A BANKED MEASUREMENT ==
+  The 20b K=0 prose run already measured the inward-rounding loss, and
+  the census has to agree with it or the census is wrong.
+  Literal, from /root/ob1b/runs/lease-k0-prose/ob1-stats.txt:
+    lease_bytes_read  306108840960
+    lease_drop_bytes  305144365056
+    lease_events      23096
+    undropped gap     964475904
+    per lease event   41759.4 bytes
+    per slice (6/ev)  6959.9 bytes = 1.699 pages
+
+  The census predicts the inward-rounding loss per slice to be the two
+  partial edge pages, minus whichever edge happens to be page aligned.
+  Expected range 1 to 2 pages (4096 to 8192 bytes) per slice.
+  MEASURED 6959.9 bytes per slice: INSIDE THE PREDICTED RANGE
+
+  This is the check that licenses the edge-page terms of the P2 bar:
+  the page model is not a new assumption, it is the model that already
+  explains a banked counter to within a page.
+
+== 6. WHAT THE CENSUS DECIDES ==
+  1. Slices are NOT page multiples on either model (section tables), so
+     no approach can promise byte-exact commit. Every approach carries
+     an edge term, and the prereg names it rather than rounding it away.
+  2. The worst-case VMA count under an mprotect commit is small against
+     this box's vm.max_map_count, by three orders of magnitude, so
+     approach A is not blocked by map-count exhaustion. That was the
+     one cheap way approach A could have died and it does not.
+  3. The edge term is bounded and tiny (fractions of a percent of the
+     model), so it cannot rescue or ruin the P2 bar either way. It is
+     carried explicitly in the bar so a surprise there is visible.

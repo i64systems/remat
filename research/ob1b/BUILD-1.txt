@@ -1,0 +1,88 @@
+=== OB1B BUILD ===
+utc_start 2026-09-01T01:01:46Z
+--- restore pristine source ---
+guard line as checked out:
+719:    if (g_K <= 0 || g_K > g_E) ob1_fatal("OB1_K=%d out of range 1..%d", g_K, g_E);
+--- landed binaries (the reference) ---
+31f3ceb72af8f73a5fbb185447da64ecd8e1a441c2424494c0974189ec924d28  /root/rs053/llama.cpp/build/bin/llama-perplexity
+1aabf8b7b34b5edcdcd808ac5a600f421a1ddcd29995b2b26fee59425ef3dd35  /root/rs053/llama.cpp/build/bin/libllama.so
+--- copy build tree ---
+--- rewrite absolute source paths in text files only (grep -I skips binaries) ---
+text files referencing old source dir: 638
+remaining after rewrite: 0
+--- cmake reconfigure against the new source root ---
+-- Configuring done (11.1s)
+-- Generating done (0.1s)
+-- Build files have been written to: /root/ob1b/llama.cpp/build
+--- age the checked-out sources so make does not rebuild all 392 objects ---
+--- confirm the tree is now fully up to date (make should have nothing to do) ---
+make[3]: Leaving directory '/root/ob1b/llama.cpp/build'
+[100%] Built target llama-perplexity
+make[2]: Leaving directory '/root/ob1b/llama.cpp/build'
+make[1]: Leaving directory '/root/ob1b/llama.cpp/build'
+make: Leaving directory '/root/ob1b/llama.cpp/build'
+=== PHASE A: recompile ob1-lease.cpp UNCHANGED, must reproduce the landed binaries ===
+[ 98%] Linking CXX shared library ../../bin/libllama-perplexity-impl.so
+make[3]: Leaving directory '/root/ob1b/llama.cpp/build'
+[ 98%] Built target llama-perplexity-impl
+make[3]: Entering directory '/root/ob1b/llama.cpp/build'
+make[3]: Leaving directory '/root/ob1b/llama.cpp/build'
+make[3]: Entering directory '/root/ob1b/llama.cpp/build'
+[ 98%] Linking CXX executable ../../bin/llama-perplexity
+make[3]: Leaving directory '/root/ob1b/llama.cpp/build'
+[100%] Built target llama-perplexity
+make[2]: Leaving directory '/root/ob1b/llama.cpp/build'
+make[1]: Leaving directory '/root/ob1b/llama.cpp/build'
+make: Leaving directory '/root/ob1b/llama.cpp/build'
+--- phase A digests ---
+1772264971eb456bf6a60d5204c48fb96eeb5a9b026c42ea1dd6f3690b192932  /root/ob1b/llama.cpp/build/bin/llama-perplexity
+2c1f2fed7faf9714079af6c40545d1eb8d3b13c94420d9312b6ddfc4e05c7281  /root/ob1b/llama.cpp/build/bin/libllama.so
+PHASE A: DIFFER
+  llama-perplexity landed=31f3ceb72af8f73a5fbb185447da64ecd8e1a441c2424494c0974189ec924d28 ob1b=1772264971eb456bf6a60d5204c48fb96eeb5a9b026c42ea1dd6f3690b192932
+  libllama.so      landed=1aabf8b7b34b5edcdcd808ac5a600f421a1ddcd29995b2b26fee59425ef3dd35 ob1b=2c1f2fed7faf9714079af6c40545d1eb8d3b13c94420d9312b6ddfc4e05c7281
+  sizes:
+lrwxrwxrwx 1 root root 13 Aug 31 21:02 /root/ob1b/llama.cpp/build/bin/libllama.so -> libllama.so.0
+lrwxrwxrwx 1 root root 13 Aug 31 16:20 /root/rs053/llama.cpp/build/bin/libllama.so -> libllama.so.0
+  --- does the binary embed its own source path? (the usual benign cause) ---
+  landed hits: 151
+  ob1b   hits: 1
+=== PHASE B: the one-line K=0 guard fix ===
+--- before ---
+719:    if (g_K <= 0 || g_K > g_E) ob1_fatal("OB1_K=%d out of range 1..%d", g_K, g_E);
+guard edit applied: 1 occurrence replaced
+--- after ---
+719:    if (g_K <  0 || g_K > g_E) ob1_fatal("OB1_K=%d out of range 0..%d", g_K, g_E);
+--- diff ---
+ src/ob1-lease.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+diff --git a/src/ob1-lease.cpp b/src/ob1-lease.cpp
+index fbb2b7c..f11fe7e 100755
+--- a/src/ob1-lease.cpp
++++ b/src/ob1-lease.cpp
+@@ -716,7 +716,7 @@ static void ob1_init() {
+ 
+     ob1_sha256_selftest();
+     ob1_load_manifest();
+-    if (g_K <= 0 || g_K > g_E) ob1_fatal("OB1_K=%d out of range 1..%d", g_K, g_E);
++    if (g_K <  0 || g_K > g_E) ob1_fatal("OB1_K=%d out of range 0..%d", g_K, g_E);
+     ob1_load_resident_sets();
+ 
+     g_treg.assign((size_t) g_L*OB1_NSUF, ob1_treg());
+[ 98%] Linking CXX shared library ../../bin/libllama-perplexity-impl.so
+make[3]: Leaving directory '/root/ob1b/llama.cpp/build'
+[ 98%] Built target llama-perplexity-impl
+make[3]: Entering directory '/root/ob1b/llama.cpp/build'
+make[3]: Leaving directory '/root/ob1b/llama.cpp/build'
+make[3]: Entering directory '/root/ob1b/llama.cpp/build'
+[ 98%] Linking CXX executable ../../bin/llama-perplexity
+make[3]: Leaving directory '/root/ob1b/llama.cpp/build'
+[100%] Built target llama-perplexity
+make[2]: Leaving directory '/root/ob1b/llama.cpp/build'
+make[1]: Leaving directory '/root/ob1b/llama.cpp/build'
+make: Leaving directory '/root/ob1b/llama.cpp/build'
+--- phase B digests (the binary every OB-1b run uses) ---
+1772264971eb456bf6a60d5204c48fb96eeb5a9b026c42ea1dd6f3690b192932  /root/ob1b/llama.cpp/build/bin/llama-perplexity
+bfa8166ed641ea664e559af5402d56ef580fc6f90cc226d0b5859d6e023b37b0  /root/ob1b/llama.cpp/build/bin/libllama.so
+PHASE B: libllama.so changed, as the one-line edit requires
+utc_end 2026-09-01T01:02:17Z
+=== END OB1B BUILD ===

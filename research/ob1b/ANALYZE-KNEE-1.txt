@@ -1,0 +1,123 @@
+=== 20B MATRIX ===
+== MODEL CONSTANTS (20b) ==
+  logical          12109566624
+  resident_always  1930678944
+  per_expert       13253760
+  L                24
+  E                32
+  tokens           32768
+
+== IDENTITY REFERENCES (this leg's own non-leased runs) ==
+  code   res8-code-a          mode=resident  identity=9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8
+                                             route   =f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77
+                              vs OB-1's banked 10-thread reference: identity MATCH  route MATCH
+  prose  res8-prose-a         mode=resident  identity=96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925
+                                             route   =4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df
+                              vs OB-1's banked 10-thread reference: identity MATCH  route MATCH
+
+== PER-RUN ROWS ==
+run                    K corpus ident  route    leases    bytes_moved   wall_s     rss_KB    p50_ms    p95_ms    p99_ms   n
+lease-k0-code          0 code   MATCH  MATCH     24078   319124033280   923.87    3499860   26726.0   27406.8   28225.9  31
+lease-k0-code-b        0 code   MATCH  MATCH     24078   319124033280   947.28    3493684   29014.8   32309.5   33352.5  31
+lease-k0-prose         0 prose  MATCH  MATCH     23096   306108840960   916.07    3479932   26437.7   27705.7   29308.2  31
+lease-k1-code          1 code   MATCH  MATCH     23364   309660848640   954.73    3796840   28637.0   29147.1   54156.0  31
+lease-k1-prose         1 prose  MATCH  MATCH     22328   295929953280   926.87    3777072   28745.8   29456.4   29649.2  31
+lease-k2-code          2 code   MATCH  MATCH     22611   299680767360   915.29    4094272   28366.7   28704.7   28856.4  31
+lease-k2-prose         2 prose  MATCH  MATCH     21560   285751065600   900.05    4074452   28038.5   28483.8   28732.9  31
+res8-code-a           -1 code   MATCH  MATCH         0              0   633.57   13008364   17758.8   18214.6   18331.5  31
+res8-prose-a          -1 prose  MATCH  MATCH         0              0   641.01   12991324   18233.7   18691.9   18995.8  31
+
+== EXPOSURE ==
+run                    K      RSS_bytes    EXP_rss     ACCT_bytes   EXP_acct peak_lease_bytes
+lease-k0-code          0     3583856640   3.378920     2354799264   5.142505        424120320
+lease-k0-code-b        0     3577532416   3.384894     2354799264   5.142505        424120320
+lease-k0-prose         0     3563450368   3.398270     2354799264   5.142505        424120320
+lease-k1-code          1     3887964160   3.114629     2659635744   4.553092        410866560
+lease-k1-prose         1     3867721728   3.130930     2659635744   4.553092        410866560
+lease-k2-code          2     4192534528   2.888364     2964472224   4.084898        397612800
+lease-k2-prose         2     4172238848   2.902415     2964472224   4.084898        397612800
+res8-code-a           -1    13320564736   0.909088    12109566624   1.000000                0
+res8-prose-a          -1    13303115776   0.910280    12109566624   1.000000                0
+
+== VERIFY / READ COST (lease runs) ==
+run                      read_s   verify_s       drop_bytes   res_verify_s          B/tok
+lease-k0-code           131.819    127.183     318122741760          0.000      9738892.6
+lease-k0-code-b         153.959    135.480     318122741760          0.000      9738892.6
+lease-k0-prose          124.170    122.463     305144365056          0.000      9341700.5
+lease-k1-code           153.754    132.883     308691345408          0.188      9450099.1
+lease-k1-prose          146.021    126.219     294998863872          0.134      9031065.5
+lease-k2-code           142.593    127.061     298743386112          0.268      9145531.2
+lease-k2-prose          135.807    120.968     284852563968          0.272      8720430.5
+
+== COST LIMB: leased p95 vs this leg's own baseline p95 (knee bar: <= 2.0x) ==
+  lease-k0-code        p95   27406.8 ms vs   18214.6 ms  ratio 1.5047  PASS   (p99 ratio 1.5397, wall ratio 1.4582)
+  lease-k0-code-b      p95   32309.5 ms vs   18214.6 ms  ratio 1.7738  PASS   (p99 ratio 1.8194, wall ratio 1.4951)
+  lease-k0-prose       p95   27705.7 ms vs   18691.9 ms  ratio 1.4822  PASS   (p99 ratio 1.5429, wall ratio 1.4291)
+  lease-k1-code        p95   29147.1 ms vs   18214.6 ms  ratio 1.6002  PASS   (p99 ratio 2.9543, wall ratio 1.5069)
+  lease-k1-prose       p95   29456.4 ms vs   18691.9 ms  ratio 1.5759  PASS   (p99 ratio 1.5608, wall ratio 1.4460)
+  lease-k2-code        p95   28704.7 ms vs   18214.6 ms  ratio 1.5759  PASS   (p99 ratio 1.5741, wall ratio 1.4447)
+  lease-k2-prose       p95   28483.8 ms vs   18691.9 ms  ratio 1.5239  PASS   (p99 ratio 1.5126, wall ratio 1.4041)
+
+=== 120B ===
+== MODEL CONSTANTS (120b) ==
+  logical          63387346208
+  resident_always  2314020128
+  per_expert       13253760
+  L                36
+  E                128
+  tokens           8192
+
+== IDENTITY REFERENCES (this leg's own non-leased runs) ==
+  prose  pag120-prose-a       mode=resident  identity=9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019
+                                             route   =a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1
+
+== PER-RUN ROWS ==
+run                    K corpus ident  route    leases    bytes_moved   wall_s     rss_KB    p50_ms    p95_ms    p99_ms   n
+pag120-prose-a        -1 prose  MATCH  MATCH         0              0   410.27   18823836   49164.4   49619.8   49619.8   7
+pag120-prose-b        -1 prose  MATCH  MATCH         0              0   390.65   22724776   46086.7   46732.3   46732.3   7
+
+== EXPOSURE ==
+run                    K      RSS_bytes    EXP_rss     ACCT_bytes   EXP_acct peak_lease_bytes
+pag120-prose-a        -1    19275608064   3.288475    63387346208   1.000000                0
+pag120-prose-b        -1    23270170624   2.723974    63387346208   1.000000                0
+
+== VERIFY / READ COST (lease runs) ==
+run                      read_s   verify_s       drop_bytes   res_verify_s          B/tok
+
+== COST LIMB: leased p95 vs this leg's own baseline p95 (knee bar: <= 2.0x) ==
+
+=== COST DECOMPOSITION ===
+== BYTES PER LEASE EVENT (must be exactly one expert's share, 13253760) ==
+  16 of 16 runs move exactly 13253760 bytes per lease event
+
+== READ AND VERIFY RATE VERSUS K ==
+  A fixed per-event overhead that dominates at small K would show up as
+  these GB/s columns FALLING sharply as K falls. Flat columns mean cost
+  tracks bytes moved, which is the case builder 1's prediction assumed.
+
+  leg    run                      K     events            bytes  read_GB/s   ver_GB/s read_ms/ev  ver_ms/ev  fadv
+  runs   lease-k16-code          16      12092     160264465920     2.3915     2.4913     5.5420     5.3200     0
+  runs   lease-k16-prose-a       16      10836     143617743360     2.4273     2.4903     5.4603     5.3221     0
+  runs   lease-k16-prose-b       16      10836     143617743360     2.4372     2.4761     5.4382     5.3528     0
+  runs   lease-k16-prose-c       16      10836     143617743360     2.3752     2.4901     5.5800     5.3227     0
+  runs   lease-k16-prose-fadv    16      10836     143617743360     1.0399     2.4318    12.7451     5.4501     1
+  runs   lease-k8-code            8      18100     239893056000     2.3849     2.5023     5.5574     5.2967     0
+  runs   lease-k8-prose           8      16954     224704247040     2.3778     2.5054     5.5740     5.2901     0
+  runs   lease-k4-code            4      21115     279853142400     2.3196     2.4832     5.7139     5.3375     0
+  runs   lease-k4-prose           4      20024     265393290240     2.2996     2.4603     5.7636     5.3871     0
+  runs   lease-k2-code            2      22611     299680767360     2.1016     2.3586     6.3064     5.6194     0
+  runs   lease-k2-prose           2      21560     285751065600     2.1041     2.3622     6.2990     5.6108     0
+  runs   lease-k1-code            1      23364     309660848640     2.0140     2.3303     6.5808     5.6875     0
+  runs   lease-k1-prose           1      22328     295929953280     2.0266     2.3446     6.5398     5.6529     0
+  runs   lease-k0-code            0      24078     319124033280     2.4209     2.5092     5.4747     5.2821     0
+  runs   lease-k0-code-b          0      24078     319124033280     2.0728     2.3555     6.3942     5.6267     0
+  runs   lease-k0-prose           0      23096     306108840960     2.4652     2.4996     5.3763     5.3023     0
+
+== RATE AT THE EXTREMES (the floor question, stated as a ratio) ==
+  (page-cache-dropping runs excluded: 1 of 16 rows)
+  highest K measured = 16 : read 2.4078 GB/s, verify 2.4869 GB/s
+  lowest  K measured = 0 : read 2.3196 GB/s, verify 2.4548 GB/s
+  read rate at lowest K is 0.9634 x the rate at highest K
+  verify rate at lowest K is 0.9871 x the rate at highest K
+  NOTE: runs from different legs used different thread counts and ran
+  under different sibling load, so treat cross-leg rows as indicative.

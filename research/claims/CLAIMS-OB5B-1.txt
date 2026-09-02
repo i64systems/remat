@@ -1,0 +1,738 @@
+# CLAIMS-OB5B-1: THE CLAIMS TABLE OF RECORD
+#
+# The machine-readable table every OB-5b published number comes out of.
+# Format and rules: research/OB5B-CLAIMS-TABLE-1.md (CLAIMS-RULES-1).
+# Checker: research/claims/claims_check.py (CHECK-CLAIMS-1).
+# Row schema: research/OB5-DESIGN-C7-1.md section 3.1, plus C6 section 12's
+# H-BOX additions (STORE, STORE_OBS), C4's OB5-024 eval/decode label,
+# C3-j's regime qualifier, and SUMMARY CONFLICT 1 RULE R-1's ACCT pairing.
+#
+# Pure ASCII, LF endings, no trailing whitespace, no em dashes.
+# Every number below is a receipt literal or is marked RECOMPUTED HERE and
+# shown with its inputs. Nothing here is copied out of a prose summary.
+#
+# THIS FILE IS APPEND-MOSTLY. A number that moves gets a NEW row and a new
+# cut version (C7 section 3.5, kill line K8); it never gets edited in place.
+
+ID: CR-001
+KIND: ROW
+LEG: LEG-OB1-20B-10T-RESIDENT
+MODEL: gpt-oss-20b-MXFP4.gguf; bytes 12109566624; sha256 27cd6c43 (truncated
+  in both receipts; the full 64 hex is owed from the model registry line
+  before this row enters a cut)
+CONFIG: K=32 of 32 (full residency); mechanism resident; corpus AC-PROSE;
+  tokens 32768
+DEVICE: box f32-HYDE; cpu UNSTATED; ram_mb UNSTATED; threads 10; nice 10;
+  gpu hidden, CUDA_VISIBLE_DEVICES empty
+STORE: path /root/openbob-baselines/models/; mount UNSTATED (receipt predates
+  the H-BOX duty)
+STORE_OBS: UNMEASURED (receipt predates C6 section 12's H-BOX store
+  observation duty)
+IDENTITY: identity 96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925;
+  route 4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df;
+  matched against OB-1b's own 8-thread prose runs, which share both digests
+EXPOSURE_ACCT_RESIDENCY: 1.000000 = 12109566624 / 12109566624 [1930678944 +
+  10178887680 + 0]
+EXPOSURE_ACCT_HELD: 1.000000 = 12109566624 / 12109566624 [1930678944 +
+  10178887680 + 0 + 0 + 0]
+EXPOSURE_RSS: UNMEASURED (OB-1's receipt does not state this run's peak RSS)
+THROUGHPUT: 59.68 tok/s eval; regime batch-prefill B=1024; tokens 32768;
+  wall_s 549.040000; ms_per_token 16.755371
+COST: BASELINE
+COST_SPREAD: BASELINE
+CAVEAT: DEVICE GAP: measured at 10 compute threads while every other row in
+  this table is 8, so its wall clock is NOT comparable to them and no ratio
+  may be taken across the two; OB-1's receipt states neither the CPU nor the
+  RAM of the box it ran on.
+CAVEAT_SOURCE: OB1B-KNEE-1.md section 5, deviation D1
+RECEIPT: research/OB1-EXPOSURE-1.md
+COMMIT: f9efa23b033e01f56aef2ee5da70a0372167ed92
+---
+
+ID: CR-002
+KIND: ROW
+LEG: LEG-OB1B-20B-8T-RESIDENT
+MODEL: gpt-oss-20b-MXFP4.gguf; bytes 12109566624; sha256 27cd6c43 (truncated
+  in the receipt; full hex owed before the cut)
+CONFIG: K=32 of 32 (full residency); mechanism resident; corpus AC-PROSE;
+  tokens 32768
+DEVICE: box f32-HYDE; cpu AMD Ryzen 9 5900X 12c/24t; ram_mb 24029; threads 8;
+  nice 10; gpu hidden, CUDA_VISIBLE_DEVICES empty
+STORE: path /root/openbob-baselines/models/; mount UNSTATED (receipt predates
+  the H-BOX duty)
+STORE_OBS: UNMEASURED (receipt predates C6 section 12's H-BOX store
+  observation duty)
+IDENTITY: identity 96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925;
+  route 4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df;
+  matched against OB-1's banked prose reference, exact
+EXPOSURE_ACCT_RESIDENCY: 1.000000 = 12109566624 / 12109566624 [1930678944 +
+  10178887680 + 0]
+EXPOSURE_ACCT_HELD: 1.000000 = 12109566624 / 12109566624 [1930678944 +
+  10178887680 + 0 + 0 + 0]
+EXPOSURE_RSS: 0.910280; peak RSS 13303115776 bytes (12991324 KB literal,
+  RECOMPUTED HERE as 12991324 x 1024; the quotient is under one because a
+  resident run's RSS exceeds the model it holds)
+THROUGHPUT: 51.12 tok/s eval; regime batch-prefill B=1024; tokens 32768;
+  wall_s 641.015000; ms_per_token 19.562225
+COST: BASELINE
+COST_SPREAD: BASELINE
+CAVEAT: a resident run's ACCT exposure is an accounting identity, not a
+  measurement: at full residency the denominator IS the model, so 1.000000 is
+  true by construction and is published only to anchor the leased rows.
+CAVEAT_SOURCE: OB1B-KNEE-1.md section 7
+RECEIPT: research/OB1B-KNEE-1.md
+COMMIT: f9335882d849812d4c0b8af606b9b4626c345e38
+---
+
+ID: CR-003
+KIND: ROW
+LEG: LEG-OB1B-20B-8T-RESIDENT
+MODEL: gpt-oss-20b-MXFP4.gguf; bytes 12109566624; sha256 27cd6c43 (truncated
+  in the receipt; full hex owed before the cut)
+CONFIG: K=32 of 32 (full residency); mechanism resident; corpus AC-CODE;
+  tokens 32768
+DEVICE: box f32-HYDE; cpu AMD Ryzen 9 5900X 12c/24t; ram_mb 24029; threads 8;
+  nice 10; gpu hidden, CUDA_VISIBLE_DEVICES empty
+STORE: path /root/openbob-baselines/models/; mount UNSTATED (receipt predates
+  the H-BOX duty)
+STORE_OBS: UNMEASURED (receipt predates C6 section 12's H-BOX store
+  observation duty)
+IDENTITY: identity 9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8;
+  route f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77;
+  matched against OB-1's banked code reference, exact
+EXPOSURE_ACCT_RESIDENCY: 1.000000 = 12109566624 / 12109566624 [1930678944 +
+  10178887680 + 0]
+EXPOSURE_ACCT_HELD: 1.000000 = 12109566624 / 12109566624 [1930678944 +
+  10178887680 + 0 + 0 + 0]
+EXPOSURE_RSS: 0.909088; peak RSS 13320564736 bytes (13008364 KB literal,
+  RECOMPUTED HERE as 13008364 x 1024)
+THROUGHPUT: 51.72 tok/s eval; regime batch-prefill B=1024; tokens 32768;
+  wall_s 633.580000; ms_per_token 19.335327
+COST: BASELINE
+COST_SPREAD: BASELINE
+CAVEAT: a resident run's ACCT exposure is an accounting identity, not a
+  measurement; published only to anchor the leased rows of the same leg.
+CAVEAT_SOURCE: OB1B-KNEE-1.md section 7
+RECEIPT: research/OB1B-KNEE-1.md
+COMMIT: f9335882d849812d4c0b8af606b9b4626c345e38
+---
+
+ID: CR-004
+KIND: ROW
+LEG: LEG-OB1B-20B-8T-LEASED
+MODEL: gpt-oss-20b-MXFP4.gguf; bytes 12109566624; sha256 27cd6c43 (truncated
+  in the receipt; full hex owed before the cut)
+CONFIG: K=0 of 32; mechanism leased; corpus AC-PROSE; tokens 32768
+DEVICE: box f32-HYDE; cpu AMD Ryzen 9 5900X 12c/24t; ram_mb 24029; threads 8;
+  nice 10; gpu hidden, CUDA_VISIBLE_DEVICES empty
+STORE: path /root/openbob-baselines/models/; mount UNSTATED (receipt predates
+  the H-BOX duty)
+STORE_OBS: UNMEASURED (receipt predates C6 section 12's H-BOX store
+  observation duty)
+IDENTITY: identity 96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925;
+  route 4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df;
+  matched against CR-002, the same leg's own resident prose run, exact
+EXPOSURE_ACCT_RESIDENCY: 5.142505 = 12109566624 / 2354799264 [1930678944 + 0 +
+  424120320]
+EXPOSURE_ACCT_HELD: 5.142505 = 12109566624 / 2354799264 [1930678944 + 0 +
+  424120320 + 0 + 0]
+EXPOSURE_RSS: 3.398270; peak RSS 3563450368 bytes
+THROUGHPUT: 35.77 tok/s eval; regime batch-prefill B=1024; tokens 32768;
+  wall_s 916.076807; ms_per_token 27.956446
+COST: 1.7738x p95 nearest-rank over 31 per-chunk intervals, worst observed in
+  this leg; baseline this leg's own 8-thread resident runs CR-002 and CR-003
+COST_SPREAD: 1.5239 1.5759 1.5759 1.6002 1.4822 1.5047 1.7738
+CAVEAT: the leg's own A/A pair (lease-k0-code and lease-k0-code-b, byte-
+  identical output and lease counters identical to the event) sits at p95
+  ratios 1.5047 and 1.7738, 17.9 percent apart, so the whole seven-run spread
+  is no wider than the noise between two runs that were the same run; five
+  workflows shared the box.
+CAVEAT_SOURCE: OB1B-KNEE-1.md section 8
+RECEIPT: research/OB1B-KNEE-1.md
+COMMIT: f9335882d849812d4c0b8af606b9b4626c345e38
+---
+
+ID: CR-005
+KIND: ROW
+LEG: LEG-OB1B-20B-8T-LEASED
+MODEL: gpt-oss-20b-MXFP4.gguf; bytes 12109566624; sha256 27cd6c43 (truncated
+  in the receipt; full hex owed before the cut)
+CONFIG: K=0 of 32; mechanism leased; corpus AC-CODE; tokens 32768
+DEVICE: box f32-HYDE; cpu AMD Ryzen 9 5900X 12c/24t; ram_mb 24029; threads 8;
+  nice 10; gpu hidden, CUDA_VISIBLE_DEVICES empty
+STORE: path /root/openbob-baselines/models/; mount UNSTATED (receipt predates
+  the H-BOX duty)
+STORE_OBS: UNMEASURED (receipt predates C6 section 12's H-BOX store
+  observation duty)
+IDENTITY: identity 9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8;
+  route f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77;
+  matched against CR-003, the same leg's own resident code run, exact
+EXPOSURE_ACCT_RESIDENCY: 5.142505 = 12109566624 / 2354799264 [1930678944 + 0 +
+  424120320]
+EXPOSURE_ACCT_HELD: 5.142505 = 12109566624 / 2354799264 [1930678944 + 0 +
+  424120320 + 0 + 0]
+EXPOSURE_RSS: 3.378920; peak RSS 3583856640 bytes
+THROUGHPUT: 35.47 tok/s eval; regime batch-prefill B=1024; tokens 32768;
+  wall_s 923.879122; ms_per_token 28.194553
+COST: 1.7738x p95 nearest-rank over 31 per-chunk intervals, worst observed in
+  this leg; baseline this leg's own 8-thread resident runs CR-002 and CR-003
+COST_SPREAD: 1.5239 1.5759 1.5759 1.6002 1.4822 1.5047 1.7738
+CAVEAT: this row and CR-006 are the same run repeated; they agree to the byte
+  on output and to the event on lease counters, and disagree by 17.9 percent
+  on p95, which is the noise floor every latency claim in this table sits on.
+CAVEAT_SOURCE: OB1B-KNEE-1.md section 8
+RECEIPT: research/OB1B-KNEE-1.md
+COMMIT: f9335882d849812d4c0b8af606b9b4626c345e38
+---
+
+ID: CR-006
+KIND: ROW
+LEG: LEG-OB1B-20B-8T-LEASED
+MODEL: gpt-oss-20b-MXFP4.gguf; bytes 12109566624; sha256 27cd6c43 (truncated
+  in the receipt; full hex owed before the cut)
+CONFIG: K=0 of 32; mechanism leased; corpus AC-CODE; tokens 32768 (A/A repeat
+  of CR-005)
+DEVICE: box f32-HYDE; cpu AMD Ryzen 9 5900X 12c/24t; ram_mb 24029; threads 8;
+  nice 10; gpu hidden, CUDA_VISIBLE_DEVICES empty
+STORE: path /root/openbob-baselines/models/; mount UNSTATED (receipt predates
+  the H-BOX duty)
+STORE_OBS: UNMEASURED (receipt predates C6 section 12's H-BOX store
+  observation duty)
+IDENTITY: identity 9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8;
+  route f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77;
+  matched against CR-005, its own A/A sibling, exact
+EXPOSURE_ACCT_RESIDENCY: 5.142505 = 12109566624 / 2354799264 [1930678944 + 0 +
+  424120320]
+EXPOSURE_ACCT_HELD: 5.142505 = 12109566624 / 2354799264 [1930678944 + 0 +
+  424120320 + 0 + 0]
+EXPOSURE_RSS: 3.384894; peak RSS 3577532416 bytes
+THROUGHPUT: 34.59 tok/s eval; regime batch-prefill B=1024; tokens 32768;
+  wall_s 947.302172; ms_per_token 28.909368
+COST: 1.7738x p95 nearest-rank over 31 per-chunk intervals, worst observed in
+  this leg; baseline this leg's own 8-thread resident runs CR-002 and CR-003
+COST_SPREAD: 1.5239 1.5759 1.5759 1.6002 1.4822 1.5047 1.7738
+CAVEAT: this is the run that sets the leg's worst p95 and it is the A/A
+  repeat of CR-005, not a different configuration; the worst number in the
+  table comes from the pair that proves the noise, which is the honest place
+  for it to come from.
+CAVEAT_SOURCE: OB1B-KNEE-1.md section 8
+RECEIPT: research/OB1B-KNEE-1.md
+COMMIT: f9335882d849812d4c0b8af606b9b4626c345e38
+---
+
+ID: CR-007
+KIND: ROW
+LEG: LEG-OB1B-120B-PAGED
+MODEL: gpt-oss-120b-MXFP4.gguf; bytes 63387346208; sha256 582bd40f (truncated
+  in the receipt; full hex owed before the cut)
+CONFIG: no resident set; mechanism paged (mmap, kernel page cache); corpus
+  AC-PROSE; tokens 8192
+DEVICE: box f32-HYDE; cpu AMD Ryzen 9 5900X 12c/24t; ram_mb 24029; threads 8;
+  nice 10; gpu hidden, CUDA_VISIBLE_DEVICES empty
+STORE: path /root/openbob-baselines/models/; mount UNSTATED (receipt predates
+  the H-BOX duty); media local NVMe
+STORE_OBS: UNMEASURED (a paged run has no lease read bucket to observe; the
+  kernel moved the bytes and did not report them)
+IDENTITY: identity 9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019;
+  route a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1;
+  matched against its A/A sibling CR-008 and, a day later, against all four
+  leased 120b runs of LEG-OB5A-120B-K8-LEASED
+EXPOSURE_ACCT_RESIDENCY: UNMEASURED (a paged run has no lease accounting; its
+  footprint is emergent page cache, not an accounted denominator)
+EXPOSURE_ACCT_HELD: UNMEASURED (a paged run has no lease accounting; this is
+  the point of relation R-D, not a gap in the measurement)
+EXPOSURE_RSS: 3.288475; peak RSS 19275608064 bytes (18823836 KB literal)
+THROUGHPUT: 19.97 tok/s eval; regime batch-prefill B=1024; tokens 8192;
+  wall_s 410.282000; ms_per_token 50.083252
+COST: BASELINE
+COST_SPREAD: BASELINE
+CAVEAT: this row's p95 of 49619.800502 ms is the tau_0 that every 120b
+  latency ratio in this table is taken against, and it is itself an mmap-
+  paged run doing memory work, not a resident baseline; a fully resident 120b
+  baseline is unmeasurable on a 24029 MB box.
+CAVEAT_SOURCE: OB5A-ALLOC-1.md section 9.2
+RECEIPT: research/OB1B-KNEE-1.md
+COMMIT: f9335882d849812d4c0b8af606b9b4626c345e38
+---
+
+ID: CR-008
+KIND: ROW
+LEG: LEG-OB1B-120B-PAGED
+MODEL: gpt-oss-120b-MXFP4.gguf; bytes 63387346208; sha256 582bd40f (truncated
+  in the receipt; full hex owed before the cut)
+CONFIG: no resident set; mechanism paged (mmap, kernel page cache); corpus
+  AC-PROSE; tokens 8192 (A/A repeat of CR-007)
+DEVICE: box f32-HYDE; cpu AMD Ryzen 9 5900X 12c/24t; ram_mb 24029; threads 8;
+  nice 10; gpu hidden, CUDA_VISIBLE_DEVICES empty
+STORE: path /root/openbob-baselines/models/; mount UNSTATED (receipt predates
+  the H-BOX duty); media local NVMe
+STORE_OBS: UNMEASURED (a paged run has no lease read bucket to observe)
+IDENTITY: identity 9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019;
+  route a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1;
+  matched against CR-007, its own A/A sibling, exact on both artifacts
+EXPOSURE_ACCT_RESIDENCY: UNMEASURED (a paged run has no lease accounting)
+EXPOSURE_ACCT_HELD: UNMEASURED (a paged run has no lease accounting)
+EXPOSURE_RSS: 2.723974; peak RSS 23270170624 bytes (22724776 KB literal)
+THROUGHPUT: 20.97 tok/s eval; regime batch-prefill B=1024; tokens 8192;
+  wall_s 390.655000; ms_per_token 47.687378
+COST: BASELINE
+COST_SPREAD: BASELINE
+CAVEAT: THIS ROW AND CR-007 ARE THE SAME RUN AND DID NOT USE THE SAME MEMORY:
+  19275608064 against 23270170624 bytes resident, a 17.17 percent spread
+  between two runs that computed identical bytes; a paged footprint cannot be
+  promised in advance because nothing enforces it.
+CAVEAT_SOURCE: OB1B-KNEE-1.md section 10.3
+RECEIPT: research/OB1B-KNEE-1.md
+COMMIT: f9335882d849812d4c0b8af606b9b4626c345e38
+---
+
+ID: CR-009
+KIND: ROW
+LEG: LEG-OB5A-120B-K8-LEASED
+MODEL: gpt-oss-120b-MXFP4.gguf; bytes 63387346208; sha256 582bd40f (truncated
+  in the receipt; full hex owed before the cut)
+CONFIG: K=8 of 128 prose-ranked resident sets; mechanism leased, kernel knob
+  vm.overcommit_memory=1; corpus AC-PROSE; tokens 8192
+DEVICE: box f32-HYDE; cpu AMD Ryzen 9 5900X 12c/24t; ram_mb 24029; threads 8;
+  nice 10; gpu hidden, CUDA_VISIBLE_DEVICES empty
+STORE: path /root/openbob-baselines/models/; mount UNSTATED (receipt predates
+  the H-BOX duty); media local NVMe
+STORE_OBS: UNMEASURED (the scout leg reports no read-bucket breakdown; the
+  allocator leg's CR-011 carries the leg's one store observation)
+IDENTITY: identity 9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019;
+  route a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1;
+  matched against the paged pair CR-007 and CR-008, produced a day earlier by
+  a different memory mechanism
+EXPOSURE_ACCT_RESIDENCY: 8.209143 = 63387346208 / 7721554208 [2314020128 +
+  3817082880 + 1590451200]
+EXPOSURE_ACCT_HELD: 8.209143 = 63387346208 / 7721554208 [2314020128 +
+  3817082880 + 1590451200 + 0 + 0]
+EXPOSURE_RSS: 7.009646; peak RSS 9042874368 bytes
+THROUGHPUT: 11.32 tok/s eval; regime batch-prefill B=1024; tokens 8192;
+  wall_s 723.465495823; ms_per_token 88.313659
+COST: 1.7971x p95 of 7 chunk intervals, which IS the maximum sample, worst
+  observed in this leg; baseline pag120-prose-a p95 49619.800502 ms
+COST_SPREAD: 1.7691 1.7898 1.7971 1.7949
+CAVEAT: the engine reports 7 chunk intervals for an 8-chunk run, so this p95
+  IS the maximum sample; tau_0 is an mmap-paged run, not a resident one,
+  because a fully resident 120b baseline is unmeasurable on a 24029 MB box;
+  no latency claim finer than "under 2x" should be read out of these numbers.
+CAVEAT_SOURCE: OB5A-ALLOC-1.md sections 9.1, 9.2, 9.3
+RECEIPT: research/OB5A-SCOUT-1.md
+COMMIT: aa69d1e4862d65572f846e3461111a6ade34d487
+---
+
+ID: CR-010
+KIND: ROW
+LEG: LEG-OB5A-120B-K8-LEASED
+MODEL: gpt-oss-120b-MXFP4.gguf; bytes 63387346208; sha256 582bd40f (truncated
+  in the receipt; full hex owed before the cut)
+CONFIG: K=8 of 128 prose-ranked resident sets; mechanism leased, kernel knob
+  vm.overcommit_memory=1; corpus AC-PROSE; tokens 8192 (A/A repeat of CR-009)
+DEVICE: box f32-HYDE; cpu AMD Ryzen 9 5900X 12c/24t; ram_mb 24029; threads 8;
+  nice 10; gpu hidden, CUDA_VISIBLE_DEVICES empty
+STORE: path /root/openbob-baselines/models/; mount UNSTATED (receipt predates
+  the H-BOX duty); media local NVMe
+STORE_OBS: UNMEASURED (the scout leg reports no read-bucket breakdown)
+IDENTITY: identity 9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019;
+  route a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1;
+  matched against CR-009, its own A/A sibling, exact on both artifacts
+EXPOSURE_ACCT_RESIDENCY: 8.209143 = 63387346208 / 7721554208 [2314020128 +
+  3817082880 + 1590451200]
+EXPOSURE_ACCT_HELD: 8.209143 = 63387346208 / 7721554208 [2314020128 +
+  3817082880 + 1590451200 + 0 + 0]
+EXPOSURE_RSS: 7.011971; peak RSS 9039876096 bytes
+THROUGHPUT: 11.42 tok/s eval; regime batch-prefill B=1024; tokens 8192;
+  wall_s 717.464047541; ms_per_token 87.581060
+COST: 1.7971x p95 of 7 chunk intervals, which IS the maximum sample, worst
+  observed in this leg; baseline pag120-prose-a p95 49619.800502 ms
+COST_SPREAD: 1.7691 1.7898 1.7971 1.7949
+CAVEAT: the A/A RSS spread across this row and CR-009 is 0.0332 percent
+  against paging's 17.17, which is the enforced-footprint signature; the p95
+  in the COST field remains a max-of-7 on a box with a 17.9 percent measured
+  noise floor.
+CAVEAT_SOURCE: OB5A-SCOUT-1.md section 4 (RSS), OB5A-ALLOC-1.md section 9.1
+RECEIPT: research/OB5A-SCOUT-1.md
+COMMIT: aa69d1e4862d65572f846e3461111a6ade34d487
+---
+
+ID: CR-011
+KIND: ROW
+LEG: LEG-OB5A-120B-K8-LEASED
+MODEL: gpt-oss-120b-MXFP4.gguf; bytes 63387346208; sha256 582bd40f (truncated
+  in the receipt; full hex owed before the cut)
+CONFIG: K=8 of 128 prose-ranked resident sets; mechanism leased, resident-
+  proportional allocator, no kernel knob; corpus AC-PROSE; tokens 8192
+DEVICE: box f32-HYDE; cpu AMD Ryzen 9 5900X 12c/24t; ram_mb 24029; threads 8;
+  nice 10; gpu hidden, CUDA_VISIBLE_DEVICES empty
+STORE: path /root/openbob-baselines/models/; mount UNSTATED (receipt predates
+  the H-BOX duty); media local NVMe
+STORE_OBS: bytes_moved 363192785280; read_bucket_s 286.711586; derived rate
+  1266753082 B/s RECOMPUTED HERE = 363192785280 / 286.711586, which the
+  receipt states as 1.267 GB/s
+IDENTITY: identity 9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019;
+  route a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1;
+  matched against the paged pair CR-007 and CR-008 and against the knob pair
+  CR-009 and CR-010: four leased runs, two allocation strategies, one output
+EXPOSURE_ACCT_RESIDENCY: 8.209143 = 63387346208 / 7721554208 [2314020128 +
+  3817082880 + 1590451200]
+EXPOSURE_ACCT_HELD: 8.209143 = 63387346208 / 7721554208 [2314020128 +
+  3817082880 + 1590451200 + 0 + 0]
+EXPOSURE_RSS: 7.016348; peak RSS 9034235904 bytes
+THROUGHPUT: 11.33 tok/s eval; regime batch-prefill B=1024; tokens 8192;
+  wall_s 723.056845679; ms_per_token 88.263775
+COST: 1.7971x p95 of 7 chunk intervals, which IS the maximum sample, worst
+  observed in this leg; baseline pag120-prose-a p95 49619.800502 ms
+COST_SPREAD: 1.7691 1.7898 1.7971 1.7949
+CAVEAT: one model, one corpus, one K at 120b scale; the K-sweep that produced
+  the 20b knee does not exist at 120b scale and was never in this leg's
+  scope, so the 8.209143 is a point, not a curve.
+CAVEAT_SOURCE: OB5A-ALLOC-1.md section 9.4
+RECEIPT: research/OB5A-ALLOC-1.md
+COMMIT: 72c5105b155572266f8c4321cf4af5783f3049d4
+---
+
+ID: CR-012
+KIND: ROW
+LEG: LEG-OB5A-120B-K8-LEASED
+MODEL: gpt-oss-120b-MXFP4.gguf; bytes 63387346208; sha256 582bd40f (truncated
+  in the receipt; full hex owed before the cut)
+CONFIG: K=8 of 128 prose-ranked resident sets; mechanism leased, resident-
+  proportional allocator, no kernel knob; corpus AC-PROSE; tokens 8192 (A/A
+  repeat of CR-011)
+DEVICE: box f32-HYDE; cpu AMD Ryzen 9 5900X 12c/24t; ram_mb 24029; threads 8;
+  nice 10; gpu hidden, CUDA_VISIBLE_DEVICES empty
+STORE: path /root/openbob-baselines/models/; mount UNSTATED (receipt predates
+  the H-BOX duty); media local NVMe
+STORE_OBS: UNMEASURED (the receipt gives the read-bucket breakdown for run a
+  only; CR-011 carries it)
+IDENTITY: identity 9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019;
+  route a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1;
+  matched against CR-011, its own A/A sibling, exact on both artifacts
+EXPOSURE_ACCT_RESIDENCY: 8.209143 = 63387346208 / 7721554208 [2314020128 +
+  3817082880 + 1590451200]
+EXPOSURE_ACCT_HELD: 8.209143 = 63387346208 / 7721554208 [2314020128 +
+  3817082880 + 1590451200 + 0 + 0]
+EXPOSURE_RSS: 7.014962; peak RSS 9036021760 bytes
+THROUGHPUT: 11.33 tok/s eval; regime batch-prefill B=1024; tokens 8192;
+  wall_s 723.344961536; ms_per_token 88.298946
+COST: 1.7971x p95 of 7 chunk intervals, which IS the maximum sample, worst
+  observed in this leg; baseline pag120-prose-a p95 49619.800502 ms
+COST_SPREAD: 1.7691 1.7898 1.7971 1.7949
+CAVEAT: timing is per 1024-token chunk, not per token, so the ms_per_token
+  figure in the THROUGHPUT field is an average within a batch and not a
+  per-token latency; CPU only, 8 threads, nice 10, GPU hidden.
+CAVEAT_SOURCE: OB1B-KNEE-1.md section 11, deviation D3
+RECEIPT: research/OB5A-ALLOC-1.md
+COMMIT: 72c5105b155572266f8c4321cf4af5783f3049d4
+---
+
+ID: CC-001
+KIND: CLAIM
+LEG: LEG-OB5A-120B-K8-LEASED
+WHAT: the allocation that leasing exists to avoid is gone
+VALUE: 102.9918x reduction in peak single model-state commit
+DERIVATION: 63374323968 / 615333888 = 102.9918, the request that killed the
+  run on 2026-08-31 against the peak single commit the allocator now takes;
+  ceiling 1073741824, so no request of 63374323968 bytes of any kind remains
+COST: UNMEASURED (this claim publishes no cost figure)
+COST_SPREAD: UNMEASURED (this claim publishes no cost figure)
+CAVEAT: this is a peak-single-allocation figure, not a total footprint
+  figure; the run's whole-process peak RSS is still 9034235904 bytes and is
+  published in CR-011.
+CAVEAT_SOURCE: OB5A-ALLOC-1.md section 6.1 (P2b)
+RECEIPT: research/OB5A-ALLOC-1.md
+COMMIT: 72c5105b155572266f8c4321cf4af5783f3049d4
+---
+
+ID: CC-002
+KIND: CLAIM
+LEG: LEG-ENFORCED-VS-EMERGENT
+WHAT: the enforced footprint against the emergent one, the exhibit's centre
+VALUE: paged A/A footprint spread 17.17 percent; leased A/A spread 0.1765
+  percent same night same box; leased A/A spread 0.0022 percent on OB-1's
+  three K=16 runs; leased A/A spread 0.0332 percent on the 120b under the
+  knob
+DERIVATION: paged 19275608064 against 23270170624 bytes on two runs with
+  byte-identical output; leased 3583856640 against 3577532416 on two runs
+  with byte-identical output and lease counters identical to the event;
+  OB-1's 8434827264 / 8434642944 / 8434708480; 120b 9042874368 against
+  9039876096
+COST: UNMEASURED (this claim publishes no cost figure)
+COST_SPREAD: UNMEASURED (this claim publishes no cost figure)
+CAVEAT: ordinary mmap paging reaches a similar-looking exposure on the 120b,
+  3.29x, for free and with no engine at all; the claim is not that leasing
+  wins on exposure, it is that the leased footprint is enforced and the
+  paged one is whatever the page cache happened to retain.
+CAVEAT_SOURCE: OB1B-KNEE-1.md section 10.3
+RECEIPT: research/OB1B-KNEE-1.md
+COMMIT: f9335882d849812d4c0b8af606b9b4626c345e38
+---
+
+ID: CC-003
+KIND: CLAIM
+LEG: LEG-OB1B-20B-8T-LEASED
+WHAT: the 20b exposure curve across residency, and the verdict on the knee
+VALUE: 1.674400 at K=16, 2.526252 at K=8, 3.388101 at K=4, 4.084898 at K=2,
+  4.553092 at K=1, 5.142505 at K=0; identity exact at every point
+DERIVATION: 12109566624 divided by ACCT 7232182944 / 4793491104 / 3574145184
+  / 2964472224 / 2659635744 / 2354799264 respectively, each ACCT the sum of
+  resident_always 1930678944, K x 24 x 13253760, and that run's own peak
+  concurrent lease bytes
+COST: UNMEASURED (this claim publishes no cost figure of its own; the leg's
+  cost is published in CR-004 through CR-006)
+COST_SPREAD: UNMEASURED (see CR-004 through CR-006)
+CAVEAT: the knee was not found and on this model it does not exist, because
+  K=0 is the end of the curve and 82.0 percent of what remains resident at
+  K=0 is not expert weights at all; the ceiling 5.142505 on the 20b and
+  15.805342 on the 120b are set by that always-resident trunk, and attacking
+  it is an open design question, not a result.
+CAVEAT_SOURCE: OB1B-KNEE-1.md sections 4, 7, 8
+RECEIPT: research/OB1B-KNEE-1.md
+COMMIT: f9335882d849812d4c0b8af606b9b4626c345e38
+---
+
+ID: CC-004
+KIND: CLAIM
+LEG: LEG-CROSS-SCALE
+WHAT: the exposure slope between the two scales, with its own limit attached
+VALUE: 2.0096x, from 4.084898 (20b K=2) to 8.209143 (120b K=8) at matched
+  6.25 percent resident fraction
+DERIVATION: 8.209143 / 4.084898 = 2.0096 RECOMPUTED HERE, while N grows
+  5.2345x (63387346208 / 12109566624) and ACCT grows 2.6047x (7721554208 /
+  2964472224)
+COST: UNMEASURED (this claim publishes no cost figure)
+COST_SPREAD: UNMEASURED (this claim publishes no cost figure)
+CAVEAT: two points are a slope, not a law; there is no K-sweep at 120b scale
+  and no third scale, so nothing here licenses extrapolation to a model this
+  house has not run.
+CAVEAT_SOURCE: OB5A-ALLOC-1.md section 8
+RECEIPT: research/OB5A-ALLOC-1.md
+COMMIT: 72c5105b155572266f8c4321cf4af5783f3049d4
+---
+
+ID: CC-005
+KIND: CLAIM
+LEG: LEG-OB5A-120B-K8-LEASED
+WHAT: the refuted prediction, published because it was refuted
+VALUE: predicted lease overhead 318.586 s, measured 465.234 s, delta
+  +146.648 s, +46.03 percent
+DERIVATION: read predicted 147.325 s measured 286.711586 s; verify predicted
+  145.300 s measured 154.163691 s; drop predicted 24.171 s measured
+  24.358835 s; mprotect predicted 1.790 s measured +2.340 s; the whole miss
+  is in READ, which came in at 1.267 GB/s against the 20b's 2.465 GB/s that
+  the prediction was derived from
+COST: UNMEASURED (this claim publishes no cost ratio; it publishes a miss)
+COST_SPREAD: UNMEASURED (this claim publishes no cost ratio)
+CAVEAT: the prediction was explicitly not a bar, so nothing failed here; it
+  is published because a house that only shows its hits cannot be checked,
+  and because the miss localizes entirely to a read rate carried from a
+  different scale.
+CAVEAT_SOURCE: OB5A-ALLOC-1.md section 10 (F-B3-1)
+RECEIPT: research/OB5A-ALLOC-1.md
+COMMIT: 72c5105b155572266f8c4321cf4af5783f3049d4
+---
+
+ID: CC-006
+KIND: CLAIM
+LEG: LEG-OB2-DYNAMIC
+WHAT: dynamic counters against their own counterfactual replay
+VALUE: cross-domain miss 60.5733 percent static to 14.3759 percent dynamic at
+  K=16 on code, with the engine matching its own simulator at +0.0000
+  percentage points
+DERIVATION: -46.1974 percentage points absolute, 76.3 percent relative, on
+  the same live route log; the +0.0000 column is the engine's measured miss
+  minus the simulator's predicted miss on the same run
+COST: 1.6488x p95, worst observed in this leg; baseline OB-1's banked
+  resident control
+COST_SPREAD: 1.6143 1.6424 1.4188 1.6488 1.6173
+CAVEAT: one model, two corpora, one policy family; the +0.0000 agreement is
+  between an engine and a simulator this house wrote, which is a consistency
+  result and not an independent check.
+CAVEAT_SOURCE: OB2-PREDICTIVE-1.md section 5
+RECEIPT: research/OB2-PREDICTIVE-1.md
+COMMIT: ed18bba6bf5503bea3c3886aa62bc8cd160b8bd0
+---
+
+ID: CC-007
+KIND: CLAIM
+LEG: LEG-OB3-REGION
+WHAT: region selection against its own counterfactual, on held-out bytes
+VALUE: held-out cross-domain miss 58.5814 percent to 16.9796 percent, a 3.45x
+  reduction; SET-MIX at 24.4677 percent shows switching beats merging
+DERIVATION: 41.6018 percentage points absolute on AC-CODE2, held out; SET-
+  PROSE is OB-1's static prose-ranked set replayed as the counterfactual,
+  SET-CODE is this leg's detector-selected set, SET-MIX is a pooled ranking
+  with no switching, all three on the same live route log at K=16
+COST: UNMEASURED (this claim publishes no cost figure)
+COST_SPREAD: UNMEASURED (this claim publishes no cost figure)
+CAVEAT: prose and code corpora only, not git or mail or scheduling
+  workloads, so the domain prior is favourable but is not proof that region
+  selection transfers to a task family this house has not measured.
+CAVEAT_SOURCE: OB5-DESIGN-C7-1.md section 8.3 (H-DOMAIN)
+RECEIPT: research/OB3-REGION-1.md
+COMMIT: NOT-ON-THIS-BRANCH b3fa1a45f2b81390e32430a741de9aaa509b86fc
+---
+
+ID: CC-008
+KIND: CLAIM
+LEG: LEG-OB4-SERIAL-DECODE
+WHAT: the compressed store, its ratio and its verified decode
+VALUE: pooled stored/raw ratio 0.9182230416359207 with index, 4608 of 4608
+  container rows decode-verified and sha256-matched
+DERIVATION: container plus index 9346489206 bytes RECOMPUTED HERE =
+  10178887680 raw expert bytes minus 832398474 bytes saved; container alone
+  ratio 0.9181917989294485, so the index is 318016 bytes RECOMPUTED HERE
+COST: 1.8310x p95 against this build's own freshly-run resident control
+  15640.098009 ms, worst observed in this leg; baseline that control
+COST_SPREAD: 1.7346 1.8310
+CAVEAT: 0.781608 of B_orig but 0.987243 of xz -9e; the ratio as a fraction
+  of public size cannot come from entropy coding trits, and an honest "MXFP4
+  barely compresses" is the result, reported and not scored.
+CAVEAT_SOURCE: OB5-DESIGN-C7-1.md section 3.3 (the DOSSIER-SPEC-F32-1 C2
+  honesty clause)
+RECEIPT: research/OB4-REMAT-1.md
+COMMIT: NOT-ON-THIS-BRANCH 9ae09a8d9a034ffe632f738bb2866aaf73ece42f
+---
+
+ID: CC-009
+KIND: CLAIM
+LEG: LEG-OB4B-PARDEC
+WHAT: pooled decode makes the verified compressed path cheaper than the raw
+  pread path
+VALUE: p95 against its own resident control falls from 1.8310x serial to
+  1.2407x with an 8-way decode pool, against OB-1's raw pread path at 1.5139x
+DERIVATION: p95 19404.681527 ms and 19387.119691 ms against the control
+  15640.098009 ms; the serial figures were 27128.973022 ms and 28637.733919
+  ms against the same control
+COST: 1.2407x p95, worst observed in this leg; baseline this build's own
+  resident control 15640.098009 ms
+COST_SPREAD: 1.2396 1.2407
+CAVEAT: the comparison against OB-1's 1.5139x crosses legs and thread
+  regimes and is a reading, not a bar; the bar this leg was scored against is
+  OB-4's own serial figure on the same box.
+CAVEAT_SOURCE: OB4B-PARDEC-1.md section 7
+RECEIPT: research/OB4B-PARDEC-1.md
+COMMIT: NOT-ON-THIS-BRANCH 4d498d67102b2e0e24ee07bacb6be39349f85bd2
+---
+
+ID: CC-010
+KIND: CLAIM
+LEG: LEG-IDENTITY
+WHAT: output identity across residency levels, thread counts and binaries
+VALUE: 21 runs across 6 values of K, 2 thread counts and 2 binaries produce 4
+  distinct digests in total, one identity and one route per corpus
+DERIVATION: OB-1's 12 runs plus OB-1b's 9; the prose set shares identity
+  96049ccf and route 4777aa83, the code set shares 9acdf5ef and f0c3f341,
+  each re-derived by the receipt's own independent hashing pass
+COST: UNMEASURED (this claim publishes no cost figure)
+COST_SPREAD: UNMEASURED (this claim publishes no cost figure)
+CAVEAT: every run in that set is the same box and the same CPU
+  microarchitecture; cross-machine byte identity is UNMEASURED, so "the same
+  bytes, every time" is a same-machine-class claim until C7 kill line K1 is
+  measured.
+CAVEAT_SOURCE: OB5-DESIGN-C7-1.md section 11 (K1)
+RECEIPT: research/OB1B-KNEE-1.md
+COMMIT: f9335882d849812d4c0b8af606b9b4626c345e38
+---
+
+ID: CC-013
+KIND: CLAIM
+LEG: LEG-IDENTITY
+WHAT: trajectory identity, which is the claim about the execution path
+VALUE: 9 of 9 leased runs byte-identical on the 786432-line route log, at
+  every K, on both corpora
+DERIVATION: the route log is 24 layers x 32768 tokens x 4 router picks per
+  token; the same nine runs also match on the perplexity-chunk artifact, and
+  the leg re-hashed both from the off-repo run bytes rather than copying the
+  builder's own digests
+COST: UNMEASURED (this claim publishes no cost figure)
+COST_SPREAD: UNMEASURED (this claim publishes no cost figure)
+CAVEAT: output identity is a claim other systems can approximate with a
+  temperature of zero; this is a claim about the routing path, and it is
+  banked beside the output digest, not instead of it. It is measured on one
+  model family, on one box.
+CAVEAT_SOURCE: OB5-DESIGN-C7-1.md section 8.1
+RECEIPT: research/OB1-EXPOSURE-1.md
+COMMIT: f9efa23b033e01f56aef2ee5da70a0372167ed92
+---
+
+ID: CC-014
+KIND: CLAIM
+LEG: LEG-IDENTITY
+WHAT: every weight byte that entered the computation was checked first
+VALUE: 4608 manifest rows on the 20b; 27403 digest-verified leases on the
+  measured 120b row
+DERIVATION: lease_bytes_read 363192785280 = 27403 x 13253760 re-derived from
+  the raw counters; the manifest row count 4608 = 24 layers x 32 experts x 6
+  tensor kinds, re-counted from the committed manifest file
+COST: UNMEASURED (this claim publishes no cost figure)
+COST_SPREAD: UNMEASURED (this claim publishes no cost figure)
+CAVEAT: verification is against a manifest this house built from the model
+  file it holds; it proves the bytes that executed are the bytes in that
+  manifest, not that the manifest matches any upstream publisher's.
+CAVEAT_SOURCE: OB5-DESIGN-C7-1.md section 8.3
+RECEIPT: research/OB1-EXPOSURE-1.md
+COMMIT: f9efa23b033e01f56aef2ee5da70a0372167ed92
+---
+
+ID: CC-015
+KIND: CLAIM
+LEG: LEG-OB5A-120B-K8-LEASED
+WHAT: the same bytes out of three different memory mechanisms
+VALUE: 4 runs, 2 allocation strategies, 1 output; and the mmap-paged pair a
+  day earlier produced the same 2 digests by a third mechanism
+DERIVATION: the knob rows CR-009 and CR-010, the allocator rows CR-011 and
+  CR-012, and the paged rows CR-007 and CR-008 all hash to identity 9d20bd03
+  and route a32d0051, and all four leased runs report lease_events 27403,
+  peak_concurrent_lease_bytes 1590451200 and lease_bytes_read 363192785280
+COST: UNMEASURED (this claim publishes no cost figure)
+COST_SPREAD: UNMEASURED (this claim publishes no cost figure)
+CAVEAT: three mechanisms on one box and one build; this is a cross-mechanism
+  result, not a cross-machine one, and the cross-machine measurement has not
+  been made.
+CAVEAT_SOURCE: OB5A-ALLOC-1.md section 7
+RECEIPT: research/OB5A-ALLOC-1.md
+COMMIT: 72c5105b155572266f8c4321cf4af5783f3049d4
+---
+
+ID: CC-011
+KIND: CLAIM
+LEG: LEG-OB5A-120B-K8-LEASED
+WHAT: the row a hostile reader computes anyway, published first
+VALUE: paging runs the same 120b at 19.97 to 20.97 tok/s eval and the leased
+  path runs it at 11.32 to 11.42; leasing costs 1.7623x to 1.8509x the paged
+  wall clock
+DERIVATION: 723.056845679 / 410.282 = 1.7623 and 723.056845679 / 390.655 =
+  1.8509, both RECOMPUTED HERE, on the same box, the same model, the same
+  corpus, the same thread count, with byte-identical output
+COST: UNMEASURED (this claim publishes a wall-clock ratio, not a p95 cost
+  figure; the leg's p95 cost is published in CR-009 through CR-012)
+COST_SPREAD: UNMEASURED (see CR-009 through CR-012)
+CAVEAT: PAGING IS FASTER THAN LEASING ON THIS POINT. What leasing buys is
+  not speed: it is an enforced footprint that reproduces to 0.0332 percent
+  where paging's varied 17.17, and 27403 leases every one of which was
+  digest-verified before its bytes entered the computation.
+CAVEAT_SOURCE: OB5-DESIGN-C7-1.md section 3.2
+RECEIPT: research/OB5-DESIGN-C7-1.md
+COMMIT: 3d8f0e91081812a19547ccbe682ac49262592dc2
+---
+
+ID: CC-012
+KIND: CLAIM
+LEG: LEG-OB1B-20B-8T-LEASED
+WHAT: the leasing tax, stated within one leg only
+VALUE: 1.4291x wall clock on prose and 1.4582x to 1.4952x on code, at K=0
+  against this leg's own 8-thread resident baselines
+DERIVATION: 916.076807 / 641.015 = 1.4291; 923.879122 / 633.580 = 1.4582;
+  947.302172 / 633.580 = 1.4952; all RECOMPUTED HERE
+COST: UNMEASURED (this claim publishes a wall-clock ratio, not a p95 cost
+  figure; the leg's p95 cost is published in CR-004 through CR-006)
+COST_SPREAD: UNMEASURED (see CR-004 through CR-006)
+CAVEAT: the 1.67x figure a reader gets by dividing 59.68 by 35.77 mixes a
+  10-thread run with 8-thread runs and does not publish; output bytes are
+  comparable across those two legs, time is not.
+CAVEAT_SOURCE: OB1B-KNEE-1.md section 5, deviation D1
+RECEIPT: research/OB1B-KNEE-1.md
+COMMIT: f9335882d849812d4c0b8af606b9b4626c345e38
+---

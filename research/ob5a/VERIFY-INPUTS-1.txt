@@ -1,0 +1,62 @@
+== INPUTS WITH A PRIOR EXPECTATION ==
+  OK    /mnt/f/f32/stage/research/ob1b/runs/pag120-prose-a/identity.txt
+        size   89
+        sha256 9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019
+        expect 9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019   (OB1B-KNEE-1.md s10.2 identity (A and B identical))
+  OK    /mnt/f/f32/stage/research/ob1b/runs/pag120-prose-a/route.log
+        size   5954219
+        sha256 a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1
+        expect a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1   (OB1B-KNEE-1.md s10.2 route (A and B identical))
+  OK    /mnt/f/f32/stage/research/ob1b/runs/pag120-prose-b/identity.txt
+        size   89
+        sha256 9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019
+        expect 9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019   (OB1B-KNEE-1.md s10.2 identity (A/A repeat))
+  OK    /mnt/f/f32/stage/research/ob1b/runs/pag120-prose-b/route.log
+        size   5954219
+        sha256 a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1
+        expect a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1   (OB1B-KNEE-1.md s10.2 route (A/A repeat))
+  OK    /mnt/f/f32/stage/research/rs053/runs/120b-prose-a/route.log
+        size   12176641
+        sha256 5aa8464d3c71a73648c2323456d656cd40cfcf9dc88b603e1f10da69f9efa129
+        expect 5aa8464d3c71a73648c2323456d656cd40cfcf9dc88b603e1f10da69f9efa129   (RESIDENT-SETS-120B-K8.json source_route_log_sha256 (the RANKING corpus))
+  OK    /root/openbob-baselines/models/gpt-oss-120b-MXFP4.gguf
+        size   63387346208
+        sha256 582bd40f6886200101f4c4ed9f25f3fe80cc14c86e9e2b37746cd8904a0c622d
+        expect 582bd40f   (house rules prefix only)
+  OK    /root/openbob-baselines/models/gpt-oss-20b-MXFP4.gguf
+        size   12109566624
+        sha256 27cd6c432c7672cb812a92f611cf3ba7bbc35928262bb1e1253ff4ee6ae35901
+        expect 27cd6c43   (house rules prefix only)
+
+== INPUTS HASHED FOR THE RECORD ==
+  /mnt/f/f32/openbob-wt/research-2/research/ob1b/RESIDENT-SETS-120B-K8.json
+        size   39334
+        sha256 8053f18a70030ad2ac2e59fe220a064ee26f35ad4eb3876bbb7c65f6e994530b
+  /mnt/f/f32/openbob-wt/research-2/research/ob1b/EXPERT-MANIFEST-120B.sha256
+        size   3015642
+        sha256 c71ce2ceec07db8932c8bbb3155029ca5f6b49b940dc46066240b2a47dbf1c80
+  /mnt/f/f32/stage/research/ob1/AC-PROSE.txt
+        size   262144
+        sha256 310710a1f3e04484fcef2d0cb4ac1de93a8a6e02ced07ed3f2c9b79505e81a8e
+  /mnt/f/f32/stage/research/ob1/AC-CODE.txt
+        size   1576144
+        sha256 d2db5c682d5f52a4383d188fee9d25f592a15d69763dbf886b5614c953e7f3fc
+
+== THE 20b REGRESSION TARGETS (P1), VERIFIED REACHABLE TODAY ==
+  Each of these already-landed artifacts must be reproduced BYTE FOR
+  BYTE by the new allocator. If one of them does not hash to its
+  banked value right now, the regression is broken before it starts.
+  OK    lease-k0-prose/identity.txt                    96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925
+  OK    lease-k0-prose/route.log                       4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df
+  OK    res8-code-a/identity.txt                       9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8
+  OK    res8-code-a/route.log                          f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77
+  OK    res8-prose-a/identity.txt                      96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925
+  OK    res8-prose-a/route.log                         4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df
+
+== THE FOUR BANKED 20b DIGESTS, RESTATED (STOP-SHIP under P1) ==
+  prose identity 96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925
+  prose route    4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df
+  code  identity 9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8
+  code  route    f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77
+
+VERIFY_INPUTS_FAILURES=0

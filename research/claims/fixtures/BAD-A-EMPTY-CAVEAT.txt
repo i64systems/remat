@@ -1,0 +1,40 @@
+# FIXTURE A: AN EMPTY CAVEAT (C7 section 3.3, bar a)
+#
+# A DELIBERATELY MALFORMED FIXTURE. It exists to prove that
+# research/claims/claims_check.py refuses this defect, by name and
+# with a non-zero exit. It is never assembled into a cut.
+# Pure ASCII, LF endings.
+
+ID: CR-011
+KIND: ROW
+LEG: LEG-OB5A-120B-K8-LEASED
+MODEL: gpt-oss-120b-MXFP4.gguf; bytes 63387346208; sha256 582bd40f (truncated
+  in the receipt; full hex owed before the cut)
+CONFIG: K=8 of 128 prose-ranked resident sets; mechanism leased, resident-
+  proportional allocator, no kernel knob; corpus AC-PROSE; tokens 8192
+DEVICE: box f32-HYDE; cpu AMD Ryzen 9 5900X 12c/24t; ram_mb 24029; threads 8;
+  nice 10; gpu hidden, CUDA_VISIBLE_DEVICES empty
+STORE: path /root/openbob-baselines/models/; mount UNSTATED (receipt predates
+  the H-BOX duty); media local NVMe
+STORE_OBS: bytes_moved 363192785280; read_bucket_s 286.711586; derived rate
+  1266753082 B/s RECOMPUTED HERE = 363192785280 / 286.711586, which the
+  receipt states as 1.267 GB/s
+IDENTITY: identity 9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019;
+  route a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1;
+  matched against the paged pair CR-007 and CR-008 and against the knob pair
+  CR-009 and CR-010: four leased runs, two allocation strategies, one output
+EXPOSURE_ACCT_RESIDENCY: 8.209143 = 63387346208 / 7721554208 [2314020128 +
+  3817082880 + 1590451200]
+EXPOSURE_ACCT_HELD: 8.209143 = 63387346208 / 7721554208 [2314020128 +
+  3817082880 + 1590451200 + 0 + 0]
+EXPOSURE_RSS: 7.016348; peak RSS 9034235904 bytes
+THROUGHPUT: 11.33 tok/s eval; regime batch-prefill B=1024; tokens 8192;
+  wall_s 723.056845679; ms_per_token 88.263775
+COST: 1.7971x p95 of 7 chunk intervals, which IS the maximum sample, worst
+  observed in this leg; baseline pag120-prose-a p95 49619.800502 ms
+COST_SPREAD: 1.7691 1.7898 1.7971 1.7949
+CAVEAT:
+CAVEAT_SOURCE: OB5A-ALLOC-1.md section 9.4
+RECEIPT: research/OB5A-ALLOC-1.md
+COMMIT: 72c5105b155572266f8c4321cf4af5783f3049d4
+---

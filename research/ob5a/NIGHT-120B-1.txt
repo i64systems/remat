@@ -1,0 +1,143 @@
+########## OB5A NIGHT 120B P3 2026-09-01T15:09:03Z ##########
+box state before anything:
+  vm.overcommit_memory 1
+  vm.overcommit_ratio  50
+  vm.max_map_count     1048576
+  guard_pids: 1 openbob(654), 1 searxng(489)
+banked paged reference identity 9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019
+banked paged reference route    a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1
+=== run A rc=0 ===
+expect_identity: 9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019
+expect_route:    a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1
+overcommit_at_run: 0
+exit_rc 0
+wallclock_s 723.056845679
+overcommit_after_run: 0
+oom_score_adj_measured: pid 1068931 -> 1000  oom_score 1332
+	Maximum resident set size (kbytes): 8822496
+	Maximum resident set size (kbytes): 8822496
+  identity: MATCH   9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019
+  route:    MATCH   a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1
+--- P4c: the printed journal digest must equal sha256 of the journal FILE ---
+  P4c: MATCH
+=== run B rc=0 ===
+expect_identity: 9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019
+expect_route:    a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1
+overcommit_at_run: 0
+exit_rc 0
+wallclock_s 723.344961536
+overcommit_after_run: 0
+oom_score_adj_measured: pid 1069582 -> 1000  oom_score 1332
+	Maximum resident set size (kbytes): 8824240
+	Maximum resident set size (kbytes): 8824240
+  identity: MATCH   9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019
+  route:    MATCH   a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1
+--- P4c: the printed journal digest must equal sha256 of the journal FILE ---
+  P4c: MATCH
+########## P3e THE A/A COMPARISON ##########
+A/A identity.txt: MATCH (byte for byte)
+A/A route.log: MATCH (byte for byte)
+digests:
+9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019  /root/ob5a/runs/p3-120b-k8-prose-a/identity.txt
+9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019  /root/ob5a/runs/p3-120b-k8-prose-b/identity.txt
+a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1  /root/ob5a/runs/p3-120b-k8-prose-a/route.log
+a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1  /root/ob5a/runs/p3-120b-k8-prose-b/route.log
+against the banked paged reference:
+  identity 9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019
+  route    a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1
+alloc journal digests (P4b):
+/root/ob5a/runs/p3-120b-k8-prose-a/ob1-stats.txt:alloc_journal_sha256=ff7c4b1d851cb57f4243ce9d5251166e6484aec3bca80841c205af30dc308d76
+/root/ob5a/runs/p3-120b-k8-prose-b/ob1-stats.txt:alloc_journal_sha256=ff7c4b1d851cb57f4243ce9d5251166e6484aec3bca80841c205af30dc308d76
+########## STATS A ##########
+ob1_mode=lease
+ob1_k=8
+ob1_sha_impl=sha-ni
+ob1_fadvise=0
+layers=36
+experts=128
+manifest_rows=27648
+registered_expert_tensors=216
+resident_slices_loaded=1728
+resident_bytes_loaded=3817082880
+resident_read_ns=3977676112
+resident_verify_ns=1622534323
+lease_events=27403
+lease_bytes_read=363192785280
+lease_read_ns=286711586002
+lease_verify_ns=154163690977
+lease_drop_bytes=361453068288
+lease_drop_ns=24358834957
+peak_concurrent_lease_bytes=1590451200
+route_calls=288
+process_ns_since_ob1_init=706969620603
+per_layer_lease_events=957,918,863,812,811,822,862,837,781,727,666,642,643,656,760,763,706,740,749,776,751,715,703,718,740,770,750,762,783,760,784,848,776,726,682,644
+chunk_count=7
+chunk_ns=89174158085,87108472582,85932024606,87317006355,86867462830,86506527103,86457239969
+alloc_reserve_mode=1
+alloc_page_size=4096
+alloc_regions_live=0
+alloc_va_model_bytes=63374323968
+alloc_commit_peak_single=615333888
+alloc_commit_model_peak=7806517248
+alloc_commit_total_bytes=369961222144
+alloc_commit_calls=166617
+alloc_decommit_calls=163920
+alloc_decommit_bytes=361453068288
+alloc_commit_live_at_exit=0
+alloc_vma_peak=48962
+alloc_journal_records=330537
+alloc_journal_bytes=9404962
+alloc_journal_sha256=ff7c4b1d851cb57f4243ce9d5251166e6484aec3bca80841c205af30dc308d76
+lease_active_slices_at_exit=498
+proc_vmpeak_kb=65029360
+proc_vmsize_kb=1408200
+proc_vmhwm_kb=8822496
+proc_vmrss_kb=240508
+########## STATS B ##########
+ob1_mode=lease
+ob1_k=8
+ob1_sha_impl=sha-ni
+ob1_fadvise=0
+layers=36
+experts=128
+manifest_rows=27648
+registered_expert_tensors=216
+resident_slices_loaded=1728
+resident_bytes_loaded=3817082880
+resident_read_ns=4605139604
+resident_verify_ns=1678865633
+lease_events=27403
+lease_bytes_read=363192785280
+lease_read_ns=285636425268
+lease_verify_ns=153891838256
+lease_drop_bytes=361453068288
+lease_drop_ns=24238895744
+peak_concurrent_lease_bytes=1590451200
+route_calls=288
+process_ns_since_ob1_init=706920167355
+per_layer_lease_events=957,918,863,812,811,822,862,837,781,727,666,642,643,656,760,763,706,740,749,776,751,715,703,718,740,770,750,762,783,760,784,848,776,726,682,644
+chunk_count=7
+chunk_ns=89061081299,88265724080,87257903396,87166688735,85774546781,86111023917,86028580044
+alloc_reserve_mode=1
+alloc_page_size=4096
+alloc_regions_live=0
+alloc_va_model_bytes=63374323968
+alloc_commit_peak_single=615333888
+alloc_commit_model_peak=7806517248
+alloc_commit_total_bytes=369961222144
+alloc_commit_calls=166617
+alloc_decommit_calls=163920
+alloc_decommit_bytes=361453068288
+alloc_commit_live_at_exit=0
+alloc_vma_peak=48960
+alloc_journal_records=330537
+alloc_journal_bytes=9404962
+alloc_journal_sha256=ff7c4b1d851cb57f4243ce9d5251166e6484aec3bca80841c205af30dc308d76
+lease_active_slices_at_exit=498
+proc_vmpeak_kb=64832752
+proc_vmsize_kb=1342664
+proc_vmhwm_kb=8824240
+proc_vmrss_kb=231640
+overcommit_final: 0
+guard_pids_final: 1 openbob, 1 searxng
+########## NIGHT 120B DONE 2026-09-01T15:45:17Z rc_a=0 rc_b=0 ##########

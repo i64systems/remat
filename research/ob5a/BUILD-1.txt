@@ -1,0 +1,138 @@
+=== OB5A BUILD ===
+utc_start 2026-09-01T13:32:17Z
+guard_pids: 1 openbob, 1 searxng
+--- the two references ---
+1aabf8b7b34b5edcdcd808ac5a600f421a1ddcd29995b2b26fee59425ef3dd35  /root/rs053/llama.cpp/build/bin/libllama.so.0
+7bc5a90641332df91e8905290d8e447ba8c2cd5b1ce304f9aebc746a58b6308f  /root/rs053/llama.cpp/build/bin/libggml-base.so.0
+31f3ceb72af8f73a5fbb185447da64ecd8e1a441c2424494c0974189ec924d28  /root/rs053/llama.cpp/build/bin/llama-perplexity
+bfa8166ed641ea664e559af5402d56ef580fc6f90cc226d0b5859d6e023b37b0  /root/ob1b/llama.cpp/build/bin/libllama.so.0
+7bc5a90641332df91e8905290d8e447ba8c2cd5b1ce304f9aebc746a58b6308f  /root/ob1b/llama.cpp/build/bin/libggml-base.so.0
+1772264971eb456bf6a60d5204c48fb96eeb5a9b026c42ea1dd6f3690b192932  /root/ob1b/llama.cpp/build/bin/llama-perplexity
+--- runpath, the one string that must differ between trees ---
+ 0x000000000000001d (RUNPATH)            Library runpath: [/root/rs053/llama.cpp/build/bin:]
+ 0x000000000000001d (RUNPATH)            Library runpath: [/root/ob1b/llama.cpp/build/bin:]
+--- restore pristine source in the ob5a tree (all five files this leg touches) ---
+guard line as checked out:
+719:    if (g_K <= 0 || g_K > g_E) ob1_fatal("OB1_K=%d out of range 1..%d", g_K, g_E);
+--- copy the ob1b build tree ---
+--- rewrite absolute source paths in text files only (grep -I skips binaries) ---
+text files referencing old source dir: 648
+remaining after rewrite: 0
+--- cmake reconfigure against the new source root ---
+-- Configuring done (9.9s)
+-- Generating done (0.1s)
+-- Build files have been written to: /root/ob5a/llama.cpp/build
+--- age the checked-out sources so make does not rebuild the world ---
+--- confirm the tree is now fully up to date (make should have nothing to do) ---
+[100%] Built target llama-perplexity
+make[2]: Leaving directory '/root/ob5a/llama.cpp/build'
+make[1]: Leaving directory '/root/ob5a/llama.cpp/build'
+make: Leaving directory '/root/ob5a/llama.cpp/build'
+=== REFERENCE .text DIGESTS ===
+landed   libllama.so.0                .text   2645458 bytes  850e33acf7be0facb41cacc5fb1bcda2a0eeb7c63d6e735fd5bfca3c9d9142ca
+landed   libggml-base.so.0            .text    593261 bytes  b8ef6676f9bbb52bde877778e4f2d4549eb25e296b2ea463c6668dd820744603
+landed   libllama-perplexity-impl.so  .text     99890 bytes  4b0fa347519fd52ab1cf904154bde8d58010406d5117211477c2d5cc71766fc6
+landed   llama-perplexity             .text       249 bytes  091a09c658e8304ee0c002557e3835080c919d53e8ae2d1c23d793810b1629fb
+ob1b     libllama.so.0                .text   2645458 bytes  f0336c94d5f1a7eb2697b171e7d4c0f67b5040e6932cae44dcdf2a3002f04af3
+ob1b     libggml-base.so.0            .text    593261 bytes  b8ef6676f9bbb52bde877778e4f2d4549eb25e296b2ea463c6668dd820744603
+ob1b     libllama-perplexity-impl.so  .text     99890 bytes  4b0fa347519fd52ab1cf904154bde8d58010406d5117211477c2d5cc71766fc6
+ob1b     llama-perplexity             .text       249 bytes  091a09c658e8304ee0c002557e3835080c919d53e8ae2d1c23d793810b1629fb
+=== PHASE A: pristine source, must reproduce the LANDED ob1 engine ===
+make[2]: Leaving directory '/root/ob5a/llama.cpp/build'
+make[1]: Leaving directory '/root/ob5a/llama.cpp/build'
+make: Leaving directory '/root/ob5a/llama.cpp/build'
+phaseA   libllama.so.0                .text   2645458 bytes  850e33acf7be0facb41cacc5fb1bcda2a0eeb7c63d6e735fd5bfca3c9d9142ca
+phaseA   libggml-base.so.0            .text    593261 bytes  b8ef6676f9bbb52bde877778e4f2d4549eb25e296b2ea463c6668dd820744603
+phaseA   libllama-perplexity-impl.so  .text     99890 bytes  4b0fa347519fd52ab1cf904154bde8d58010406d5117211477c2d5cc71766fc6
+phaseA   llama-perplexity             .text       249 bytes  091a09c658e8304ee0c002557e3835080c919d53e8ae2d1c23d793810b1629fb
+=== PHASE B: + the D3 K=0 guard fix, and nothing else ===
+guard edit applied: 1 occurrence replaced
+719:    if (g_K <  0 || g_K > g_E) ob1_fatal("OB1_K=%d out of range 0..%d", g_K, g_E);
+make[2]: Leaving directory '/root/ob5a/llama.cpp/build'
+make[1]: Leaving directory '/root/ob5a/llama.cpp/build'
+make: Leaving directory '/root/ob5a/llama.cpp/build'
+phaseB   libllama.so.0                .text   2645458 bytes  f0336c94d5f1a7eb2697b171e7d4c0f67b5040e6932cae44dcdf2a3002f04af3
+phaseB   libggml-base.so.0            .text    593261 bytes  b8ef6676f9bbb52bde877778e4f2d4549eb25e296b2ea463c6668dd820744603
+phaseB   libllama-perplexity-impl.so  .text     99890 bytes  4b0fa347519fd52ab1cf904154bde8d58010406d5117211477c2d5cc71766fc6
+phaseB   llama-perplexity             .text       249 bytes  091a09c658e8304ee0c002557e3835080c919d53e8ae2d1c23d793810b1629fb
+=== PHASE C: + the OB-5a reserve/commit allocator ===
+patched ggml/src/ggml-backend.cpp (1 edits)
+patched src/llama-model.cpp (2 edits)
+patched src/llama-model-loader.cpp (1 edits)
+PART 1 OK (ggml allocator + hook sites)
+patched src/ob1-lease.h (2 edits)
+patched src/ob1-lease.cpp (11 edits)
+PART 2 OK (lease engine)
+--- diff stat against ob1b ---
+ ggml/src/ggml-backend.cpp  | 362 +++++++++++++++++++++++++++++++++++++++++++++
+ src/llama-model-loader.cpp |  13 ++
+ src/llama-model.cpp        |  26 +++-
+ src/ob1-lease.cpp          | 264 ++++++++++++++++++++++++++++++++-
+ src/ob1-lease.h            |  56 +++++++
+ 5 files changed, 715 insertions(+), 6 deletions(-)
+--- compiler warnings from the changed translation units ---
+-- Warning: ccache not found - consider installing it for faster compilation or disable this warning with GGML_CCACHE=OFF
+-- Warning: NCCL not found, performance for multiple CUDA GPUs will be suboptimal
+CMake Warning at vendor/cpp-httplib/CMakeLists.txt:154 (message):
+/root/ob5a/llama.cpp/src/llama-context.cpp:46:6: warning: no previous declaration for ‘bool llama_route_log_enabled()’ [-Wmissing-declarations]
+make[2]: Leaving directory '/root/ob5a/llama.cpp/build'
+make[1]: Leaving directory '/root/ob5a/llama.cpp/build'
+make: Leaving directory '/root/ob5a/llama.cpp/build'
+phaseC   libllama.so.0                .text   2655794 bytes  e7437728ed7c0ccbfb708bfd16c630c26c1eb7a64ec6e16f371bbba860401ae9
+phaseC   libggml-base.so.0            .text    599485 bytes  f62c1bfe6398e4b9720eef5dadb5fcad8f3dc5b385f1b1acb29a9c4da4a9a446
+phaseC   libllama-perplexity-impl.so  .text     99890 bytes  4b0fa347519fd52ab1cf904154bde8d58010406d5117211477c2d5cc71766fc6
+phaseC   llama-perplexity             .text       249 bytes  091a09c658e8304ee0c002557e3835080c919d53e8ae2d1c23d793810b1629fb
+=== VERDICTS ===
+A) phase A must reproduce the LANDED ob1 engine exactly:
+  phaseA  vs landed  libllama.so.0                SAME    as required
+  phaseA  vs landed  libggml-base.so.0            SAME    as required
+  phaseA  vs landed  libllama-perplexity-impl.so  SAME    as required
+  phaseA  vs landed  llama-perplexity             SAME    as required
+B) phase B must reproduce the OB-1b engine exactly (the digest-banking binary):
+  phaseB  vs ob1b    libllama.so.0                SAME    as required
+  phaseB  vs ob1b    libggml-base.so.0            SAME    as required
+  phaseB  vs ob1b    libllama-perplexity-impl.so  SAME    as required
+  phaseB  vs ob1b    llama-perplexity             SAME    as required
+C) phase C must DIFFER from phase B, in the two libraries the patch touches:
+  phaseC  vs phaseB  libllama.so.0                DIFFER  as required
+      differing bytes: 2473770
+  phaseC  vs phaseB  libggml-base.so.0            DIFFER  as required
+      differing bytes: 569292
+   and the executable and the perplexity impl, which the patch does not touch:
+  phaseC  vs phaseB  libllama-perplexity-impl.so  SAME    as required
+  phaseC  vs phaseB  llama-perplexity             SAME    as required
+=== the new symbols must actually be exported from libggml-base ===
+000000000003ca50 T ggml_backend_cpu_reserve_buffer_type
+000000000003c020 T ggml_backend_cpu_reserve_enabled
+000000000003c070 T ggml_reserve_commit
+000000000003c510 T ggml_reserve_counters
+000000000003c2e0 T ggml_reserve_decommit
+000000000003c750 T ggml_reserve_vma_count
+=== and referenced from libllama ===
+                 U ggml_backend_cpu_reserve_buffer_type
+                 U ggml_backend_cpu_reserve_enabled
+                 U ggml_reserve_commit
+                 U ggml_reserve_counters
+                 U ggml_reserve_decommit
+                 U ggml_reserve_vma_count
+--- the running binary is phase C; final digests ---
+f9965806c98f5dce6cc7f4f44e52dd57e8d9b51cf27826ad4608db4599e23249  /root/ob5a/llama.cpp/build/bin/llama-perplexity
+5e2c4a1b34606ffe1d9cc7e563345b74426d3b8de836b4176d712916a5aced00  /root/ob5a/llama.cpp/build/bin/libllama.so.0
+6f1ba2c7a215c8c33594afdce199530138272697b7d6d29aa677bd4a3c27318d  /root/ob5a/llama.cpp/build/bin/libggml-base.so.0
+41773bf9edcd89ccaaece7a1b7a2897e61ab07689f81073e8febed09a2f5fc86  /root/ob5a/llama.cpp/build/bin/libggml-cpu.so.0
+5aea400e28040543c7f0f005d95e1a8d976650956b4d8a8c22774fdd90923c72  /root/ob5a/llama.cpp/build/bin/libllama-perplexity-impl.so
+--- source digests of the five touched files ---
+ab1ee51d5905bf1a949bda0cca4ef63926493159338af314045b1fb566676018  /root/ob5a/llama.cpp/src/ob1-lease.cpp
+087a045dddc35a4618b6580c406b2b35b32b93dd46e71e2a3573fe3ed9b34172  /root/ob5a/llama.cpp/src/ob1-lease.h
+be278cef9427d165ce2632683d99ee006b504f7795948eabe8d2de3779655141  /root/ob5a/llama.cpp/ggml/src/ggml-backend.cpp
+9f9dcdaec300c3c87a07de8cac359cf0b5ff6ca33c53445f612245bb5dc16efb  /root/ob5a/llama.cpp/src/llama-model.cpp
+28ea244454bb29ac66b39074d534034f7fa655878570729f00fdff09e596ad76  /root/ob5a/llama.cpp/src/llama-model-loader.cpp
+--- box state that bears on the allocator ---
+vm.overcommit_memory=0
+vm.overcommit_ratio=50
+vm.max_map_count=1048576
+page_size=4096
+transparent_hugepage=always [madvise] never
+guard_pids_after: 1 openbob, 1 searxng
+utc_end 2026-09-01T13:33:03Z
+=== END OB5A BUILD ===

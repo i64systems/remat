@@ -1,0 +1,58 @@
+# OB-5b C3-T2 TRUNK CENSUS -- 20B (gpt-oss-20b)
+model_path=/root/openbob-baselines/models/gpt-oss-20b-MXFP4.gguf
+file_size=12109566624 data_start=13008288 align=32 n_tensor=459 gguf_version=3
+expert_count(E)=32 block_count(L)=24 embedding_length(n_embd)=2880 vocab=201088
+n_trunk_tensors=315 n_expert_tensors=144 n_global=3 n_perlayer_suffixes=13
+SUM_TRUNK_BYTES=1917670656 (RS053 NON_EXPERT_BYTES=1917670656) MATCH=True
+resident_always_check: SUM_TRUNK_BYTES+data_start=1930678944 OB1B_resident_always=1930678944 MATCH=True
+
+--- GLOBAL TENSORS (3) ---
+output.weight dims=[2880, 201088] type=8 abs_offset=13008288 bytes=615329280 page_aligned=False
+output_norm.weight dims=[2880] type=0 abs_offset=628337568 bytes=11520 page_aligned=False
+token_embd.weight dims=[2880, 201088] type=8 abs_offset=628349088 bytes=615329280 page_aligned=False
+Gb (sum of global trunk bytes) = 1230670080
+
+--- K-T1 THE TIE QUESTION ---
+token_embd.weight: offset=615340800 dims=[2880, 201088] type=8 bytes=615329280
+output.weight:     offset=0 dims=[2880, 201088] type=8 bytes=615329280
+TIED (same on-disk tensor, same offset) = False
+SAME_SHAPE_DIFFERENT_TENSOR (equal dims/type/bytes, distinct offsets) = True
+VERDICT: K-T1 DOES NOT FIRE (embedding and output projection are two distinct tensors on disk)
+
+--- PER-LAYER STRUCTURE (13 tensors x 24 layers) ---
+suffixes=['attn_k.bias', 'attn_k.weight', 'attn_norm.weight', 'attn_output.bias', 'attn_output.weight', 'attn_q.bias', 'attn_q.weight', 'attn_sinks.weight', 'attn_v.bias', 'attn_v.weight', 'ffn_gate_inp.bias', 'ffn_gate_inp.weight', 'post_attention_norm.weight']
+blk.0.attn_k.bias dims=[512] type=0 bytes=2048
+blk.0.attn_k.weight dims=[2880, 512] type=8 bytes=1566720
+blk.0.attn_norm.weight dims=[2880] type=0 bytes=11520
+blk.0.attn_output.bias dims=[2880] type=0 bytes=11520
+blk.0.attn_output.weight dims=[4096, 2880] type=8 bytes=12533760
+blk.0.attn_q.bias dims=[4096] type=0 bytes=16384
+blk.0.attn_q.weight dims=[2880, 4096] type=8 bytes=12533760
+blk.0.attn_sinks.weight dims=[64] type=0 bytes=256
+blk.0.attn_v.bias dims=[512] type=0 bytes=2048
+blk.0.attn_v.weight dims=[2880, 512] type=8 bytes=1566720
+blk.0.ffn_gate_inp.bias dims=[32] type=0 bytes=128
+blk.0.ffn_gate_inp.weight dims=[2880, 32] type=0 bytes=368640
+blk.0.post_attention_norm.weight dims=[2880] type=0 bytes=11520
+Pb_per_layer (13 tensors, exact) = 28625024
+Pb_total (x24 layers) = 687000576
+floor_per_layer (2 norms + router weight+bias, ruling C3-R1) = 391808
+floor_total (x24 layers) = 9403392
+attn_per_layer (Pb_per_layer - floor_per_layer, what K_t actually leases) = 28233216
+attn_total (x24 layers) = 677597184
+
+--- TRUNK-H ---
+TRUNK-H (gguf header+tensor-info, data_start) = 13008288
+
+--- RECONCILIATION: Gb + Pb_total + Hb = resident_always ---
+1230670080 + 687000576 + 13008288 = 1930678944 (want 1930678944) MATCH=True
+
+--- EMBEDDING / HEAD ROW GEOMETRY ---
+vocab=201088 n_embd=2880 row_bytes(Q8_0? type=8)=3060
+
+--- MANIFEST LEASE-UNIT SCHEME (canonical, matches section 6.1/6.2 worked numbers) ---
+EMBED: b=8 rows/block, n_blocks=25136, raw_block_bytes=24480, committed(page-outward)=24576, edge=96 B/block (0.3922 pct)
+HEAD: 32 tiles, tile_rows=6284, raw_tile_bytes=19229040, committed(page-outward)=19230720, edge=1680 B/tile (0.0087 pct)
+
+MANIFEST_ROW_COUNT=25481 MANIFEST_COVERED_BYTES=1917670656 SUM_TRUNK_BYTES=1917670656 MATCH=True
+ELAPSED_SECONDS=2.014

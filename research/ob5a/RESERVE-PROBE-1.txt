@@ -1,0 +1,28 @@
+reserve_probe: N=63374323968 bytes (the gpt-oss-120b CPU buffer size)
+               ACCT(K=8)=7721554208 bytes (the predicted committed peak)
+  RSS now 1620 KB   VmSize 2692 KB
+
+== 1. posix_memalign(64, 63374323968), the current path ==
+  FAILED rc=12 (ENOMEM)  -- reproduces OB1B-KNEE-1.md section 9
+
+== 2. mmap PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS ==
+  FAILED errno=12 (Cannot allocate memory)  -- an accountable mapping, refused
+
+== 3. mmap PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS -- THE RESERVATION ==
+  SUCCEEDED at 0x7b9cf8988000
+  RSS before 421 pages, after 421 pages, delta 0 pages (0 bytes)
+  VmSize 61891684 KB   VmRSS 1684 KB   VmHWM 1684 KB
+  address space cost: 63374323968 bytes = 0.0450 pct of a 128 TB user VA space
+
+== 4. mprotect a resident-sized slab of it to READ|WRITE, and touch it ==
+  mprotect(7721553920 bytes -> RW) SUCCEEDED
+  VmSize 61891684 KB   VmRSS 1684 KB   VmHWM 1684 KB   (nothing touched yet)
+  after touching one byte per page of the first 268435456 bytes:
+  VmRSS 263828 KB   VmHWM 263828 KB   (expected roughly 262144 KB more)
+
+== 5. WHAT THIS SETTLES ==
+  The 63374323968-byte address range CAN be held on this box today
+  without committing it, and pages inside it can be committed a slab
+  at a time. The allocation that blocks the 120b leased point is not
+  an address-space problem, it is a COMMIT problem, and commit is the
+  axis approach A moves. No kernel setting was changed to get here.

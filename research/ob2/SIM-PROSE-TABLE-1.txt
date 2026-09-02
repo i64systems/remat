@@ -1,0 +1,17 @@
+ROUTE_LOG=/mnt/f/f32/stage/research/ob1/runs/res-prose-a/route.log
+ROUTE_LOG_SHA256=4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df
+RESIDENT_SETS_JSON=/mnt/f/f32/openbob-wt/research-2/research/ob1/RESIDENT-SETS.json
+RESIDENT_SETS_SOURCE_SHA256=a0bb972ec5a02e18ab685000c72b512751e579e243deecc3c095d8340c4b50aa
+policy               corpus  K variant                  total_picks     misses   miss_pct  churn/1000tok
+P0-STATIC-PROSE      prose  16 -                           3145728     591548   18.8048%          0.000
+P1-SLIDING-W512      prose  16 H=256                       3145728     491041   15.6098%        399.841
+P1-SLIDING-W2048     prose  16 H=256                       3145728     508800   16.1743%        138.245
+P1-SLIDING-W8192     prose  16 H=256                       3145728     514438   16.3535%         60.669
+P2-DECAY             prose  16 H=256,add=65536,shift=1     3145728     469793   14.9343%        317.200
+P3-WARMUP-FREEZE     prose  16 warmup=2048                 3145728     638966   20.3122%         11.658
+P0-STATIC-PROSE      prose   8 -                           3145728    1331123   42.3153%          0.000
+P1-SLIDING-W512      prose   8 H=256                       3145728    1178874   37.4754%        266.602
+P1-SLIDING-W2048     prose   8 H=256                       3145728    1224863   38.9373%         99.304
+P1-SLIDING-W8192     prose   8 H=256                       3145728    1242946   39.5122%         47.180
+P2-DECAY             prose   8 H=256,add=65536,shift=1     3145728    1156494   36.7640%        224.487
+P3-WARMUP-FREEZE     prose   8 warmup=2048                 3145728    1375854   43.7372%          9.094

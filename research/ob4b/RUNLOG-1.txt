@@ -1,0 +1,496 @@
+OB4B-PARDEC-1 RUNLOG-1 -- builder 1 (patch + runs)
+Governing prereg: research/OB4B-PARDEC-1-PREREG.md, committed e6bcae0 BEFORE
+any line of the patch existed. Governing law: research/LAW-EXPOSURE-1.md,
+ACCEPTANCE form. Pure ASCII. Literal numbers only. Failed commands verbatim.
+
+===========================================================================
+SECTION 1. WORKTREE AND BASELINE
+===========================================================================
+
+Fork discipline: this leg took its OWN worktree off the shared clone and did
+not touch any sibling's tree.
+
+  git -C /root/rs053/llama.cpp worktree add /root/ob4b/llama.cpp -b ob4b c087083
+    Preparing worktree (new branch 'ob4b')
+    HEAD is now at c087083 OB-1: fix resident-set JSON key scan to walk direct
+    children (a bare search for K=8 matched layer key 8 inside the K=16 set and
+    aborted)
+
+  git -C /root/rs053/llama.cpp worktree list
+    /root/rs053/llama.cpp  c087083 [ob1]
+    /root/ob1b/llama.cpp   c087083 [ob1b]
+    /root/ob2/llama.cpp    8488ede [ob2]
+    /root/ob3/llama.cpp    c087083 [ob3]
+    /root/ob4/llama.cpp    c087083 [ob4]
+
+FINDING WORTH RECORDING: branch ob4's head IS c087083. The OB-4 remat engine
+was never committed; it lives as UNCOMMITTED working-tree state of the
+/root/ob4/llama.cpp worktree, and its only receipt is
+research/ob4/remat-engine.patch. So "base the ob4b worktree on the ob4 head"
+means c087083 PLUS that patch, and the patch had to be re-applied rather than
+inherited.
+
+  cd /root/ob4b/llama.cpp
+  git apply --verbose /mnt/f/f32/openbob-wt/ob4/research/ob4/remat-engine.patch
+    Applied patch src/CMakeLists.txt cleanly.
+    Applied patch src/ob1-lease.cpp cleanly.
+    Applied patch src/ob4-remat.cpp cleanly.
+    Applied patch src/ob4-remat.h cleanly.
+
+The patch is not trusted on the word "cleanly". Every source file it touches
+was digest-compared against the OB-4 working tree it is supposed to reproduce:
+
+  MATCH src/CMakeLists.txt b17157cad5411a5516bf9e5990dabfeb48345fd3105ec72afad4d45220bed753
+  MATCH src/ob1-lease.cpp  05f7944b2acefcf63a5f2f3353bd94986a22d1717f4312218e754bb3976a6661
+  MATCH src/ob4-remat.cpp  7ef07d51aac3d58b7e63b28ccaf32a7d87fa6f4ba00a41cc6f55c106b8357b72
+  MATCH src/ob4-remat.h    daf0dc28defd3efed01d147166faba58fb8e7474824eaf7c8f3209e896925464
+
+  diff -r -q --exclude=build --exclude=.git /root/ob4/llama.cpp /root/ob4b/llama.cpp
+    (no output: the two source trees are identical)
+
+That state was committed as the ob4b BASELINE so that the parallel-decode diff
+is exactly one commit's worth of change and nothing else:
+
+  04d44c9 ob4b baseline: the OB-4 remat engine (uncommitted working-tree state
+          of /root/ob4/llama.cpp) applied from research/ob4/remat-engine.patch,
+          all four source files digest-verified equal to the OB-4 tree
+  c087083 OB-1: fix resident-set JSON key scan ...
+
+===========================================================================
+SECTION 2. THE PATCH
+===========================================================================
+
+research/ob4b/pardec.patch, sha256
+2a27ed44ef8015bf5a88f4b56136f33649dc363bdf7235b437d63c743bace432
+1 file changed, 222 insertions(+), 2 deletions(-) -- src/ob1-lease.cpp only.
+
+It is generated, not hand-edited: research/ob4b/apply-pardec.py performs six
+exact literal replacements, each with an occurrence-count assertion, and does a
+full dry run over every anchor before writing a single byte, so a half-applied
+file is not a state it can produce. Running it twice aborts on the first anchor
+by design. The build script regenerates the patch from the script's own output
+and digest-compares it against the committed file:
+
+  2a27ed44ef8015bf5a88f4b56136f33649dc363bdf7235b437d63c743bace432  research/ob4b/pardec.patch
+  2a27ed44ef8015bf5a88f4b56136f33649dc363bdf7235b437d63c743bace432  /root/ob4b/pardec-regenerated.patch
+
+What it does, in the words of the prereg it implements:
+
+  E1  includes <atomic> <condition_variable> <mutex> <thread>
+  E2  forward declarations, so ob1_init can size the pool and ob1_write_stats
+      can report it, while the pool itself is defined after ob1_fetch_slice
+      (the body its workers run)
+  E3  ob4b_stats(f) hook in the stats writer
+  E4  ob4b_pool_config() at init, before any slice is fetched, so the pool size
+      is a property of the run and not of when the pool was first used
+  E5  the pool: a persistent, fixed-size worker set that drains a per-callback
+      work list by atomic cursor, each worker running the UNCHANGED
+      ob1_fetch_slice body (rematerialize, then sha256-verify)
+  E6  the lease loop, split into phase 1 (build the work list in canonical
+      order, run it through the pool) and phase 2 (the ordered bookkeeping, on
+      the calling thread, in that same canonical order)
+
+Design invariant, as preregistered: a work item's destination address is a pure
+function of its own (layer, expert, tensor) ids --
+dst = g_treg[layer,tensor].base + expert*slice -- never of a completion
+counter, a queue position or a worker id. Distinct items write disjoint byte
+ranges, so the bytes a callback produces are identical under every interleaving.
+Output ordering cannot depend on thread completion order because no output
+location is chosen by completion order.
+
+sha256 verification did NOT move, weaken or batch: it stays per-slice, stays
+mandatory, stays fatal on mismatch, and now runs inside the workers with the
+decode it guards, so it parallelizes too.
+
+OB4B_DECODE_THREADS counts the calling thread. P=8 spawns 7 workers. P=1 spawns
+nothing and walks the same canonical loop on the calling thread, which is byte
+for byte the OB-4 code path and is used as the unit test's control arm.
+
+Threading hazards handled explicitly, each named because each was a real
+question and not a formality:
+  - per-worker accumulators, merged after the drain; the merged values are sums
+    of unsigned integers, so the merge is order independent
+  - the mutex handshake on both sides of the drain is what publishes a worker's
+    slice bytes and accumulator to the caller (release on the worker's unlock,
+    acquire on the caller's lock), so the relaxed atomic cursor is only ever
+    responsible for uniqueness, never for visibility
+  - the zstd decode context and its three scratch buffers were already
+    thread_local in ob4-remat.cpp, which is why the workers are persistent:
+    per-callback threads would rebuild them 768 times a run and measure the
+    allocator instead of the decode
+  - the sync object is deliberately leaked. The workers are detached and park on
+    a condition variable for the life of the process; destroying that condition
+    variable at static-destruction time would be a race against threads still
+    waiting on it. A few hundred bytes go unreclaimed at exit, on purpose.
+  - lost-wakeup: a worker created after notify_all still proceeds, because the
+    wait predicate compares a generation counter rather than trusting the signal
+
+===========================================================================
+SECTION 3. BUILD, AND THE PHASE-A SOUNDNESS CHECK
+===========================================================================
+
+research/ob4b/build-ob4b.sh, following OB-1b's object-reuse pattern: copy the
+OB-4 build tree into the ob4b worktree, rewrite the absolute source paths inside
+it, cmake-reconfigure against the new source root with
+-ffile-prefix-map=/root/ob4b/llama.cpp=/root/ob4/llama.cpp (which changes
+embedded __FILE__ strings only, never code generation), age the sources so make
+does not rebuild all 249 objects, then:
+
+  PHASE A  recompile src/ob1-lease.cpp with its content UNCHANGED and relink.
+           The result must reproduce the OB-4 engine.
+  PHASE B  apply pardec.patch, rebuild, and require that the library actually
+           changed.
+
+  text files referencing the old source dir: 469
+  remaining after rewrite: 0
+  cmake: Configuring done (2.1s) / Generating done (0.1s)
+
+PHASE A, whole-file digests:
+
+  reference (OB-4)
+    a3cb0e0f20c73c3054978957d193a7e50de67d62646426f77dabbd8a887b819f  llama-perplexity
+    63ce0a6e9d9f2da8b0f9cac6699b524becab162bc7f00d9fe062925c68963efd  libllama.so.0.3.0
+  candidate (ob4b, unpatched rebuild)
+    4e1c41552e0a528500410215e4603700a5e3293c868332d079d8be6a6b8d6ec1  llama-perplexity
+    a81b46bda13ac697a2f1c9c0ded16d0098d0236595b7e09455144921f3204b12  libllama.so.0.3.0
+
+  PHASE A: DIFFER   <- reported literally, not worked around
+
+The script's own diagnostic said where to look, and the answer was NOT a code
+difference. research/ob4b/verify-binary.sh dumps every ELF section of both
+libraries and compares them (both files are 4752712 bytes):
+
+  SECTION                  REF                CAND               VERDICT
+  .note.gnu.property       d6cd20a8414b70fa   d6cd20a8414b70fa   SAME
+  .note.gnu.build-id       5db4d7a8e4180a58   7789d743151e9a17   DIFFER
+  .gnu.hash                4ab660a3c24d8e06   4ab660a3c24d8e06   SAME
+  .dynsym                  b17057d4a09df946   b17057d4a09df946   SAME
+  .dynstr                  292f6947637a0d7a   1effa118b30983d9   DIFFER
+  .gnu.version             b506a7093def6494   b506a7093def6494   SAME
+  .gnu.version_r           957ed04d7adcd4f3   957ed04d7adcd4f3   SAME
+  .rela.dyn                fe2ec020ee95b79c   fe2ec020ee95b79c   SAME
+  .rela.plt                b2e449bc3347c4a0   b2e449bc3347c4a0   SAME
+  .init                    167590c31f340cb3   167590c31f340cb3   SAME
+  .plt                     fb6bc0ce31e451a7   fb6bc0ce31e451a7   SAME
+  .plt.got                 c3138c708797eb94   c3138c708797eb94   SAME
+  .plt.sec                 cf564c0c2533f9df   cf564c0c2533f9df   SAME
+  .text                    00452ac4ff15060f   00452ac4ff15060f   SAME
+  .fini                    6a4f3e5efc7c1f7e   6a4f3e5efc7c1f7e   SAME
+  .rodata                  cbac34ea2c5fe796   cbac34ea2c5fe796   SAME
+  .eh_frame_hdr            f8c813a405279059   f8c813a405279059   SAME
+  .eh_frame                419784db3e2baedd   419784db3e2baedd   SAME
+  .gcc_except_table        a0dfd56a20321d64   a0dfd56a20321d64   SAME
+  .tbss                    a0dfd56a20321d64   a0dfd56a20321d64   SAME
+  .init_array              a816105ca6f38c70   a816105ca6f38c70   SAME
+  .fini_array              0092ce160183ddc5   0092ce160183ddc5   SAME
+  .data.rel.ro             5a1e05640b01c8e7   5a1e05640b01c8e7   SAME
+  .dynamic                 f10ed421e5363205   ef35a40c1a3b7b93   DIFFER
+  .got                     a92b8430e9cfedc4   a92b8430e9cfedc4   SAME
+  .got.plt                 f56c84bbcceec299   f56c84bbcceec299   SAME
+  .data                    2f0d7e693b0476a8   2f0d7e693b0476a8   SAME
+  .bss                     2f0d7e693b0476a8   2f0d7e693b0476a8   SAME
+  .comment                 509378ae5eca3c51   509378ae5eca3c51   SAME
+  .symtab                  509378ae5eca3c51   509378ae5eca3c51   SAME
+  .strtab                  509378ae5eca3c51   509378ae5eca3c51   SAME
+  .shstrtab                509378ae5eca3c51   509378ae5eca3c51   SAME
+
+  sections differing: 3
+
+  .text sha256, both files:
+    00452ac4ff15060f84d344b6a00f9171237139ee25e44c04ca14428014bda448
+  .text: MATCH
+
+  RUNPATH reference: [/root/ob4/llama.cpp/build/bin:]
+  RUNPATH candidate: [/root/ob4b/llama.cpp/build/bin:]
+
+  strings count, "ob4/llama.cpp":  reference 151, candidate 150
+  strings count, "ob4b/llama.cpp": candidate 1, and it is the RUNPATH string
+
+PHASE A VERDICT, stated honestly: the unpatched rebuild reproduces the OB-4
+engine's .text, .rodata, .data, .data.rel.ro, relocations and symbol tables
+BYTE FOR BYTE. The three differing sections are one fact wearing three hats:
+the linker bakes the build DIRECTORY into RUNPATH (.dynstr), .dynamic points
+into .dynstr, and .note.gnu.build-id is a hash over the link inputs. Zero code
+difference. The brief's bar -- "prove the unpatched rebuild reproduces the ob4
+engine's .text before trusting the patched one" -- is met exactly and at the
+level it was set; the whole-file digest is not met, and that is reported as a
+DIFFER rather than dressed up as a pass.
+
+Caveat recorded against the table above: objcopy --dump-section leaves its
+output file untouched for NOBITS sections, so the rows that repeat the previous
+row's digest (.tbss after .gcc_except_table; .symtab/.strtab/.shstrtab after
+.comment) are stale-carry artefacts and carry no information. The decisive rows
+(.text, .rodata, .data.rel.ro, .rela.*) carry distinct digests and are real.
+
+PHASE B, the binary every OB-4b run uses:
+
+  4e1c41552e0a528500410215e4603700a5e3293c868332d079d8be6a6b8d6ec1  llama-perplexity
+  90279df234db252d6c29360d6219cba1fb677e0273af5dc908fee2cdc2d83322  libllama.so.0.3.0
+  c71a2c820d812a6ff293d067ee4cdd7c1e855743892ef454712d7bf547450281  libllama-perplexity-impl.so
+  PHASE B: libllama.so changed, as the patch requires
+
+The patched library was built twice (once inside build-ob4b.sh, once after the
+phase-A section-level diagnosis restored and rebuilt the unpatched source) and
+came out at 90279df234db252d6c29360d6219cba1fb677e0273af5dc908fee2cdc2d83322
+both times. Unasked-for, but it is a free reproducibility datapoint and is
+recorded rather than discarded.
+
+===========================================================================
+SECTION 4. RUNS
+===========================================================================
+
+Driver research/ob4b/run-ob4b.sh, batch research/ob4b/runbatch-ob4b.sh, analysis
+research/ob4b/analyze_ob4b.py -> research/ob4b/run-analysis.json. Every figure
+below is copied from that JSON or from the stats files it reads; nothing is
+rounded, inferred or reconstructed.
+
+Binary used by every run below:
+  4e1c41552e0a528500410215e4603700a5e3293c868332d079d8be6a6b8d6ec1  llama-perplexity
+  90279df234db252d6c29360d6219cba1fb677e0273af5dc908fee2cdc2d83322  libllama.so.0.3.0
+
+RUNLOCK DISCIPLINE, as executed. Acquired and released per run, not held across
+the batch:
+  unit-pool1      ACQUIRED after 2880s at 2026-09-01T03:47:47Z, RELEASED 03:50:01Z
+  unit-pool8      ACQUIRED after    0s at 2026-09-01T03:50:01Z, RELEASED 03:51:29Z
+  ob4b-k8-code-a  ACQUIRED after 1470s at 2026-09-01T04:19:08Z, RELEASED 04:29:44Z
+  ob4b-k8-code-b  ACQUIRED after    0s at 2026-09-01T04:29:44Z, RELEASED 04:40:14Z
+  runlock present at end: none
+Total queueing behind sibling workflows: 4350 s. Never near the 120-minute
+report threshold on any single acquire. Free RAM checked before every run (22
+GiB available before both full runs, floor 6 GB). Guard pids 654 (openbob serve)
+and 489 (searxng) present before and after every run: "guard_pids: 1 openbob, 1
+searxng" / "guard_pids_after: 1 openbob, 1 searxng" on all four.
+
+---------------------------------------------------------------------------
+4.1 UNIT: pool 8 vs pool 1, K=8 AC-CODE, first 4 chunks (4096 tokens)
+---------------------------------------------------------------------------
+
+  pool1 identity sha256 c8049cb509e3d9b35cf31564e83aaf5c78523fa39d992ac1c8a69f839083ba55 (42 B)
+  pool8 identity sha256 c8049cb509e3d9b35cf31564e83aaf5c78523fa39d992ac1c8a69f839083ba55 (42 B)
+  pool1 route    sha256 ff192e390ab846cf549d237d89f0706738b0aafb1aee3a54a07586c7883ca8b9 (1780170 B)
+  pool8 route    sha256 ff192e390ab846cf549d237d89f0706738b0aafb1aee3a54a07586c7883ca8b9 (1780170 B)
+  PASS: pool1 == pool8 identity, byte identical
+  PASS: pool1 == pool8 route log, byte identical
+  PASS: unit identity (41 B, trailing newline stripped) is an exact prefix of
+        the banked OB-4 identity
+  PASS: unit route log is an exact prefix of the banked OB-4 route log
+        unit lines 98304, banked lines 786432
+  UNIT GATE: PASS
+
+DEFECT IN THE GATE, RECORDED BECAUSE IT FIRED. The first version of the gate
+compared raw bytes with startswith and reported
+
+  FAIL: unit identity is not a prefix of the banked OB-4 identity
+    unit   b'[1]24.5827,[2]9.4037,[3]5.8070,[4]4.6785,\n'
+    banked b'[1]24.5827,[2]9.4037,[3]5.8070,[4]4.6785,[5]3.9503,...'
+  BATCH STOP: UNIT GATE FAILED, no full run is started
+
+The stop was correct behaviour by the harness and the diagnosis was a defect in
+the harness, not in the engine: identity.txt is produced by
+`grep '^\[1\]' stdout.txt`, so it carries a trailing newline, and the 4-chunk
+file therefore ends at an offset where the 32-chunk file continues with '[5]'.
+Verified at byte level before changing anything:
+
+  unit,   last bytes: 345d 342e 3637 3835 2c0a     ->  4]4.6785,\n
+  banked, same offset: 345d 342e 3637 3835 2c5b    ->  4]4.6785,[
+
+The 41 bytes before the newline are identical. The gate was moved out to
+research/ob4b/unit-gate.py, which strips the trailing newline before the prefix
+test and PRINTS BOTH ARTIFACTS so the reader can check the claim rather than
+take it. The two unit runs were not re-run: their artifacts were already correct
+and re-deriving them would have taken the RUNLOCK from two sibling workflows for
+nothing. The resume used an explicit OB4B_SKIP_EXISTING=1 switch that is off by
+default, so a plain run of runbatch-ob4b.sh still executes every run.
+
+Unit timing (3 chunk_ns samples only, so its "p95" is the max of three and is
+NOT a p95; recorded for shape, never for the verdict):
+
+  arm          pool  p95-shaped ms   lease phase wall s   process s   wall s
+  unit-pool1      1     30190.4847            48.235        122.359   133.91
+  unit-pool8      8     18417.5252             8.794         79.780    88.77
+
+  items_by_slot, pool8: 1771,1657,1749,1695,1622,1684,1687,1725 (13590 total)
+  items_by_slot, pool1: 13590
+
+The pool-1 arm is the honest control it was meant to be: its pool wall
+(48.235151441 s) equals its own serial sum (48.229135124 s) to within 6 ms over
+96 dispatches, i.e. a speedup of 0.9998752711078899, which is the number a
+single-threaded "pool" must produce.
+
+---------------------------------------------------------------------------
+4.2 FULL RUNS: K=8, AC-CODE, 32 chunks, decode pool 8
+---------------------------------------------------------------------------
+
+RUN ROWS (banked OB-4 rows are the serial reference, re-read from their own
+stats files by this leg's analysis script, not quoted from OB-4's document):
+
+  run                   pool        p95 ms   p95/control   identity   route
+  ob4-banked-k8-code-a     1   27128.973022  1.734578198064283  9acdf5ef  f0c3f341
+  ob4-banked-k8-code-b     1   28637.733919  1.831045681588478  9acdf5ef  f0c3f341
+  ob4b-k8-code-a           8   19404.681527  1.240700762606072  9acdf5ef  f0c3f341
+  ob4b-k8-code-b           8   19387.119691  1.239577890102978  9acdf5ef  f0c3f341
+
+  control: ob4-res-code p95 15640.098009 ms (banked, reused per prereg)
+  p95 method: nearest-rank over the run's own chunk_ns series, rank =
+              ceil(0.95*31) = 30, milliseconds
+
+  run                   wall s   peak RSS B   store bytes read   lease events
+  ob4-banked-k8-code-a  941.57   5857521664      222597631923          18100
+  ob4-banked-k8-code-b  937.56   5857406976      222597631923          18100
+  ob4b-k8-code-a        635.93   5946462208      222597631923          18100
+  ob4b-k8-code-b        629.02   5946564608      222597631923          18100
+
+IDENTITY LIMB (stop-ship): PASS, both runs, both artifacts, exactly.
+
+  sha256(identity.txt) = 9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8
+  sha256(route.log)    = f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77
+
+identity_groups_by_sha256 from run-analysis.json puts ob4b-k8-code-a,
+ob4b-k8-code-b, ob4-banked-res-code, ob4-banked-k8-code-a and
+ob4-banked-k8-code-b in ONE group, and the route-log grouping does the same.
+Seven runs across three builder sessions, two byte provenances (raw gguf pread
+and C2-decoded container), two decode paths (serial and 8-way parallel) and two
+A/A repeats now share one output digest and one route digest. The final
+perplexity line of ob4b-k8-code-a reads "Final estimate: PPL = 4.2823 +/-
+0.08499", the same value the banked runs report.
+
+  (Note for readers of run-analysis.json: the two UNIT rows show
+  identity_matches_reference=false. That is correct and expected -- a 4-chunk
+  identity artifact cannot have the same digest as a 32-chunk one. The unit's
+  identity claim is the prefix test in 4.1, not that field.)
+
+DECODE SHARE LIMB (report only, no threshold):
+
+  lease_decode_ns / lease_get_bytes_ns
+    ob4-banked-k8-code-a   0.9156801014760382
+    ob4-banked-k8-code-b   0.9205559462136544
+    ob4b-k8-code-a         0.8054799038222907
+    ob4b-k8-code-b         0.8010350057230456
+
+  lease_blob_read_ns / lease_get_bytes_ns
+    ob4-banked-k8-code-a   0.08420599730016932
+    ob4b-k8-code-a         0.19437298455360158
+
+READ THAT SHARE WITH THE CAVEAT IT NEEDS. Under a pool, lease_read_ns and
+lease_verify_ns are sums over OVERLAPPING intervals and are no longer wall
+clock, so the share above is a ratio of aggregate CPU-side time, not of elapsed
+time. The engine therefore also emits ob4b_pool_wall_ns, the true elapsed cost
+of the whole lease phase, and that is the number the p95 actually moved with:
+
+  quantity                         OB-4 run a      OB-4b run a
+  lease phase, elapsed             347.629808362 s   74.993038234 s
+  lease phase / process wall             40.463 pct       12.085 pct
+  process wall                     859.125574377 s  620.544037498 s
+
+  quantity                         OB-4 run b      OB-4b run b
+  lease phase, elapsed             356.148151959 s   72.930066992 s
+  lease phase / process wall             40.850 pct       11.869 pct
+
+  lease phase elapsed speedup: 4.635494394523587x (a), 4.8834200577118265x (b)
+
+THE HONEST SPEEDUP IS 4.64x, NOT 7.68x. run-analysis.json also reports
+pool_speedup_vs_serial_equivalent = 7.683326616920114 (a) / 7.675275868448088
+(b), which is the pool's elapsed time against ITS OWN overlapped sum. That
+number measures only how well the eight slots were kept busy; it is inflated
+because its denominator grew under contention. The end-to-end figure is the pool
+wall against the SERIAL run's actual wall, 4.64x, and that is what the p95 moved
+with. Both are reported; the smaller one is the result.
+
+WHERE THE MISSING 3.04x WENT, measured not assumed. Per-slice work got slower
+under 8-way concurrency, exactly as an honest accounting should show:
+
+  aggregate lease decode:    232.554046922 s -> 374.285810724 s  (x1.6094573097218028)
+  aggregate blob pread:       21.385684166 s ->  90.320130597 s  (x4.223392148500693)
+  aggregate lease verify:     93.661149933 s -> 111.521706435 s
+  aggregate lease phase:     347.629808362 s -> 576.196006747 s
+
+Eight zstd decoders and eight preads contend for memory bandwidth and page
+cache on a 12-core box, so each individual slice costs more; the pool still wins
+by 4.64x because they run at the same time. Work distribution was even and is
+not the limiter: items_by_slot for run a was
+14538,13352,13429,13444,13323,13530,13360,13624 over 108600 items in 768
+dispatches (spread between the busiest and idlest slot: 8.4 pct).
+
+COST LIMB (the decision), against the frozen bar:
+
+  ACCEPT iff p95 / 15640.098009 ms < 1.734578198064283
+
+  ob4b-k8-code-a  1.240700762606072  ACCEPT
+  ob4b-k8-code-b  1.239577890102978  ACCEPT
+
+Both runs clear it, and the worse of the two clears it, which is the form the
+prereg required. The two agree to 0.0011 of each other, so there is no
+disagreement across the line to report. The parent program's 3.0x governor is
+cleared with 58.7 pct of its budget unspent.
+
+  p95 improvement vs OB-4's own runs: -7724.291495 ms (a, -28.47 pct),
+                                      -9250.614228 ms (b, -32.30 pct)
+  wall clock: 941.57 s -> 635.93 s (-32.46 pct), 937.56 s -> 629.02 s (-32.91 pct)
+
+THE RESULT WORTH NAMING. On OB-1's own banked resident baseline
+(16073.67024 ms), the denominator OB-1 used for its raw-pread lease path:
+
+  OB-1 raw-pread lease path, K=8 code   1.5139267887581103x
+  OB-4b remat + pool 8, K=8 code        1.2072340191918731x (a)
+                                        1.2061414351250248x (b)
+
+Rematerializing every missed expert from an 8.2 pct smaller compressed container
+is now measurably CHEAPER than preading the raw bytes out of the gguf -- 1.21x
+the resident baseline against the raw path's 1.51x, on the same corpus, same K,
+same manifest, same identity digest. OB-4 had to argue that its 1.69-1.78x was
+affordable; OB-4b does not have to argue.
+
+COST PAID, stated plainly: peak RSS rose by 88940544 B (84.82 MiB, +1.52 pct),
+from 5857521664 to 5946462208 -- the seven extra workers' thread_local zstd
+contexts and split-stream scratch buffers. Store bytes read
+(222597631923) and lease events (18100) are byte-for-byte and event-for-event
+identical to OB-4's, which is the check that the pool changed WHEN work happens
+and never WHAT work happens.
+
+---------------------------------------------------------------------------
+4.3 DEVIATIONS FROM THE PREREG
+---------------------------------------------------------------------------
+
+1. Declared deviation 1 of the prereg (thread arithmetic) stood as written and
+   was not revisited: 10 compute threads plus 7 spawned decode workers = 17 OS
+   threads against the house 16-total guidance, on a 24-logical-CPU box, with
+   the compute pool parked at its between-split wait for the whole window the
+   decode pool is active. Nothing in the measurements suggests it hurt: the
+   pool's own slots stayed evenly loaded and the wall clock fell 32 pct.
+2. The unit gate defect in 4.1, and the OB4B_SKIP_EXISTING=1 resume it forced.
+   The two unit runs in the record were produced before the gate was fixed;
+   their artifacts are unmodified and the fixed gate was run against them.
+3. Phase A of the build reproduced the OB-4 engine's .text, .rodata, .data and
+   relocations byte for byte but NOT the whole-file digest, the difference being
+   RUNPATH and its two consequences. Reported as DIFFER by the build script and
+   resolved by section-level comparison, not by relaxing the check. See
+   section 3.
+4. No pool-size sweep was run. The prereg forbade one from moving the verdict
+   and none was run even as exploration, for RUNLOCK economy while two sibling
+   workflows were queueing. The unit's pool-1 arm is the only other size
+   measured.
+5. The banked ob4-res-code control was reused, per the prereg's own
+   preregistered decision, and no fresh K=0 control was run. Its risk (box drift
+   between OB-4's control and these runs) is not resolved by the identity limb,
+   which catches correctness drift only. Two facts argue against drift mattering
+   here: the two OB-4b runs agree to 0.0011 in ratio, and the margin to the bar
+   is 0.494 of a ratio unit, far outside any plausible drift.
+
+---------------------------------------------------------------------------
+4.4 VERDICT
+---------------------------------------------------------------------------
+
+  IDENTITY limb  (stop-ship)   PASS   both runs, both artifacts, exact
+  DECODE SHARE   (report only) 0.9157/0.9206 -> 0.8055/0.8010 aggregate;
+                               lease phase 40.46/40.85 pct -> 12.09/11.87 pct
+                               of process wall
+  COST limb      (decision)    ACCEPT  1.2407 and 1.2396 against the frozen
+                               bar of 1.734578198064283
+
+The operating point is ACCEPTED. The answer to the question OB-4b was opened to
+ask is yes: parallelizing decode across the distinct missed experts of a
+callback collapses the lease phase from 40 pct of process wall to 12 pct, pulls
+p95 from 1.73-1.83x of the resident control to 1.24x, and does it with the
+identity digest untouched.
+
+END OB4B-PARDEC-1 RUNLOG-1

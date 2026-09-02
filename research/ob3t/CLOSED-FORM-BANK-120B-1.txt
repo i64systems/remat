@@ -1,0 +1,36 @@
+=== BASELINE, K=8 ===
+ACCT_baseline_K8 = 7721554208
+exposure_baseline = 8.209143457456642
+
+=== T3: EMBEDDING BLOCK LEASING ===
+resident_always_leased (embedding freed) = 1698690848
+EB=8: raw_block=24480 committed_block=24576 edge=96 B/block (0.3922 pct)
+ACCT batch K=8, ring=8388608: 7114613536 exposure= 8.909457398811549
+per_microbatch_read(EB=8) = 25165824  total_read(8 microbatches) = 201326592
+wall(read) = 0.15892531733501736 s
+syscall cycles=8192 syscall_wall=2.3035 s
+TOTAL wall (read+syscall) = 2.4624247443558174 s
+
+-- decode regime, same EB=8 block granularity as batch --
+ACCT_decode_leased(EB=8) = 5630192416 exposure= 11.258468898481071
+read per generated token (committed) = 24576 B  ( 24.0 KB )
+
+-- decode regime, alternate EB=1 (row-granular) --
+raw=3060 committed(1 page)=4096 edge=1036 B/token (33.86 pct)
+ACCT_decode_leased(EB=1, ring=6120) = 5621809928 exposure= 11.27525601537911
+read per generated token (committed) = 4096 B
+
+=== T4: OUTPUT-PROJECTION TILING, 32 TILES (batch/prefill only) ===
+ACCT head K=8, ring=33554432: 7139779360 exposure= 8.878053930226773
+read (whole matrix x 8 microbatches) = 4922634240   wall= 3.8858811493527 s
+HT=32 tile_rows=6284 raw_tile=19229040 committed_tile=19230720 edge=1680 B/tile (0.0087 pct)
+syscall cycles(head)=256 syscall_wall=0.0720 s
+
+=== T5: THE TRUNK K_t SWEEP (attention-only; router+norms are the resident floor, ruling C3-R1) ===
+trunk_floor_always (Gb+Hb) = 1243692320
+base_no_ring (trunk_floor_always + router/norm floor + experts + concurrent) = 6705158432
+K_t=36 resident_attn=1016395776 ring=0 ACCT=7721554208 exposure=8.209143 added_read(8mb)=0 wall=0.000s
+K_t=27 resident_attn=762296832 ring=56466432 ACCT=7523921696 exposure=8.424775 added_read(8mb)=2032791552 wall=1.605s
+K_t=18 resident_attn=508197888 ring=56466432 ACCT=7269822752 exposure=8.719242 added_read(8mb)=4065583104 wall=3.209s
+K_t= 9 resident_attn=254098944 ring=56466432 ACCT=7015723808 exposure=9.035040 added_read(8mb)=6098374656 wall=4.814s
+K_t= 0 resident_attn=0 ring=56466432 ACCT=6761624864 exposure=9.374573 added_read(8mb)=8131166208 wall=6.419s

@@ -1,0 +1,1386 @@
+OB5A-RUNLOG-1: THE RESIDENT-PROPORTIONAL ALLOCATOR, BUILT AND MEASURED
+OB-5a builder 2. Run 2026-09-01 on f32-HYDE. Pure ASCII, no em dashes. Every
+number below is either literal command output from this leg, a literal from a
+committed receipt, or an arithmetic derivation shown in full.
+
+Bound by research/OB5A-ALLOC-1-PREREG.md, committed at f7a96a0 before this
+builder started. Every bar was frozen there and every prediction was banked
+there. Nothing in this file was fitted after the fact.
+
+
+================================================================================
+0. THE ANSWER, FIRST
+================================================================================
+
+The ruling this leg serves, her words, quoted in OB5-PLAN-1.md section 0:
+
+  "If the whole premise is N >> M, then the runtime should eventually never
+  require an allocation proportional to N."
+
+The blocker, from OB1B-KNEE-1.md section 9, verbatim as the engine printed it:
+
+  0.00.806.033 E ggml_aligned_malloc: insufficient memory (attempted to allocate 60438.47 MB)
+  0.00.806.050 E ggml_backend_cpu_buffer_type_alloc_buffer: failed to allocate buffer of size 63374323968
+  0.00.806.050 E alloc_tensor_range: failed to allocate CPU buffer of size 63374323968
+  0.00.878.238 E llama_model_load: error loading model: unable to allocate CPU buffer
+  exit_rc 1   wallclock_s 1.068426206
+
+The same configuration, on the same box, with this leg's allocator:
+
+  exit_rc 0   wallclock_s 104.071809667
+  identity [1]88.3425,  which is the banked paged reference's first chunk,
+  byte for byte, sha256 59d9369f09d49f2cecfcc3454f8ab6e8378a7facc2d70b6ea4e84fb5aaefd759
+  route.log byte-identical to the first 36864 lines of the banked route log
+  alloc_va_model_bytes    63374323968   the reservation, declared not charged
+  alloc_commit_model_peak  7715102720   what the kernel was actually asked to back
+  alloc_commit_peak_single  615333888   the largest single request, 586.83 MB
+  Maximum resident set size 8494872 kbytes
+
+THE 63374323968-BYTE REQUEST IS GONE. It was replaced by a PROT_NONE
+reservation of exactly that size and 24045 commits whose largest is 615333888
+bytes. The peak simultaneously committed model state is 7715102720 bytes, which
+is 8.2143x smaller than the request that failed, and 12.1712 percent of the
+63387346208-byte model.
+
+And the 20b regression that had to hold for any of it to count:
+
+  run              identity  route   lease_events  peak_concurrent  commit_peak
+  res-prose        MATCH     MATCH              0                0  12096561152
+  res-code         MATCH     MATCH              0                0  12096561152
+  lease-k8-code    MATCH     MATCH          18100        318090240   4793679872
+  lease-k0-prose   MATCH     MATCH          23096        424120320   2359328768
+
+  ALL BARS PASS: P1a P1b P1c P2a P2b P2c P2d P4b P4c P4d
+  OB5A_ANALYZE_FAILURES=0
+
+
+================================================================================
+1. THE BUILD, AND WHAT IT PROVES
+================================================================================
+
+research/ob5a/build-ob5a.sh, output at research/ob5a/BUILD-1.txt.
+
+The landed build tree is configured with GGML_CUDA=ON, so a from-scratch
+reconfigure recompiles several hundred nvcc translation units for a change of
+one CPU-side .cpp. This build copies a landed build tree into the ob5a
+worktree, rewrites the absolute source paths inside it, lets cmake regenerate
+its makefiles, and recompiles only what changed. Same pattern as
+research/ob1b/build-ob1b.sh. -ffile-prefix-map=/root/ob5a/llama.cpp=/root/rs053/llama.cpp
+maps this tree's root back to rs053 for embedded __FILE__ paths only, so a
+recompiled translation unit does not differ from the references in that string
+alone. It changes no code generation.
+
+THREE PHASES. Two of them are checks, and neither is tautological.
+
+  PHASE A  all five touched files restored to their c087083 content, recompiled
+           in the ob5a tree. Its .text must equal the LANDED ob1 engine's.
+  PHASE B  plus the D3 K=0 guard fix and nothing else. Its .text must equal the
+           OB-1b engine's. THIS IS THE CHECK THIS LEG ACTUALLY NEEDS: the OB-1b
+           engine is the binary that produced every banked identity and route
+           digest the P1 regression is measured against, so reproducing its
+           executable code exactly means the only thing separating this leg's
+           binary from the digest-banking binary is phase C.
+  PHASE C  plus the OB-5a allocator. Its .text must DIFFER, in the two libraries
+           the patch touches and in no others.
+
+Literal .text digests, all four objects, all five snapshots:
+
+  landed   libllama.so.0                 2645458 bytes  850e33acf7be0facb41cacc5fb1bcda2a0eeb7c63d6e735fd5bfca3c9d9142ca
+  landed   libggml-base.so.0              593261 bytes  b8ef6676f9bbb52bde877778e4f2d4549eb25e296b2ea463c6668dd820744603
+  landed   libllama-perplexity-impl.so     99890 bytes  4b0fa347519fd52ab1cf904154bde8d58010406d5117211477c2d5cc71766fc6
+  landed   llama-perplexity                  249 bytes  091a09c658e8304ee0c002557e3835080c919d53e8ae2d1c23d793810b1629fb
+  ob1b     libllama.so.0                 2645458 bytes  f0336c94d5f1a7eb2697b171e7d4c0f67b5040e6932cae44dcdf2a3002f04af3
+  ob1b     libggml-base.so.0              593261 bytes  b8ef6676f9bbb52bde877778e4f2d4549eb25e296b2ea463c6668dd820744603
+  phaseA   libllama.so.0                 2645458 bytes  850e33acf7be0facb41cacc5fb1bcda2a0eeb7c63d6e735fd5bfca3c9d9142ca
+  phaseA   libggml-base.so.0              593261 bytes  b8ef6676f9bbb52bde877778e4f2d4549eb25e296b2ea463c6668dd820744603
+  phaseB   libllama.so.0                 2645458 bytes  f0336c94d5f1a7eb2697b171e7d4c0f67b5040e6932cae44dcdf2a3002f04af3
+  phaseB   libggml-base.so.0              593261 bytes  b8ef6676f9bbb52bde877778e4f2d4549eb25e296b2ea463c6668dd820744603
+  phaseC   libllama.so.0                 2655794 bytes  e7437728ed7c0ccbfb708bfd16c630c26c1eb7a64ec6e16f371bbba860401ae9
+  phaseC   libggml-base.so.0              599485 bytes  f62c1bfe6398e4b9720eef5dadb5fcad8f3dc5b385f1b1acb29a9c4da4a9a446
+  phaseC   libllama-perplexity-impl.so     99890 bytes  4b0fa347519fd52ab1cf904154bde8d58010406d5117211477c2d5cc71766fc6
+  phaseC   llama-perplexity                  249 bytes  091a09c658e8304ee0c002557e3835080c919d53e8ae2d1c23d793810b1629fb
+
+VERDICTS, as the script printed them:
+
+  A) phaseA vs landed  libllama.so.0                SAME    as required
+  A) phaseA vs landed  libggml-base.so.0            SAME    as required
+  A) phaseA vs landed  libllama-perplexity-impl.so  SAME    as required
+  A) phaseA vs landed  llama-perplexity             SAME    as required
+  B) phaseB vs ob1b    libllama.so.0                SAME    as required
+  B) phaseB vs ob1b    libggml-base.so.0            SAME    as required
+  B) phaseB vs ob1b    libllama-perplexity-impl.so  SAME    as required
+  B) phaseB vs ob1b    llama-perplexity             SAME    as required
+  C) phaseC vs phaseB  libllama.so.0                DIFFER  as required (2473770 bytes)
+  C) phaseC vs phaseB  libggml-base.so.0            DIFFER  as required ( 569292 bytes)
+  C) phaseC vs phaseB  libllama-perplexity-impl.so  SAME    as required
+  C) phaseC vs phaseB  llama-perplexity             SAME    as required
+
+The two libraries that differ are exactly the two the patch touches:
+libggml-base carries the allocator, libllama carries the hooks. The perplexity
+implementation and the executable are untouched and prove it by matching.
+
+The symbols reach the library and are referenced from the other one:
+
+  000000000003ca50 T ggml_backend_cpu_reserve_buffer_type      (libggml-base.so.0)
+  000000000003c020 T ggml_backend_cpu_reserve_enabled
+  000000000003c070 T ggml_reserve_commit
+  000000000003c510 T ggml_reserve_counters
+  000000000003c2e0 T ggml_reserve_decommit
+  000000000003c750 T ggml_reserve_vma_count
+                   U ggml_backend_cpu_reserve_buffer_type      (libllama.so.0)
+                   U ggml_backend_cpu_reserve_enabled
+                   U ggml_reserve_commit
+                   U ggml_reserve_counters
+                   U ggml_reserve_decommit
+                   U ggml_reserve_vma_count
+
+COMPILER WARNINGS, counted rather than characterised. Phase A emitted 0, phase B
+emitted 0, phase C emitted 1, verbatim:
+
+  /root/ob5a/llama.cpp/src/llama-context.cpp:46:6: warning: no previous
+  declaration for 'bool llama_route_log_enabled()' [-Wmissing-declarations]
+
+NO LINE THIS PATCH ADDS PRODUCED A WARNING, and the one that appeared is not
+this leg's code, but the reason it appears only in phase C is worth stating
+rather than waving at. llama-context.cpp is untouched by this leg (git diff on
+it is empty) and llama_route_log_enabled is defined at that same line 46 in
+c087083 itself, inherited from the RS053 route-log patch. It surfaces in phase C
+because llama-context.cpp includes ob1-lease.h, so editing that header forced
+that translation unit to recompile for the first time in this build, which
+re-emitted a warning that had been latent in the source all along. Phases A and B
+did not recompile it and therefore did not print it. The header edit makes
+llama-context.cpp a fourth recompiled translation unit beyond the three the
+patch edits directly; it changes no code in it, and libllama's .text difference
+in section 1 is the measured consequence of all four.
+
+ONE DECLARED EXCEPTION TO THE PURE-ASCII LAW. Line 77 of BUILD-1.txt, the
+warning above as gcc actually printed it, contains gcc's Unicode typographic
+quotes around the function name. It is left exactly as the compiler emitted it,
+because doctoring verbatim tool output to satisfy a formatting rule is worse
+than the formatting violation. It is the only non-ASCII byte sequence in any
+artifact of this leg; RUNLOG-1.txt, ANALYZE-ALLOC-1.txt, SMOKE-120B-1.txt and
+DIAG-BUFFERS-1.txt are pure ASCII with no em dashes, verified by
+LC_ALL=C grep over each.
+
+THE FIRST BUILD ATTEMPT FAILED, verbatim, and is recorded rather than quietly
+fixed:
+
+  /root/ob5a/llama.cpp/ggml/src/../include/ggml.h:184:67: error: invalid use of
+  'extern' in linkage specification
+    184 | #        define GGML_API __attribute__ ((visibility ("default"))) extern
+        |                                                                   ^~~~~~
+  /root/ob5a/llama.cpp/ggml/src/ggml-backend.cpp:2731:12: note: in expansion of
+  macro 'GGML_API'
+   2731 | extern "C" GGML_API ggml_backend_buffer_type_t ggml_backend_cpu_reserve_buffer_type(void) {
+
+GGML_API already ends in the keyword extern, so writing extern "C" GGML_API in
+front of a definition puts two storage-class specifiers in one declaration. The
+fix follows ggml's own house style: declare with GGML_API inside an extern "C"
+block, define without it. Phases A and B had already passed at that point and
+are unaffected; the build script restores pristine source at its start and was
+re-run whole.
+
+
+================================================================================
+2. THE IMPLEMENTATION, AS BUILT
+================================================================================
+
+research/ob5a/alloc.patch, 884 lines,
+sha256 5a6f636dbd29cf1ee282d5254f60a49688fa7a44d47e14161de6c8ec582837b3.
+The patch is against c087083 and therefore carries the D3 K=0 guard fix as well
+as the allocator. That is deliberate: it is exactly what has to be applied to a
+fresh worktree of ob1b to reproduce this leg's binary.
+
+  ggml/src/ggml-backend.cpp  | 362 ++++++++++
+  src/llama-model-loader.cpp |  13 ++
+  src/llama-model.cpp        |  26 ++-
+  src/ob1-lease.cpp          | 264 ++++++++
+  src/ob1-lease.h            |  56 +++
+  5 files changed, 715 insertions(+), 6 deletions(-)
+
+2.1 THE RESERVATION. A new buffer type in ggml/src/ggml-backend.cpp,
+ggml_backend_cpu_reserve_buffer_type(), whose alloc_buffer is
+
+  mmap(NULL, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)
+
+taken WITHOUT MAP_NORESERVE, deliberately, per prereg section 3.7, so that every
+commit is a charge the kernel actually takes and the kernel's own accounting is
+a second witness beside the engine's counters. Its get_alignment, get_alloc_size,
+get_max_size and is_host are the CPU buffer type's, unchanged. That is the whole
+identity argument, and P1 is the test of it: the tallocr walk sees the same
+alignment, the same per-tensor size and the same unbounded max size, so it lays
+every tensor out at the offset it uses today, and only the base pointer differs.
+free_buffer munmaps, because the CPU free path calls ggml_aligned_free, which
+calls free(), which would abort on an mmap'd pointer.
+
+The engine names it in its own log:
+
+  load_tensors:  CPU_Reserve model buffer size = 11536.18 MiB
+  ggml_backend_cpu_reserve_buffer_type_alloc_buffer: OB5A reserved 12096558336
+    bytes PROT_NONE, region 0, 2953262 pages, base 0x7bdb0efd2000
+
+2.2 THE COMMITS, WHERE THE WRITE HAPPENS. Not in set_tensor. Prereg section 2.4
+established that the host non-mmap loader writes into cur->data directly through
+file->read_raw and never calls ggml_backend_tensor_set, so a buffer-interface
+set_tensor hook would never fire. The hooks are:
+
+  llama-model-loader.cpp:1616  ob1_commit_tensor(name, cur->data, n_size)
+                               commits the trunk, once, never decommitted; a
+                               no-op for a fused expert tensor under an active
+                               lease
+  ob1-lease.cpp ob1_lease_load_tensor  commits each RESIDENT slice, outward
+                               rounded, before ob1_fetch_slice writes it
+  ob1-lease.cpp ob1_on_route   commits each LEASED slice, outward rounded,
+                               before ob1_fetch_slice writes it
+  ob1-lease.cpp ob1_drop       after the existing inward-rounded madvise, one
+                               inward-rounded mprotect(PROT_NONE) beside it
+
+2.3 THE ROUNDING, AS FROZEN. COMMIT rounds OUTWARD so a byte the engine owns is
+always backed and a legitimate access never faults. DECOMMIT rounds INWARD so a
+page a neighbour still owns is never taken away. The inward rule is ob1_drop's
+existing one, unchanged, and ob1_drop's madvise call is kept verbatim: prereg
+section 3.4 measured that mprotect(PROT_NONE) alone decommits nothing (271.3 MB
+still resident over a 268.9 MB region), so arm C needs both limbs and this patch
+adds only the limb that was missing.
+
+2.4 THE GUARDS, all fatal, none reached by the frozen configuration:
+
+  --mlock            throws at llama-model.cpp, before the mlock walk
+  --check-tensors    throws in the loader, before validation walks whole tensors
+  mmap on            throws at the buffer-type substitution site, because the
+                     reserve path is only reached on the non-mmap loader and
+                     silently doing nothing there would look like a passing run
+                     with no allocator in it
+  clear              ggml_rsv_fatal; verified by grep never called on the
+                     weights buffer
+  get/set/cpy/memset_tensor   ggml_rsv_fatal on any range not currently
+                     committed, rather than a silent SIGSEGV or a silent read of
+                     zeros
+
+2.5 THE JOURNAL. One text record per commit and per decommit, in issue order:
+
+  <op> <region> <layer> <expert> <tensor> <page_start> <page_end>
+
+Page indices are REGION-RELATIVE, never absolute addresses, so the digest is
+invariant to ASLR and an A/A pair can be compared at all. Trunk commits carry
+-1 -1 -1. First and last records of the 20b K=0 smoke, verbatim:
+
+  C 0 -1 -1 -1 0 150227
+  C 0 -1 -1 -1 150226 150230
+  C 0 -1 -1 -1 150229 300457
+  ...
+  C 0 23 31 3 2953078 2953082
+  C 0 23 31 4 2953258 2953262
+  C 0 23 31 5 2953168 2953172
+
+The rolling digest is a STREAMING sha256, added for this leg, driving the same
+two block functions the existing one-shot uses. It is cross-checked against the
+one-shot at journal init, on odd-sized chunks that straddle block boundaries,
+and disagreement is fatal. A wrong hash there would have silently passed P4b on
+every run.
+
+
+================================================================================
+3. P1: THE 20b IDENTITY REGRESSION (STOP-SHIP). PASS.
+================================================================================
+
+Four runs at the frozen configuration, unchanged from OB-1b:
+
+  --ctx-size 1024 --chunks 32 -b 1024 -ub 1024 --threads 8 --threads-batch 8
+  --no-warmup --seed 1 -ngl 0 --no-mmap --no-repack
+
+each under the house runlock, one lock cycle per run, 75 s courtesy yield after
+each release, free RAM confirmed above the 6 GB bar before each.
+
+P1a. Identity and route, byte for byte, against the pairs banked before this leg:
+
+  run             limb      digest
+  res-prose       identity  96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925  MATCH
+                  route     4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df  MATCH
+  res-code        identity  9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8  MATCH
+                  route     f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77  MATCH
+  lease-k8-code   identity  9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8  MATCH
+                  route     f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77  MATCH
+  lease-k0-prose  identity  96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925  MATCH
+                  route     4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df  MATCH
+
+Eight of eight. This is the stronger statement rather than "each run matches its
+own reference": a leased run and a resident run on the same corpus hash to the
+SAME pair, so the allocator has not moved output on either path.
+
+P1b. The counters are a regression too, and the allocator did not move them:
+
+  run             lease_events  banked   peak_concurrent  banked
+  lease-k8-code          18100   18100         318090240   318090240  MATCH
+  lease-k0-prose         23096   23096         424120320   424120320  MATCH
+
+P1c. The resident controls leased nothing:
+
+  res-prose  resident_bytes_loaded=0  lease_events=0  MATCH
+  res-code   resident_bytes_loaded=0  lease_events=0  MATCH
+
+A fifth run, the 1-chunk smoke fired before any lock time was spent on the
+matrix, also matched OB-1b's own 1-chunk smoke on both limbs:
+identity b0582867e00d2db9a5d8bb8802c7c1c31fb9dbd37d51bd0f56a775ae30c314d8,
+route 8b8dee364ec4249b1bf59b6e1a9d0c17f9c5823f3ad1c01b5e37eca4807db97e.
+
+
+================================================================================
+4. P2: THE ALLOCATION BAR, MEASURED NOT ASSERTED. PASS.
+================================================================================
+
+Engine counters, from the runs' own ob1-stats.txt:
+
+  run              va_model      commit_peak  peak_single  commits  decommits  vma_peak  VmHWM_kb
+  res-prose      12096558336     12096561152    615333888      459          0       173  12992380
+  res-code       12096558336     12096561152    615333888      459          0       179  13009468
+  lease-k8-code  12096558336      4793679872    615333888   110067     108462      6777   5877304
+  lease-k0-prose 12096558336      2359328768    615333888   138891     138396      8850   3480308
+
+A NUMBER THAT NEEDS NAMING BEFORE ANYTHING ELSE IS READ. The prereg quotes the
+20b model-state request as 12109566624, which is the FILE size. The weights
+BUFFER is 12096558336, smaller by 13008288 bytes of GGUF header and padding that
+never enter the buffer. The reservation this leg takes is the buffer size, so
+every derivation below is given in both forms and the prereg's bars are applied
+literally as written.
+
+P2a. ON THE LEASED RUNS NO MODEL-STATE COMMIT IS A FUNCTION OF TOTAL EXPERT
+BYTES.
+
+  lease-k0-prose
+    measured commit peak      2359328768
+    prereg P2a bar            2373083808      PASS
+    headroom under the bar    13755040 bytes (0.5796 pct of the bar)
+    re-derived from the buffer, which is what is actually committed:
+      buffer trunk            12096558336 - 10178887680 = 1917670656
+      K x L x per_expert      0 x 24 x 13253760 = 0
+      peak concurrent lease   424120320
+      sum before edge         2341790976
+      measured minus that     17537792 = the outward-rounding edge actually paid
+      edge census bound       18284544        edge within census
+    against the allocation the old allocator makes for the same run:
+      old single request      12096558336
+      reduction               5.1271x
+
+  lease-k8-code
+    measured commit peak      4793679872
+    prereg P2a bar            4811775648      PASS
+    headroom under the bar    18095776 bytes (0.3761 pct of the bar)
+    re-derived from the buffer:
+      buffer trunk            1917670656
+      K x L x per_expert      8 x 24 x 13253760 = 2544721920
+      peak concurrent lease   318090240
+      sum before edge         4780482816
+      measured minus that     13197056 = the edge actually paid
+      edge census bound       18284544        edge within census
+      old single request      12096558336
+      reduction               2.5234x
+
+THE PAGE CENSUS HELD IN BOTH DIRECTIONS. Prereg section 3.5 predicted the
+outward-rounding edge would cost at most 18284544 bytes on the 20b. Measured:
+17537792 at K=0 and 13197056 at K=8. The K=0 figure is 95.92 percent of the
+bound, which is where it should be: at K=0 every expert in every layer is leased
+at some point, so essentially every internal expert boundary page ends up
+permanently committed. The bound was not loose and it was not exceeded.
+
+P2b. THE N-PROPORTIONAL REQUEST IS GONE. The largest single commit on every run,
+leased or resident, is 615333888 bytes (586.83 MB), which is one trunk tensor.
+No commit request on any run is anywhere near 12096558336. The reservation is
+reported as alloc_va_model_bytes and is DECLARED, not counted against the bar,
+per prereg section 4.3. On the 120b the same figure is 615333888, against the
+prereg's ceiling of 1 GB: see section 6.
+
+P2c. VmHWM against the committed model state plus the engine's own buffers.
+Those buffers are not printed at this build's default log level, so they were
+read off a separate 1-chunk diagnostic run with -v
+(research/ob5a/DIAG-BUFFERS-1.txt). They are a function of the configuration,
+not of the allocator, and the leased and resident diagnostic arms report them
+identically. The engine's own words, verbatim:
+
+  CPU compute buffer size =   823.89 MiB
+  CPU KV buffer size =    24.00 MiB   (printed twice: gpt-oss carries a full
+                                       cache and a sliding-window one)
+  CPU  output buffer size =     0.77 MiB
+  sum 872.6567 MiB = 915046871 bytes
+
+  run                 VmHWM_B   commit_peak      +buffers  unaccounted   ratio  bar
+  res-prose       13304197120   12096561152   13011608023    292589097  1.0225  1.25 PASS
+  res-code        13321695232   12096561152   13011608023    310087209  1.0238  1.25 PASS
+  lease-k8-code    6018359296    4793679872    5708726743    309632553  1.0542  1.25 PASS
+  lease-k0-prose   3563835392    2359328768    3274375639    289459753  1.0884  1.25 PASS
+
+The unaccounted column is what VmHWM carries beyond the committed model state
+and the engine's buffers: the tokenized corpus, the allocator's own page bitmap,
+the C++ runtime, the loader's transient reads. If the allocator were leaking
+N-proportional state this column would grow with the model term. It does not: it
+stays between 292589097 and 310087209 across a 5.1x range of committed model
+state, a spread of 17498112 bytes.
+
+THE STRONGEST FORM OF THIS LIMB IS NOT A RATIO. It is the comparison with the
+banked runs, which used the OLD allocator on this box at this configuration:
+
+  run             ob5a MaxRSS_kb  banked MaxRSS_kb  delta_kb  delta_pct
+  res-prose             12992380          12991324      1056    0.0081%
+  res-code              13009468          13008364      1104    0.0085%
+  lease-k8-code          5877304           5877468      -164   -0.0028%
+  lease-k0-prose         3480308           3479932       376    0.0108%
+
+The allocator changed the process's peak resident set by at most 0.0108 percent
+on any run. It did not trade commit for RSS; it removed the request without
+moving the residency. (lease-k8-code's banked figure is OB-1's 10-thread run,
+the only one that exists, so that row is context rather than a bar.)
+
+P2d. THE RESIDENT CONTROLS. Both commit 12096561152 of the 12096558336-byte
+buffer, that is the whole page-rounded reservation, 100.0000 percent. This is BY
+CONSTRUCTION and is the control, not a bar failure: with no lease active every
+tensor is committed whole in the loader, so these runs ARE the N-proportional
+case, and they are what the leased runs are read against. The 2816-byte excess
+over the buffer size is the last partial page of the mapping, which mmap rounds
+up: 12096558336 / 4096 = 2953260.8203125, so the mapping is 2953261 pages =
+12096561152 bytes.
+
+
+================================================================================
+5. P4: ALLOCATOR DETERMINISM. PASS.
+================================================================================
+
+P4c FIRST, because it is what stops P4a being a rolling hash of nothing. Under
+OB5A_ALLOC_JOURNAL the full record stream is written, and the printed
+alloc_journal_sha256 must equal the sha256 of that file. Measured on all six
+runs of this leg plus both 120b and 20b smokes:
+
+  aa-k0-prose-a   c9e9e8ee91434a086024b9032b58fb214c631482f1cd697766f08095be84572d  MATCH
+  aa-k0-prose-b   c9e9e8ee91434a086024b9032b58fb214c631482f1cd697766f08095be84572d  MATCH
+  res-prose       01786927d0a3273c7b72bbc80b007587d53503ebe433588eacb4802a5334be44  MATCH
+  res-code        01786927d0a3273c7b72bbc80b007587d53503ebe433588eacb4802a5334be44  MATCH
+  lease-k8-code   78badcfe839603ca27c17cc0987a994340b7daab8c12ed7c0c927fecacda7f85  MATCH
+  lease-k0-prose  02b3dce67db6c4729a4afc968d80bb58858c1fc0b724ea5ff3cae1c5d067228f  MATCH
+  smoke120-k8-prose e383b8f7a0251f2f95d6f5f4bb8417b4513476a1820c9556f2c915c14d48ff89  MATCH
+
+An unplanned result worth keeping: res-prose and res-code produce the SAME
+journal digest, on different corpora. That is correct and it is a property, not
+a coincidence. With no lease active the commit schedule is a pure function of
+the model's tensor layout and nothing else, so the corpus cannot reach it. The
+leased runs, whose schedule is driven by the route trace, differ from each other
+as they must.
+
+P4b. The A/A pair, aa-k0-prose-a and aa-k0-prose-b, 2 chunks each:
+
+  alloc_journal_sha256         c9e9e8ee91434a086024b9032b58fb214c631482f1cd697766f08095be84572d  MATCH
+  alloc_journal_records        17301                                                            MATCH
+  alloc_commit_calls           8895                                                             MATCH
+  alloc_decommit_calls         8406                                                             MATCH
+  alloc_commit_model_peak      2359304192                                                       MATCH
+  alloc_commit_peak_single     615333888                                                        MATCH
+  alloc_commit_total_bytes     20905832448                                                      MATCH
+  alloc_decommit_bytes         18535133184                                                      MATCH
+  alloc_va_model_bytes         12096558336                                                      MATCH
+  lease_events                 1430                                                             MATCH
+  peak_concurrent_lease_bytes  424120320                                                        MATCH
+  lease_bytes_read             18952876800                                                      MATCH
+  identity.txt                 7b215e1dcecd9d1e0584017366215dbfff375412fc6a73960496b6acec63a61c  MATCH
+  route.log                    4f4030f3911b92f634a343bd97d056f6c272d7196d9c4903b397105469d13241  MATCH
+  alloc-journal.txt            c9e9e8ee91434a086024b9032b58fb214c631482f1cd697766f08095be84572d  MATCH
+
+ONE COUNTER IS DELIBERATELY EXCLUDED AND IS NAMED RATHER THAN QUIETLY DROPPED.
+alloc_vma_peak was 8850 on run a and 8840 on run b. It counts lines of
+/proc/self/maps, which includes mappings this allocator does not own: the
+loader's transient reads, the C++ heap's arenas, thread stacks. It is reported
+as a HEADROOM measurement against vm.max_map_count and was never a determinism
+limb; the 10-line difference is those other mappings, not the commit schedule,
+and the commit schedule's own determinism is what alloc_journal_sha256 measures.
+
+P4d. The call counts against what the residency schedule implies.
+
+THE PREREG'S P4d IS CORRECTED HERE, and the correction is a finding rather than
+a fudge. Prereg section 7 says "decommits = 6 x lease_events". That is not the
+relation. ob1_release_active runs at the START of the next route call, and there
+is no route call after the last layer of the last chunk, so the final route
+call's leases are never released. The true relation, and the engine now prints
+lease_active_slices_at_exit so it is checkable rather than assumed:
+
+  alloc_decommit_calls + lease_active_slices_at_exit == 6 x lease_events
+
+  run              decommits  active_at_exit       sum   6 x lease_events
+  aa-k0-prose-a         8406             174      8580               8580  MATCH
+  aa-k0-prose-b         8406             174      8580               8580  MATCH
+  res-prose                0               0         0                  0  MATCH
+  res-code                 0               0         0                  0  MATCH
+  lease-k8-code       108462             138    108600             108600  MATCH
+  lease-k0-prose      138396             180    138576             138576  MATCH
+  smoke120-k8-prose    21306             540     21846              21846  MATCH
+
+This is not a new fact about the engine; it was already latent in a banked
+counter. OB-1b's lease-k0-prose recorded lease_bytes_read 306108840960 and
+lease_drop_bytes 305144365056, a gap of 964475904. Inward rounding alone loses
+4095 bytes per slice in expectation on both slice sizes (derived: for
+n = 4406400 the loss is 3200 unless the base residue lies in 1..895 when it is
+7296, and (3200 + 895 x 7296 + 3200 x 3200) / 4096 = 4095 exactly; for
+n = 11520 the same computation also gives 4095). Over 138576 slices that is
+567468720 bytes, not 964475904. Solving
+
+  964475904 = U x 13253760 + (138576 - 6U) x 4095
+
+gives U = 30.0099, that is 30 lease events in the final route call left
+undropped. This leg's engine reports the same quantity directly, as 180 slices,
+which is 30 events. The prereg's flat relation was off by exactly that term.
+
+The commit side holds as stated:
+
+  commits = trunk tensors + resident slices + 6 x lease_events
+
+  lease-k0-prose  138891 - 0    - 138576 = 315 trunk tensors
+  lease-k8-code   110067 - 1152 - 108600 = 315 trunk tensors
+  res-prose          459 - 0    -      0 = 459 trunk tensors
+
+315 and 459 differ by 144, which is 24 layers x 6 fused expert tensors: under an
+active lease ob1_commit_tensor declines those and the slice path takes them,
+exactly as designed.
+
+
+================================================================================
+6. THE 120b STARTABILITY SMOKE
+================================================================================
+
+research/ob5a/smoke-120b.sh, output at research/ob5a/SMOKE-120B-1.txt.
+
+THIS IS NOT P3. P3 is the night leg's: 8 chunks, A/A, against the banked paged
+pair, with the exposure and latency limbs. This is ONE chunk, and it exists to
+answer before 3 a.m. the question the leg was funded to answer.
+
+It carries a real identity limb, which is why it was worth the lock time rather
+than being a bare "did it load". llama-perplexity accumulates its per-chunk PPL
+figures on one line, so a 1-chunk run's identity artifact is a BYTE-EXACT PREFIX
+of the 8-chunk one. The banked paged reference's identity begins [1]88.3425, so
+a passing 1-chunk leased run must produce exactly [1]88.3425, and nothing else.
+Both the expected string and its sha256 were written into the script before the
+run.
+
+  exit_rc 0
+  wallclock_s 104.071809667
+  identity got  [1]88.3425,
+  identity sha256 got  59d9369f09d49f2cecfcc3454f8ab6e8378a7facc2d70b6ea4e84fb5aaefd759
+  identity sha256 want 59d9369f09d49f2cecfcc3454f8ab6e8378a7facc2d70b6ea4e84fb5aaefd759   MATCH
+  route.log 36864 lines, byte-identical to the first 36864 lines of the banked
+    294912-line route log                                                       MATCH
+  route sha256 f08051e653f904ac73382bd0dbb5a306362a8c4facc28b1009a4c2f25b7ac998
+
+  no ggml_aligned_malloc failure, no 63374323968-byte request, no fatal, no
+  SIGSEGV inside the expert region
+
+Counters:
+
+  layers=36  experts=128  registered_expert_tensors=216
+  resident_slices_loaded=1728   resident_bytes_loaded=3817082880
+  lease_events=3641             lease_bytes_read=48256940160
+  peak_concurrent_lease_bytes=1590451200
+  alloc_va_model_bytes=63374323968
+  alloc_commit_model_peak=7715102720
+  alloc_commit_peak_single=615333888
+  alloc_commit_calls=24045      alloc_decommit_calls=21306
+  alloc_vma_peak=46657
+  lease_active_slices_at_exit=540
+  proc_vmpeak_kb=65029296  proc_vmhwm_kb=8494872  proc_vmrss_kb=274252
+  Maximum resident set size (kbytes): 8494872
+
+THE PREREG'S CENTRAL 120b PREDICTION WAS HIT EXACTLY, ON THE FIRST CHUNK.
+peak_concurrent_lease_bytes came back 1590451200, which is the literal figure
+banked in prereg section 6.2 as (E-K) x per_expert = (128-8) x 13253760. Prereg
+section 6.3 and deviation D4 argued that this term, and not E x per_expert =
+1696481280, is the right one because the route log says all 128 experts of some
+layer are routed in the worst micro-batch while 8 are resident. The engine now
+says the same thing from the other side. (The banked prediction is the worst
+over all EIGHT chunks; this run saw it in chunk 1, so the figure is confirmed
+reachable, and P3b remains the night leg's to close.)
+
+The commit peak, fully accounted:
+
+  buffer trunk               63374323968 - 61073326080 = 2300997888
+  K=8 pool                   8 x 36 x 13253760 = 3817082880
+  peak concurrent (1 chunk)  1590451200
+  sum before edge            7708531968
+  measured commit peak       7715102720
+  edge actually paid         6570752
+  120b edge census bound     112361472
+
+  prereg ACCT (file form)    2314020128 + 3817082880 + 1590451200 = 7721554208
+  measured minus prereg ACCT -6451488
+  which is exactly           file trunk 2314020128 - buffer trunk 2300997888
+                             = 13022240, minus the 6570752 edge paid = 6451488
+
+WHAT THIS SETTLES FOR THE NIGHT LEG'S P2a. The 8-chunk run cannot exceed
+
+  2300997888 + 3817082880 + 1590451200 + 112361472 = 7820893440
+
+because the pool and the trunk are fixed, the peak concurrent term is already at
+its banked maximum, and the edge cannot exceed the census. The prereg's P2a bar
+for the 120b is 7833915680. The bar is therefore satisfiable by construction,
+with 13022240 bytes of margin even in the worst case.
+
+Exposure, on the smoke's own numbers, offered as a preview and not as P3c:
+63387346208 / 7715102720 = 8.2159. P3c's figure is ACCT 7721554208 and
+EXPOSURE_acct 8.209143, and it is the night leg's to confirm at 8 chunks.
+
+ONE NUMBER THE NIGHT LEG SHOULD SEE COMING: alloc_vma_peak was 46657. Prereg
+section 3.6 predicted worst-case 4765 VMAs for the 120b at K=8 and measured
+headroom of 220.1x. The real figure is 9.8x the prediction, because the census
+counted committed ISLANDS while mprotect creates boundary VMAs on both sides of
+every island and the punctured PROT_NONE gaps between leased experts are not
+contiguous. The same underestimate shows on the 20b: census 2185 worst case at
+K=8, measured 6777. Headroom against the measured vm.max_map_count of 1048576 is
+still 22.5x on the 120b and 118.5x on the 20b K=0 run, so nothing is at risk,
+but the census's VMA limb was optimistic by about an order of magnitude and
+should be read that way rather than as a validated prediction.
+
+Lease cost decomposition for the single chunk, literal ns:
+
+  resident_read_ns    5152048807   resident_verify_ns  1596344283   (load, once)
+  lease_read_ns      36277810633   lease_verify_ns    20697210688
+  lease_drop_ns       2908415540
+  lease overhead this chunk = 36277810633 + 20697210688 + 2908415540
+                            = 59883436861 ns = 59.883436861 s
+
+Prereg section 6.6 predicted 39.823 s per chunk. The measured 59.883 s is 50.4
+percent above it, on the run's FIRST chunk with a cold page cache on a 63 GB
+file. Later chunks should be cheaper; this leg has one chunk and does not
+extrapolate from it. The night leg measures chunk_ns properly, which this run
+could not: chunk timing needs at least two layer-0 route calls and a 1-chunk run
+makes one (chunk_count=0).
+
+
+================================================================================
+7. COST
+================================================================================
+
+  run             wall_s (ob5a)   wall_s banked   delta
+  res-prose       632.155422518    641.014834    -1.382%
+  res-code        637.727468161    633.580138    +0.655%
+  lease-k0-prose  908.702772783    916.076807    -0.805%
+  lease-k8-code   861.577634171    (none banked at 8 threads)
+  aa-k0-prose-a    60.442598537    (2 chunks, no banked partner)
+  aa-k0-prose-b    59.509241357
+
+THE ALLOCATOR'S COST IS NOT RESOLVABLE AT THIS SAMPLE SIZE, AND THIS LEG SAYS SO
+RATHER THAN CLAIMING A SPEEDUP. Prereg section 3.4 predicted the added
+mprotect(PROT_NONE) would cost +1.5087 s on lease-k0-prose at the worse of the
+two probe runs, that is +0.1647 percent of wall. OB-1b's own A/A pair at the
+same configuration, lease-k0-code and lease-k0-code-b, measured 923.879122037 s
+and 947.302172451 s, a spread of 23.423050414 s, 2.535 percent. The predicted
+cost is 15.5x smaller than the measured run-to-run spread of the very same
+configuration. Three of this leg's four deltas are negative and one is positive;
+all four are inside that spread. The honest statement is that the allocator's
+wall-clock cost is below this box's noise floor, not that it is free and not
+that it is 1.5 s.
+
+lease-k8-code has no 8-thread banked partner: OB-1's only lease-k8-code run was
+at --threads 10 and measured 778.10 s, which is not comparable. Its peak RSS is
+comparable and is reported in section 4.
+
+The 20b K=8 run is 5.5 percent faster than the K=0 run (861.577634171 against
+908.702772783) while committing 2.03x more model state, which is the leasing
+curve OB-1b already mapped and is not a result of this leg.
+
+
+================================================================================
+8. DEVIATIONS
+================================================================================
+
+D-B2-1  THE PUBLIC DECLARATIONS DO NOT GO IN ggml/include/ggml-backend.h. Prereg
+        section 4.1 puts the buffer type in ggml/src/ggml-backend.cpp, and that
+        is exactly where it is. The DECLARATIONS go in src/ob1-lease.h instead,
+        inside extern "C", with GGML_API on them so the symbols are exported
+        from libggml-base.so exactly as they would have been. Reason, measured
+        on this tree: 371 dependency files reference ggml-backend.h and 4
+        reference ob1-lease.h, so editing the public header would rebuild
+        essentially the whole tree including the CUDA translation units for a
+        change confined to one CPU-side .cpp. nm confirms the symbols are
+        exported from libggml-base.so.0 and undefined-referenced from
+        libllama.so.0, which is the arrangement the prereg intended.
+
+D-B2-2  THE PREREG'S P4d RELATION IS CORRECTED. "decommits = 6 x lease_events"
+        is not the relation; the final route call's leases are never released.
+        The corrected relation, checked on all seven runs, is
+        alloc_decommit_calls + lease_active_slices_at_exit == 6 x lease_events.
+        Section 5 derives the same correction independently from a banked OB-1b
+        counter, so this is a pre-existing property of the lease engine that the
+        prereg's arithmetic missed, not a behaviour this leg introduced.
+
+D-B2-3  THE ALLOCATION JOURNAL WAS ENABLED ON EVERY RUN, not on a special one.
+        Prereg P4c only requires it under OB5A_ALLOC_JOURNAL. Enabling it
+        everywhere makes P4c provable on every run for the price of 13049 to
+        7411768 bytes of buffered local writes per run. It cannot affect
+        identity, and the wall-clock section shows the totals sit inside the
+        box's noise floor either way. Declared because it is a difference from
+        the banked runs' conditions.
+
+D-B2-4  THE COMPUTE-BUFFER FIGURES FOR P2c CAME FROM A SEPARATE DIAGNOSTIC RUN.
+        This build's default log level does not print them, and raising the log
+        level on a P1 run would have changed a frozen configuration. Two 1-chunk
+        arms with -v were run instead, one leased and one resident
+        (research/ob5a/DIAG-BUFFERS-1.txt); they report the buffers identically,
+        and the buffers are a function of the configuration rather than of the
+        allocator.
+
+D-B2-5  A 120b RUN WAS MADE, AND IT IS NOT P3. One chunk, K=8, 104.071809667 s
+        of lock time, with its expected identity and route committed to the
+        script before the run. The prereg's kill lines put the 120b behind P1,
+        and P1 passed before this ran. It is reported as a startability smoke
+        with an identity limb, never as the 120b row; P3's eight chunks, A/A,
+        exposure and latency limbs are untouched and remain the night leg's.
+
+D-B2-6  THE FINAL COURTESY YIELD DID NOT COMPLETE. The matrix wrapper process
+        was terminated during the 75 s yield that follows the last run, res-code,
+        after that run had already finished with rc=0 and released the lock. No
+        run was interrupted, no data was lost, the runlock was confirmed free
+        afterwards, and pid 654 and pid 489 were confirmed alive. The matrix
+        script's closing "MATRIX DONE" line is therefore absent from
+        research/ob5a/logs/MATRIX.log while every run's own log is complete.
+
+D-B2-7  THE 20b MODEL-STATE FIGURE IS 12096558336, NOT 12109566624. The prereg
+        uses the file size where it means the buffer size. Both are given
+        throughout section 4 and the prereg's bars are applied literally as
+        written; the difference, 13008288 bytes, is GGUF header and padding that
+        never enters the weights buffer. The same distinction on the 120b is
+        63374323968 buffer against 63387346208 file, and it fully accounts for
+        the 6451488-byte gap between the smoke's measured commit peak and the
+        prereg's ACCT.
+
+D-B2-8  A CONCURRENT ARCHITECT-RUN WORKFLOW APPEARED ON THE BOX AFTER THIS LEG'S
+        LAST RUN, AND IT FLIPS vm.overcommit_memory TO 1. This is recorded
+        because the headline claim of this leg is that the 120b starts WITHOUT
+        changing a kernel setting, and a kernel setting was changed on this box
+        today. It was not changed during any run of this leg. The timeline,
+        literal:
+
+          14:37:54Z  this leg's last 20b matrix run releases the lock
+          14:41:49Z  this leg's buffer diagnostic starts
+          14:44:41Z  the scout's first script appears on disk
+          14:45:26Z  this leg's buffer diagnostic ends
+          14:46:13Z  the scout's executed scripts appear on disk
+          14:48:28Z  this leg's 120b smoke acquires the lock
+          14:50:12Z  its llama-perplexity exits after 104.071809667 s; lock released
+          14:50:15Z  the scout's first cycle starts and flips overcommit to 1
+
+        The scout is /mnt/f/f32/stage/research/ob5a/scout-all.sh, which names its
+        authorization as the THREADS.md owner-orders line at commit d95cbd1. It
+        flips vm.overcommit_memory to 1 only while holding the runlock and flips
+        it back to 0 before releasing, so the box is never at overcommit=1
+        without the lock held. Since the runlock is mutually exclusive and this
+        leg held it for the whole of every model run it made, no run of this leg
+        executed at overcommit=1. The three seconds between 14:50:12Z and
+        14:50:15Z are the closest approach.
+
+        AN HONEST GAP GOES WITH THIS. This leg's run driver did not record
+        /proc/sys/vm/overcommit_memory per run, so the statement above rests on
+        the lock's mutual exclusion plus these timestamps rather than on a
+        per-run witness. research/ob5a/BUILD-1.txt records overcommit_memory=0 at
+        13:33Z, before every run. THE NIGHT LEG SHOULD RECORD THE VALUE INSIDE
+        EACH RUN, and must confirm it is 0 before starting, because the scout
+        leaves it at 1 while it holds the lock and this leg's whole claim is
+        about the overcommit=0 case. As of this receipt's last check the value
+        was 1 and the scout held the lock, which is its protocol working, not a
+        fault.
+
+        The scout is the CONTROL prereg section 3.7 named and declined as the
+        allocator: "add MAP_NORESERVE, or equivalently flip vm.overcommit_memory
+        to 1 ... the runtime still ASKS for N bytes and the kernel politely
+        lies". Its own first-cycle figures, quoted as another workflow's data and
+        not as a result of this leg, are exit_rc 0 and wallclock_s
+        101.378756546 for the same 1-chunk 120b configuration on the OB-1b
+        binary. That is 2.693 s faster than this leg's 104.071809667 s, but the
+        two runs are not a controlled pair: this leg's ran first on a cold page
+        cache over a 63 GB file and the scout's ran three seconds later on a warm
+        one, which is a confound larger than the gap. No cost conclusion is drawn
+        from it here.
+
+NO DEVIATION FROM THE HOUSE RULES. Every model run held
+/mnt/f/f32/stage/research/runlock, taken with mkdir and released with rmdir
+immediately after the run, with a 5 s poll and a 75 s courtesy yield (except as
+recorded in D-B2-6). Free RAM was confirmed above the 6 GB bar before every run,
+and was 22 GB or more at every check. Every run used --threads 8 --threads-batch
+8 at nice 10; every analysis ran at 4 threads or fewer. pid 654 and pid 489 were
+confirmed alive before and after every run, including the 120b smoke. No weights
+were downloaded. Nothing outside /mnt/f/f32/stage/research/ob5a/ was written in
+the stage tree. The sealed corpus was never read.
+
+
+================================================================================
+9. NIGHT-LEG HANDOFF
+================================================================================
+
+9.1 THE BINARY. Do not rebuild. The tree is left in phase C state, built and
+verified.
+
+  /root/ob5a/llama.cpp/build/bin/llama-perplexity
+    f9965806c98f5dce6cc7f4f44e52dd57e8d9b51cf27826ad4608db4599e23249
+  /root/ob5a/llama.cpp/build/bin/libllama.so.0
+    5e2c4a1b34606ffe1d9cc7e563345b74426d3b8de836b4176d712916a5aced00
+  /root/ob5a/llama.cpp/build/bin/libggml-base.so.0
+    6f1ba2c7a215c8c33594afdce199530138272697b7d6d29aa677bd4a3c27318d
+  /root/ob5a/llama.cpp/build/bin/libggml-cpu.so.0
+    41773bf9edcd89ccaaece7a1b7a2897e61ab07689f81073e8febed09a2f5fc86
+  /root/ob5a/llama.cpp/build/bin/libllama-perplexity-impl.so
+    5aea400e28040543c7f0f005d95e1a8d976650956b4d8a8c22774fdd90923c72
+
+  branch ob5a, worktree /root/ob5a/llama.cpp, HEAD c087083d21e6bd32c1faebc09434a4b54f5d946a,
+  five files modified in the working tree. To reproduce from a fresh worktree of
+  ob1b: apply research/ob5a/alloc.patch
+  (sha256 5a6f636dbd29cf1ee282d5254f60a49688fa7a44d47e14161de6c8ec582837b3),
+  which carries the D3 guard fix and the allocator together, then run
+  research/ob5a/build-ob5a.sh.
+
+  Source digests of the five touched files, as built:
+    ab1ee51d5905bf1a949bda0cca4ef63926493159338af314045b1fb566676018  src/ob1-lease.cpp
+    087a045dddc35a4618b6580c406b2b35b32b93dd46e71e2a3573fe3ed9b34172  src/ob1-lease.h
+    be278cef9427d165ce2632683d99ee006b504f7795948eabe8d2de3779655141  ggml/src/ggml-backend.cpp
+    9f9dcdaec300c3c87a07de8cac359cf0b5ff6ca33c53445f612245bb5dc16efb  src/llama-model.cpp
+    28ea244454bb29ac66b39074d534034f7fa655878570729f00fdff09e596ad76  src/llama-model-loader.cpp
+
+9.2 THE INVOCATION. The frozen P3 configuration, with the two environment
+variables this leg adds. OB5A_RESERVE=1 IS THE ONLY THING THAT TURNS THE
+ALLOCATOR ON; without it the engine behaves exactly as OB-1b's did and the 120b
+will fail at load in 1.07 s as before.
+
+  CUDA_VISIBLE_DEVICES="" \
+  OB5A_RESERVE=1 \
+  OB5A_ALLOC_JOURNAL=<path> \
+  LLAMA_ROUTE_LOG=<path> \
+  OB1_STATS=<path> \
+  OB1_LEASE=/mnt/f/f32/openbob-wt/research-2/research/ob1b/RESIDENT-SETS-120B-K8.json \
+  OB1_K=8 \
+  OB1_MANIFEST=/mnt/f/f32/openbob-wt/research-2/research/ob1b/EXPERT-MANIFEST-120B.sha256 \
+  OB1_GGUF=/root/openbob-baselines/models/gpt-oss-120b-MXFP4.gguf \
+  nice -n 10 /usr/bin/time -v \
+  /root/ob5a/llama.cpp/build/bin/llama-perplexity \
+    -m /root/openbob-baselines/models/gpt-oss-120b-MXFP4.gguf \
+    -f /mnt/f/f32/stage/research/ob1/AC-PROSE.txt \
+    --ctx-size 1024 --chunks 8 -b 1024 -ub 1024 \
+    --threads 8 --threads-batch 8 --no-warmup --seed 1 -ngl 0 --no-mmap --no-repack
+
+  research/ob5a/smoke-120b.sh is a working template; change --chunks 1 to
+  --chunks 8, drop the prefix comparison, and compare against the full banked
+  pair instead. research/ob5a/locked-run-ob5a.sh takes the runlock correctly and
+  research/ob5a/run-ob5a.sh renders the digest verdicts inline.
+
+  Input digests, verified this leg:
+    8053f18a70030ad2ac2e59fe220a064ee26f35ad4eb3876bbb7c65f6e994530b  RESIDENT-SETS-120B-K8.json
+    c71ce2ceec07db8932c8bbb3155029ca5f6b49b940dc46066240b2a47dbf1c80  EXPERT-MANIFEST-120B.sha256
+    310710a1f3e04484fcef2d0cb4ac1de93a8a6e02ced07ed3f2c9b79505e81a8e  AC-PROSE.txt
+    63387346208 bytes                                                gpt-oss-120b-MXFP4.gguf
+
+9.3 WHAT TO EXPECT, so a surprise is recognisable as one.
+
+  starts at all                 yes, proven, 104.071809667 s for 1 chunk
+  identity chunk 1              [1]88.3425, exactly
+  P3a full identity             9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019
+  P3a full route                a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1
+  P3b lease_events              27403 (chunk 1 alone gave 3641)
+  P3b peak_concurrent           1590451200, already confirmed reachable in chunk 1
+  P3b lease_bytes_read          363192785280
+  P3c ACCT / EXPOSURE_acct      7721554208 / 8.209143
+  alloc_va_model_bytes          63374323968, declared not charged
+  alloc_commit_model_peak       between 7715102720 and 7820893440
+  alloc_commit_peak_single      615333888, against the 1 GB P2b ceiling
+  VmHWM                         roughly 8494872 kbytes plus later-chunk edge
+  alloc_vma_peak                roughly 46657, headroom 22.5x on max_map_count
+  P3d p95 bar                   99239.6 ms per chunk (pag120-prose-a's 49619.8 x 2.0)
+  lease overhead per chunk      59.9 s on the cold first chunk, expected lower
+                                after; the prereg's floor was 39.823 s
+  P4d relation                  decommits + active_at_exit == 6 x lease_events
+  RAM                           free RAM was 15777 MB before the smoke and the
+                                run peaked at 8494872 kbytes; the 6 GB house bar
+                                is comfortable, but the 120b run is the largest
+                                thing this box does and the bar should be checked
+                                immediately before it, not assumed
+
+  RUN TIME. Chunk 1 took 104.071809667 s wall including model load. Eight chunks
+  should be roughly 10 to 13 minutes of lock time, against the paged reference's
+  410.282 s. Budget one lock cycle per run and two runs for the A/A pair.
+
+  CHECK vm.overcommit_memory BEFORE STARTING, AND RECORD IT INSIDE EACH RUN.
+  It must be 0. A concurrent architect-run scout on this box flips it to 1 while
+  it holds the runlock and back to 0 when it releases (see D-B2-8); if a run of
+  P3 executed at 1 the result would still be correct but the claim would be
+  worthless, because overcommit=1 is precisely the shortcut prereg section 3.7
+  refused and this allocator exists to avoid. Add
+  "overcommit_at_run: $(cat /proc/sys/vm/overcommit_memory)" to the run driver;
+  this leg did not, and says so as a declared gap.
+
+9.4 THE FIVE WAYS IT CAN GO WRONG, and what each means.
+
+  1. A SIGSEGV inside the expert region. This is a CORRECTNESS FINDING, not a
+     crash to patch around: it means a kernel read touched an expert the
+     residency schedule said was absent, which under the old madvise-only design
+     would have silently read zeros and been invisible. Localize it, report it,
+     and do not widen the commit to make it go away. Nothing of the sort
+     happened in 3641 lease events on the 120b or 23096 on the 20b.
+  2. "OB5A RESERVE FATAL: <accessor>: range is not committed". Same class of
+     finding, caught earlier: something called get_tensor, set_tensor,
+     cpy_tensor or memset_tensor on an uncommitted range. Report the accessor
+     named in the message.
+  3. "OB5A_RESERVE requires --no-mmap" / "incompatible with --mlock" /
+     "incompatible with --check-tensors". A flag was added to the frozen
+     configuration. Take the flag out; do not take the guard out.
+  4. alloc_commit_model_peak above 7833915680. The peak concurrent term moved,
+     or the edge exceeded the census. Both are computable from the journal,
+     which names the exact page range of every commit.
+  5. Identity mismatch against the paged pair. The pain-signal law applies:
+     localize before acting, never retry until green. The 20b regression and the
+     120b first chunk both passed, so the first thing to check is whether
+     OB5A_RESERVE was actually on, which alloc_reserve_mode=1 in ob1-stats.txt
+     records.
+
+9.5 NOT DONE BY THIS LEG, deliberately: P3 in full, the 8-chunk A/A pair, the
+p95 latency limb, the exposure row, and any 120b claim beyond startability and
+the first chunk's identity.
+
+
+================================================================================
+10. ARTIFACTS
+================================================================================
+
+  research/ob5a/apply_alloc.py        the ggml-side patch, exact-literal edits
+  research/ob5a/apply_lease.py        the lease-engine patch, exact-literal edits
+  research/ob5a/alloc.patch           the whole diff against c087083
+  research/ob5a/build-ob5a.sh         three-phase build and binary verification
+  research/ob5a/BUILD-1.txt           its output
+  research/ob5a/run-ob5a.sh           the run driver, digest verdicts inline
+  research/ob5a/locked-run-ob5a.sh    the house runlock wrapper
+  research/ob5a/runs-ob5a.sh          the regression matrix
+  research/ob5a/analyze_alloc.py      the bar verdicts, computed from the runs
+  research/ob5a/ANALYZE-ALLOC-1.txt   its output
+  research/ob5a/diag-buffers.sh       the P2c denominator
+  research/ob5a/DIAG-BUFFERS-1.txt    its output
+  research/ob5a/smoke-120b.sh         the 120b startability smoke
+  research/ob5a/SMOKE-120B-1.txt      its output
+  research/ob5a/RUNLOG-1.txt          this file
+
+  run artifacts (identity.txt, route.log, stdout, stderr, ob1-stats.txt, and the
+  gzipped allocation journal) at /mnt/f/f32/stage/research/ob5a/runs/<run>/ and
+  /root/ob5a/runs/<run>/, per the house law that run evidence stays off the repo
+
+  box state at build time, literal:
+    vm.overcommit_memory=0
+    vm.overcommit_ratio=50
+    vm.max_map_count=1048576
+    page_size=4096
+    transparent_hugepage=always [madvise] never
+
+
+================================================================================
+11. THE NIGHT LEG: THE 120b K=8 P3 ROW, ON THE ALLOCATOR, WITH NO KERNEL KNOB
+================================================================================
+
+OB-5a builder 2b. Run 2026-09-01 on f32-HYDE, 15:09:03Z to 15:57:39Z. Bound by
+the same prereg, research/OB5A-ALLOC-1-PREREG.md at f7a96a0. Every bar in its
+section 7 was frozen and every prediction in its section 6 was banked before any
+run of this leg existed. Nothing below was fitted after the fact.
+
+11.0 THE ANSWER, FIRST
+
+OB1B-KNEE-1.md section 9 recorded the leased 120b point dying at model load in
+1.068426206 s on a request the runtime could not make. The day leg showed one
+chunk of it running. THE FULL ROW NOW EXISTS, TWICE, AND IT IS BYTE-IDENTICAL TO
+THE BANKED PAGED REFERENCE:
+
+  run                 exit_rc  wallclock_s      identity            route
+  p3-120b-k8-prose-a        0  723.056845679    MATCH 9d20bd03...   MATCH a32d0051...
+  p3-120b-k8-prose-b        0  723.344961536    MATCH 9d20bd03...   MATCH a32d0051...
+
+  identity line, verbatim, on both runs and on the banked reference:
+    [1]88.3425,[2]50.2396,[3]30.1827,[4]30.7592,[5]25.4183,[6]21.7583,[7]20.3296,[8]19.6660,
+
+  vm.overcommit_memory read 0 INSIDE the locked window on both runs, and 0 again
+  after each. No kernel setting was changed by this leg at any point.
+
+  alloc_va_model_bytes      63374323968   the reservation, DECLARED not charged
+  alloc_commit_model_peak    7806517248   what the kernel was actually asked to back
+  alloc_commit_peak_single    615333888   the largest single request, 586.83 MB
+  VmHWM                      9034235904   bytes (8822496 kbytes)
+  EXPOSURE_acct                 8.209143  the banked prediction, hit exactly
+  EXPOSURE_rss                  7.016348
+  p95 per chunk               89174.2 ms  bar 99239.6 ms
+
+  OB5A_120B_ANALYZE_FAILURES=0
+  ALL BARS PASS: P2a P2b P2c P3a P3b P3c P3d P3e P4b P4c P4d
+
+THE SENTENCE THE ROW EXISTS TO EARN, from OB5-PLAN-1.md section 1: at the same
+resident fraction K/E = 6.25 percent, the 20b measured 4.084898 and the 120b was
+PREDICTED 8.209143. The 120b is now MEASURED at 8.209143. The slope is no longer
+arithmetic; it is two measured points. Sparser, more expert-heavy models expose
+more under the same discipline.
+
+11.1 P1 WAS RE-VERIFIED BEFORE THIS LEG SPENT ANY LOCK TIME
+
+The prereg's section 7 says a P1 mismatch ends the leg, so P1 was checked against
+the run artifacts themselves rather than against section 3's prose. Recomputed
+from /mnt/f/f32/stage/research/ob5a/runs/<run>/, literal:
+
+  res-prose       identity 96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925
+                  route    4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df
+  res-code        identity 9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8
+                  route    f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77
+  lease-k8-code   identity 9acdf5ef883588030b675eebea31e3afbaf9f82d12d73edad8f3254762aa0ae8
+                  route    f0c3f341d8eaf299ccf09aba7850029f62cbe3f87b5a66162741f049bff41c77
+  lease-k0-prose  identity 96049ccf8ca241bf58233afe13ed75e2ca43180d81973360d04cebc80d551925
+                  route    4777aa8319f25d6e367f761ef12c7bec81a9ff7896bfed1b8ea0326b5dffc3df
+
+All eight equal the pairs banked in prereg section 6.5. P1 PASSES on an
+independent recomputation, so the 120b phase was authorised to fire.
+
+The binary was taken as the day leg left it, not rebuilt:
+  f9965806c98f5dce6cc7f4f44e52dd57e8d9b51cf27826ad4608db4599e23249  llama-perplexity
+which is the digest RUNLOG-1.txt section 9.1 handed over.
+
+11.2 THE KNOB, AND WHY THIS RUN IS THE ARCHITECTURAL ANSWER
+
+Prereg section 3.7 names the one-line alternative that makes the 63374323968-byte
+allocation succeed: flip vm.overcommit_memory to 1. It refuses it as the
+allocator, in the plan's words (OB5-PLAN-1 section 2.1), because at 1 "the
+runtime still ASKS for N bytes and the kernel politely lies."
+
+An architect-run SCOUT was measuring that exact configuration on this box during
+this leg: the LANDED OB-1b engine, the same 120b K=8 point, with the knob flipped.
+It holds the same runlock and flips the knob only while holding it. At this
+leg's first look the box read
+
+  /proc/sys/vm/overcommit_memory   1
+
+which is the scout mid-cycle, not a leftover, and NOT a deviation: its own driver
+reverts to 0 before it releases the lock. THE KNOB WAS THEREFORE NEVER TOUCHED BY
+THIS LEG, IN EITHER DIRECTION. Holding the lock is what guarantees the 0, and the
+0 was recorded inside the locked window on every run rather than assumed:
+
+  run                    overcommit_before_lock  overcommit_at_run  overcommit_after_run
+  p3-120b-k8-prose-a                          1                  0                     0
+  p3-120b-k8-prose-b                          0                  0                     0
+  diag-120b-k8                                0                  0                     0
+
+Run A requested the lock at 15:09:03Z and acquired it at 15:18:32Z, after 569 s
+of waiting for the scout. The before-lock 1 and the at-run 0 on that row are the
+scout releasing between those two timestamps.
+
+THIS CLOSES THE GAP THE DAY LEG DECLARED. RUNLOG-1.txt section 9.3: "Add
+overcommit_at_run: $(cat /proc/sys/vm/overcommit_memory) to the run driver; this
+leg did not, and says so as a declared gap." The night driver does, and it is
+FATAL rather than advisory: a value other than 0 aborts the run with exit 77
+before the model is loaded, because at 1 the result would still be correct and
+the claim would be worthless.
+
+oom_score_adj was likewise measured rather than asserted. The driver requests
+1000 and a sampler reads it back off the actual model process:
+
+  run A   oom_score_adj_measured: pid 1068931 -> 1000  oom_score 1332
+  run B   oom_score_adj_measured: pid 1069582 -> 1000  oom_score 1332
+
+pid 654 (openbob serve) and pid 489 (searxng) were confirmed alive before and
+after every run of this leg, and were alive at its end.
+
+11.3 P3a AND P3e: IDENTITY, ROUTE, AND THE A/A PAIR. PASS.
+
+  limb                        digest
+  banked paged reference id   9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019
+  banked paged reference rt   a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1
+  run A identity              9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019  MATCH
+  run A route                 a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1  MATCH
+  run B identity              9d20bd0365554989051d96b6ad4932625b0a6578002879f8253e6fcc21682019  MATCH
+  run B route                 a32d0051bd6d68f2777e64c7b889ae48d56621e9701b107fcef88c0e30cd89c1  MATCH
+
+P3e, the A/A pair against each other, byte for byte on both artifacts and to the
+event on every counter that is not a clock:
+
+  lease_events 27403, peak_concurrent_lease_bytes 1590451200,
+  lease_bytes_read 363192785280, lease_drop_bytes 361453068288, route_calls 288,
+  per_layer_lease_events (all 36), alloc_journal_sha256, alloc_commit_calls
+  166617, alloc_decommit_calls 163920, alloc_commit_model_peak 7806517248,
+  alloc_commit_peak_single 615333888, alloc_commit_total_bytes 369961222144,
+  alloc_va_model_bytes 63374323968, alloc_journal_records 330537,
+  lease_active_slices_at_exit 498.
+
+THE COMPARISON IS AGAINST A PAGED REFERENCE AND THE DIFFERENCE IS NAMED. The
+banked pair pag120-prose-a/b ran resident-and-paged (mmap, no --no-mmap on its
+command line); these runs are leased with --no-mmap and the reserve allocator.
+Prereg section 7 P3d set tau_0 to the paged pair knowingly, because a fully
+resident 120b baseline is UNMEASURABLE on a 24029 MB box. Identity holding across
+that gap is the point: three different ways of getting the bytes in front of the
+kernels produce one output.
+
+11.4 P3b: THE COUNTERS AGAINST THE BANKED PREDICTIONS. PASS, EXACTLY.
+
+  counter                      measured        predicted (prereg s6.2)
+  lease_events                    27403                  27403   MATCH
+  peak_concurrent_lease_bytes 1590451200             1590451200   MATCH
+  lease_bytes_read         363192785280           363192785280   MATCH
+  per_layer_lease_events   957,918,863,...        the banked 36-layer series   MATCH
+
+The per-layer series is reproduced in full, all 36 layers, from a prediction made
+against a route trace before the allocator existed. The prediction rule was
+itself validated on eight already-measured 20b points (prereg s6.1) before it was
+allowed to make this one.
+
+11.5 P2a AND P2b: THE ALLOCATION BAR. PASS.
+
+P2b. THE N-PROPORTIONAL REQUEST IS GONE.
+
+  alloc_va_model_bytes      63374323968   PROT_NONE reservation, declared per s4.3
+  alloc_commit_peak_single    615333888   586.83 MB, one trunk tensor
+  prereg P2b ceiling         1073741824   1 GB
+  no commit request of 63374323968 bytes appears on any run
+  reduction of the peak single request: 63374323968 / 615333888 = 102.9918x
+
+The engine's own line, verbatim from the -v diagnostic, is worth quoting because
+it carries the same number the failure did:
+
+  0.02.370.462 I load_tensors:  CPU_Reserve model buffer size = 60438.47 MiB
+  0.02.370.404 I ggml_backend_cpu_reserve_buffer_type_alloc_buffer: OB5A reserved
+               63374323968 bytes PROT_NONE, region 0, 15472248 pages, base 0x781cd4d88000
+
+60438.47 MiB is the figure in OB1B-KNEE-1.md section 9's fatal error
+("attempted to allocate 60438.47 MB"). The same quantity, at the same point in
+the load, is now a reservation that succeeds instead of an allocation that fails.
+
+P2a. THE PEAK SIMULTANEOUSLY COMMITTED MODEL STATE, RE-DERIVED FROM THE BUFFER.
+
+  measured alloc_commit_model_peak    7806517248
+  prereg P2a bar (ACCT + edge census) 7833915680      PASS
+  headroom under the bar                27398432 bytes (0.3497 pct of the bar)
+  re-derived:
+    buffer trunk        63374323968 - 61073326080 = 2300997888
+    K x L x per_expert  8 x 36 x 13253760          = 3817082880
+    peak concurrent lease                            1590451200
+    sum before edge                                  7708531968
+    measured minus that                                97985280  = the outward-rounding edge actually paid
+    edge census bound (prereg s3.5)                   112361472
+    edge as a fraction of its bound                     87.21 pct   within, not exceeded
+
+  against the single model-state request the old allocator makes for this run:
+    63374323968 / 7806517248 = 8.1181x smaller
+    commit peak as a percentage of the 63387346208-byte model: 12.3156 pct
+
+THE PAGE CENSUS HELD ON THE 120b TOO. Prereg section 3.5 bounded the 120b edge at
+112361472 bytes from a census computed off the digest manifests. Measured 97985280,
+which is 87.21 percent of the bound: tight enough to be a real prediction and not
+exceeded. The day leg found the same on the 20b (95.92 percent of its bound).
+
+A DAY-LEG PREDICTION CONFIRMED. RUNLOG-1.txt section 9.3 banked the expected
+8-chunk commit peak as "between 7715102720 and 7820893440", from the 1-chunk
+smoke's 7715102720 plus the edge it expected later chunks to add. Measured
+7806517248 falls inside that range. This leg's own 1-chunk diagnostic reproduced
+the smoke's 7715102720 exactly, so the 91414528-byte difference between one chunk
+and eight is edge accumulating as more distinct experts are touched, which is
+what the census says it should be.
+
+11.6 P2c: VmHWM AGAINST COMMITTED MODEL STATE PLUS BUFFERS. PASS.
+
+THE 20b DENOMINATOR WAS NOT CARRIED ACROSS. The day leg measured the engine's
+buffers on the 20b (915046871 bytes, DIAG-BUFFERS-1.txt) and P2c on the 20b rows
+used that. Those buffers are a function of the model as well as the
+configuration, so this leg measured the 120b's own, at the same frozen
+configuration, one chunk, leased K=8, at -v. The engine's words, verbatim
+(research/ob5a/DIAG-BUFFERS-120B-1.txt):
+
+  CPU compute buffer size =   824.82 MiB   (destructor line: 824.8242 MiB, "matches expectation")
+  CPU KV buffer size      =    36.00 MiB   (printed twice: a full cache and a sliding-window one)
+  CPU  output buffer size =     0.77 MiB
+  CPU model buffer size   =     0.00 MiB   (the weights are in CPU_Reserve, not here)
+  sum 897.5942 MiB = 941195736 bytes
+
+  run   VmHWM_B      commit_peak+buffers   unaccounted   ratio   bar
+  A     9034235904            8747712984     286522920  1.0328  1.25  PASS
+  B     9036021760            8747712984     288308776  1.0330  1.25  PASS
+
+THE UNACCOUNTED COLUMN DID NOT GROW WITH THE MODEL, AND THAT IS THE LIMB THAT
+MATTERS. On the 20b the day leg measured it between 292589097 and 310087209
+across a 5.1x range of committed model state. On the 120b, a model 5.2345x larger
+by file size, it is 286522920 and 288308776. It did not move. If the allocator
+were leaking N-proportional state anywhere, this is the column it would show up
+in, and it is flat across both models.
+
+11.7 P3c: EXPOSURE. PASS, AT THE PREDICTED FIGURE.
+
+  ACCT = resident_always + K x L x per_expert + peak_concurrent
+       = 2314020128 + 3817082880 + 1590451200
+       = 7721554208        predicted 7721554208   MATCH
+  EXPOSURE_acct = 63387346208 / 7721554208 = 8.209143    predicted 8.209143   MATCH
+  ACCT as a percentage of the model: 12.1815 pct
+
+  EXPOSURE_rss = 63387346208 / VmHWM
+    run A  63387346208 / 9034235904 = 7.016348
+    run B  63387346208 / 9036021760 = 7.014962
+
+The prereg's D4 correction is now settled by measurement rather than by argument.
+OB5-PLAN-1's first draft carried "~8.10x", which is what ACCT 7827584288 gives
+with a peak-concurrent term of E x per_expert; the prereg re-derived it as
+(E-K) x per_expert = 1590451200, giving 7721554208 and 8.209143, on the ground
+that the worst micro-batch of the route trace routes all 128 experts of some
+layer while 8 are resident. THE ENGINE MEASURED peak_concurrent_lease_bytes AT
+EXACTLY 1590451200. The prereg's reading of the route log was right.
+
+11.8 P3d: LATENCY. PASS.
+
+  run                p95 per chunk (nearest-rank)   ratio vs tau_0
+  p3-120b-k8-prose-a                    89174.2 ms          1.7971x
+  p3-120b-k8-prose-b                    89061.1 ms          1.7949x
+  bar (prereg s7 P3d, 2.0x)             99239.6 ms
+
+  chunk_ms run A: 89174.2, 87108.5, 85932.0, 87317.0, 86867.5, 86506.5, 86457.2
+  chunk_ms run B: 89061.1, 88265.7, 87257.9, 87166.7, 85774.5, 86111.0, 86028.6
+
+tau_0 is the PAGED pair, named as such. Its own p95 figures re-derive from the
+banked runs' chunk_ns by the same nearest-rank rule this leg used:
+pag120-prose-a 49619.8 ms and pag120-prose-b 46732.3 ms, which are the two
+figures the prereg wrote down before any run so the friendlier one could not be
+chosen afterwards. The binding number was fixed at 99239.6 ms and the measured
+p95 is 89174.2 ms.
+
+11.9 P4b, P4c, P4d: ALLOCATOR DETERMINISM. PASS.
+
+  P4b  alloc_journal_sha256 A == B
+       ff7c4b1d851cb57f4243ce9d5251166e6484aec3bca80841c205af30dc308d76
+  P4c  the printed digest equals the sha256 of the journal FILE on both runs,
+       330537 records, 9404962 bytes, so P4a is not a rolling hash of nothing
+  P4d  the day leg's corrected relation holds on both runs:
+       decommits + active_at_exit == 6 x lease_events
+       163920 + 498 = 164418  vs  6 x 27403 = 164418   MATCH
+       commits 166617 - resident slices 1728 - 164418 = 471 trunk tensors
+
+The A/A journal digest match is the strongest determinism statement available
+here: the commit and decommit schedule, 330537 records of it, is a pure function
+of the residency schedule and the route trace, reproduced record for record
+across two runs that were not otherwise identical processes.
+
+11.10 THE ARCHITECTURE AGAINST THE KNOB, WHICH IS THE COMPARISON THAT SETTLES IT
+
+The scout finished its own A/A pair on this box shortly before these runs. It is
+the same 120b K=8 point on the LANDED engine at vm.overcommit_memory=1. The two
+approaches can therefore be read against each other directly, which is the whole
+reason the scout was worth its lock time.
+
+  approach              identity/route    p95 ms    sum of chunk_s   VmHWM kbytes
+  scout A  (knob)       9d20bd/a32d00     87783.6         607.023        8830932
+  scout B  (knob)       9d20bd/a32d00     88809.9         607.255        8828004
+  ob5a A   (allocator)  9d20bd/a32d00     89174.2         609.363        8822496
+  ob5a B   (allocator)  9d20bd/a32d00     89061.1         609.666        8824240
+
+FOUR RUNS, TWO ALLOCATION STRATEGIES, ONE OUTPUT. All four hash to the banked
+paged pair on both limbs, and all four report lease_events 27403,
+peak_concurrent_lease_bytes 1590451200 and lease_bytes_read 363192785280.
+
+THE COST OF DOING IT ARCHITECTURALLY, MEASURED AND NOT ROUNDED IN OUR FAVOUR:
+
+  on the sum of chunk time   609.363 vs 607.023 s  = +2.340 s  = +0.3855 pct
+  on p95                     89174.2 vs 87783.6 ms = +1390.6 ms = +1.5841 pct
+
+The p95 figure needs its noise named beside it or it overstates the cost. The
+scout's own A/A pair differs by 1.1692 percent on p95 (87783.6 vs 88809.9), and
+ob5a A against scout B is +0.41 percent. The honest statement is that the
+architectural cost on p95 is of the same order as run-to-run noise, and that the
+cleanest measurement of it is the chunk-time sum, +2.340 s over 609 s.
+
+THAT FIGURE WAS PREDICTED. Prereg section 3.4 projected the arm-C decommit cost
+at +1.790 s for this run, from a probe that section D5 declared a LOWER BOUND
+because it ran at 4 threads where the model run has 8, TLB shootdown cost rising
+with the number of CPUs the address space is active on. Measured +2.340 s: above
+the lower bound, by 30.7 percent, in exactly the direction D5 said it would err.
+A prereg that predicted a number, declared why the number was a floor, and then
+measured a value just above that floor is the shape a prediction should have.
+
+WHAT THE KNOB BUYS AND WHAT IT DOES NOT. The scout proves the point is
+computable. It does not discharge the ruling, in the plan's own words, because
+at overcommit=1 the runtime still asks for 63374323968 bytes and the kernel
+agrees to a promise it has not checked. The allocator asks for 615333888 bytes at
+its largest, the kernel charges every commit, and the accounting is a witness
+rather than a courtesy. That is the difference the row was funded to produce, and
+it costs 0.3855 percent of chunk time.
+
+11.11 ENFORCED VERSUS EMERGENT FOOTPRINT, NOW ON THE 120b
+
+  run pair                            VmHWM kbytes        spread   EXPOSURE_rss
+  paged pag120-prose-a / -b     18823836 / 22724776     20.7234%   3.288475 / 2.723974
+  leased ob5a A / B               8822496 / 8824240      0.0198%   7.016348 / 7.014962
+
+The paged pair is byte-identical on identity and route and its peak RSS differs
+by 20.72 percent between the two runs. The leased pair differs by 0.0198 percent.
+This reproduces on the 120b what the white paper recorded on the 20b: an exposure
+figure taken from paging is an OBSERVATION about what the kernel happened to
+keep, and one taken from leasing is a BOUND the runtime enforces. It is also why
+EXPOSURE_rss is quoted here beside EXPOSURE_acct rather than instead of it.
+
+11.12 DEVIATIONS AND FINDINGS OF THIS LEG
+
+D-B2b-1  THE BOX READ overcommit_memory=1 AT FIRST LOOK, AND IT WAS CORRECT.
+         The scout held the runlock and flips the knob only inside it. This leg
+         did not change the setting in either direction, and recorded 0 inside
+         the locked window on all three of its runs. Had the value been 1 at that
+         point, the driver would have aborted with exit 77 rather than produce a
+         worthless claim.
+
+D-B2b-2  THE PREREG'S VMA HEADROOM ESTIMATE IS SUPERSEDED BY MEASUREMENT.
+         Prereg section 3.6 counted the allocator's own commit islands and
+         predicted "worst-case VMAs 4765" for the 120b, headroom 220.1x against
+         vm.max_map_count 1048576. Measured alloc_vma_peak is 48962 on run A and
+         48960 on run B, 10.3x the prereg's worst case, so the real headroom is
+         21.42x, not 220.1x. THE APPROACH IS NOT ENDANGERED and no bar moves:
+         21.42x is ample. The estimate was wrong in a specific and understandable
+         way, and it is the same direction the 20b showed (predicted 2185,
+         measured 8850 at K=0): alloc_vma_peak counts every line of
+         /proc/self/maps, including mappings the allocator does not own, while
+         the census counted only its own islands. The census was never measuring
+         the same quantity as the counter. Anyone reading section 3.6's headroom
+         figure as a safety margin should use 21.42x.
+
+D-B2b-3  THE P2c DENOMINATOR WAS RE-MEASURED ON THE 120b RATHER THAN INHERITED.
+         See 11.6. Carrying the 20b's 915046871 bytes across would have
+         understated the denominator by 26148865 bytes and flattered the ratio.
+         The extra lock cycle cost 102.490198033 s.
+
+D-B2b-4  NO RUN OF THIS LEG WAS RETRIED. Three model runs were made and three
+         are reported. There is no discarded run behind any number here.
+
+D-B2b-5  THE MODEL FILE WAS NOT RE-HASHED. Its size was checked at run time
+         (63387346208 bytes, printed by every run) and its sha256
+         582bd40f6886200101f4c4ed9f25f3fe80cc14c86e9e2b37746cd8904a0c622d was
+         verified by the day leg the same morning
+         (research/ob5a/VERIFY-INPUTS-1.txt). Re-hashing 63 GB during a leg whose
+         runs are I/O bound would have contended with the measurement it exists
+         to protect.
+
+11.13 ARTIFACTS OF THE NIGHT LEG
+
+  research/ob5a/run-120b-night.sh        the per-run driver: lock, RAM bar, the
+                                         fatal overcommit check, oom_score_adj
+                                         requested AND measured, inline digest
+                                         verdicts against digests passed in
+  research/ob5a/night-120b.sh            the A/A wrapper and the A/A comparison
+  research/ob5a/diag-buffers-120b.sh     the P2c denominator, measured on the 120b
+  research/ob5a/analyze_120b.py          the bar verdicts, every expectation a
+                                         prereg literal declared at the top
+  research/ob5a/NIGHT-120B-1.txt         the pair's own output
+  research/ob5a/DIAG-BUFFERS-120B-1.txt  the buffer diagnostic's output
+  research/ob5a/ANALYZE-120B-1.txt       the verdicts, OB5A_120B_ANALYZE_FAILURES=0
+
+  run artifacts (identity.txt, route.log, stdout, stderr, ob1-stats.txt, the
+  gzipped allocation journal, the oom_score_adj sample) at
+  /mnt/f/f32/stage/research/ob5a/runs/p3-120b-k8-prose-a/ and -b/ and
+  /root/ob5a/runs/, per the house law that run evidence stays off the repo
+
+  box state at run time, literal, recorded inside the lock:
+    vm.overcommit_memory=0
+    vm.overcommit_ratio=50
+    vm.max_map_count=1048576
+    page_size=4096
+    free RAM available 22 GB before each run (house bar 6)
+    pid 654 and pid 489 alive before and after every run
+
+11.14 WHAT REMAINS OPEN
+
+  - The 120b row exists at K=8 only. The K=0 floor (EXPOSURE_acct 15.805342,
+    prereg s6.3) is arithmetic, not measurement, on this model.
+  - The reservation is still N bytes of virtual address space, 63374323968, and
+    prereg section 4.3 declares that as a deliberate non-goal. Making the VA
+    sub-linear needs per-expert tensors and a gather, which is approach B, which
+    costs the identity limb. Nothing in this leg changes that trade.
+  - A fully resident 120b baseline remains UNMEASURABLE on a 24029 MB box, so
+    every latency ratio on this model is against the paged pair and says so.
+
+END OF THE NIGHT LEG.
